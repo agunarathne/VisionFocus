@@ -1,0 +1,49 @@
+<resources>
+    <!-- Dark theme enforced as default (AC requirement: "Dark theme default (#121212 background)") -->
+    <style name="Theme.VisionFocus" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_variant</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorSecondaryVariant">@color/secondary_variant</item>
+        <item name="colorOnSecondary">@color/on_secondary</item>
+        
+        <!-- Surface colors (dark theme default) -->
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorOnBackground">@color/on_background</item>
+        
+        <!-- Typography -->
+        <item name="textAppearanceBody1">@style/TextAppearance.VisionFocus.Body1</item>
+        
+        <!-- Error color -->
+        <item name="colorError">@color/error_red</item>
+    </style>
+    
+    <!-- High-contrast theme variant (7:1 ratio) - will be activated in Story 5.3 Settings Screen -->
+    <style name="Theme.VisionFocus.HighContrast" parent="Theme.VisionFocus">
+        <!-- Pure black background, pure white foreground for 7:1+ contrast -->
+        <item name="android:colorBackground">@color/high_contrast_background</item>
+        <item name="colorSurface">@color/high_contrast_background</item>
+        <item name="colorOnSurface">@color/high_contrast_on_surface</item>
+        <item name="colorOnBackground">@color/high_contrast_on_surface</item>
+    </style>
+    
+    <style name="TextAppearance.VisionFocus.Body1" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">20sp</item>  <!-- Increased from default 16sp -->
+        <item name="android:fontFamily">sans-serif</item>  <!-- Roboto (system default on Android) -->
+        <item name="android:lineHeight">30sp</item>  <!-- 1.5x line height -->
+    </style>
+    
+    <!-- Large text mode variant (150% scaling) -->
+    <style name="TextAppearance.VisionFocus.Body1.Large" parent="TextAppearance.VisionFocus.Body1">
+        <item name="android:textSize">30sp</item>  <!-- 20sp * 1.5 -->
+        <item name="android:lineHeight">45sp</item>
+    </style>
+</resources>

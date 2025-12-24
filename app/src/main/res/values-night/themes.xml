@@ -1,0 +1,28 @@
+<resources>
+    <!-- Dark theme is the default, so values-night enforces it -->
+    <style name="Theme.VisionFocus" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_variant</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorSecondaryVariant">@color/secondary_variant</item>
+        <item name="colorOnSecondary">@color/on_secondary</item>
+        
+        <!-- Surface colors (dark theme default) -->
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorOnBackground">@color/on_background</item>
+        
+        <!-- Typography -->
+        <item name="textAppearanceBody1">@style/TextAppearance.VisionFocus.Body1</item>
+        
+        <!-- Error color -->
+        <item name="colorError">@color/error_red</item>
+    </style>
+</resources>

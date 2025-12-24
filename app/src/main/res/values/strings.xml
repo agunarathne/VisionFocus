@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">VisionFocus</string>
+    <string name="main_screen_placeholder_description">VisionFocus application launched successfully. This is a placeholder screen. Future features will be added in subsequent development stories.</string>
+</resources>
