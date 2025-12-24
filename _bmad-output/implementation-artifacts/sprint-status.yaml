@@ -1,0 +1,125 @@
+# generated: December 24, 2025
+# project: VisionFocus
+# project_key: VisionFocus
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: December 24, 2025
+project: VisionFocus
+project_key: VisionFocus
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Project Foundation & Core Infrastructure
+  epic-1: in-progress
+  1-1-android-project-bootstrapping-with-material-design-3: done
+  1-2-dependency-injection-setup-with-hilt: backlog
+  1-3-datastore-preferences-infrastructure: backlog
+  1-4-room-database-foundation: backlog
+  1-5-camera-permissions-talkback-testing-framework: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Accessible Object Recognition
+  epic-2: backlog
+  2-1-tflite-model-integration-on-device-inference: backlog
+  2-2-high-confidence-detection-filtering-tts-announcement: backlog
+  2-3-recognition-fab-with-talkback-semantic-annotations: backlog
+  2-4-camera-capture-with-accessibility-focus-management: backlog
+  2-5-high-contrast-mode-large-text-support: backlog
+  2-6-haptic-feedback-for-recognition-events: backlog
+  2-7-complete-talkback-navigation-for-primary-flow: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Voice Command System
+  epic-3: backlog
+  3-1-android-speech-recognizer-integration: backlog
+  3-2-core-voice-command-processing-engine: backlog
+  3-3-voice-command-confirmation-cancellation: backlog
+  3-4-voice-command-help-system: backlog
+  3-5-always-available-voice-activation: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Advanced Recognition Features
+  epic-4: backlog
+  4-1-verbosity-mode-selection-brief-standard-detailed: backlog
+  4-2-recognition-history-storage-with-room-database: backlog
+  4-3-recognition-history-review-ui: backlog
+  4-4-continuous-scanning-mode-for-environment-mapping: backlog
+  4-5-distance-and-position-information-in-detailed-mode: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Personalization & Settings
+  epic-5: backlog
+  5-1-tts-speech-rate-adjustment: backlog
+  5-2-tts-voice-selection: backlog
+  5-3-settings-screen-with-persistent-preferences: backlog
+  5-4-haptic-feedback-intensity-adjustment: backlog
+  5-5-quick-settings-toggle-via-voice-commands: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: GPS-Based Navigation
+  epic-6: backlog
+  6-1-destination-input-via-voice-and-text: backlog
+  6-2-google-maps-directions-api-integration: backlog
+  6-3-turn-by-turn-voice-guidance-with-anticipatory-warnings: backlog
+  6-4-route-deviation-detection-and-recalculation: backlog
+  6-5-gps-location-permissions-with-clear-explanations: backlog
+  6-6-network-availability-indication: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Saved Locations & Offline Navigation
+  epic-7: backlog
+  7-1-save-current-location-with-custom-labels: backlog
+  7-2-saved-locations-management-ui: backlog
+  7-3-quick-navigation-to-saved-locations: backlog
+  7-4-offline-map-pre-caching: backlog
+  7-5-automatic-gps-offline-navigation-mode-switching: backlog
+  7-6-destination-arrival-confirmation: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Enhanced Audio Priority & TTS Management
+  epic-8: backlog
+  8-1-audio-priority-queue-implementation: backlog
+  8-2-confidence-aware-tts-phrasing: backlog
+  8-3-bluetooth-audio-routing-for-discreet-use: backlog
+  8-4-tts-speech-interruption-and-resumption-control: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: Onboarding & First-Run Experience
+  epic-9: backlog
+  9-1-first-run-permission-flow-with-clear-explanations: backlog
+  9-2-quick-start-tutorial-for-core-voice-commands: backlog
+  9-3-optional-onboarding-with-immediate-app-access: backlog
+  9-4-talkback-accessibility-validation-during-onboarding: backlog
+  9-5-graceful-degradation-when-permissions-denied: backlog
+  epic-9-retrospective: optional
