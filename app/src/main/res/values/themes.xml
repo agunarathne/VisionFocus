@@ -38,12 +38,12 @@
     <style name="TextAppearance.VisionFocus.Body1" parent="TextAppearance.Material3.BodyLarge">
         <item name="android:textSize">20sp</item>  <!-- Increased from default 16sp -->
         <item name="android:fontFamily">sans-serif</item>  <!-- Roboto (system default on Android) -->
-        <item name="android:lineHeight">30sp</item>  <!-- 1.5x line height -->
+        <!-- lineHeight moved to values-v28/themes.xml for API 28+ -->
     </style>
     
     <!-- Large text mode variant (150% scaling) -->
     <style name="TextAppearance.VisionFocus.Body1.Large" parent="TextAppearance.VisionFocus.Body1">
         <item name="android:textSize">30sp</item>  <!-- 20sp * 1.5 -->
-        <item name="android:lineHeight">45sp</item>
+        <!-- lineHeight moved to values-v28/themes.xml for API 28+ -->
     </style>
 </resources>

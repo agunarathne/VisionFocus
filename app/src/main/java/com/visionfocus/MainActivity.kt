@@ -1,12 +1,25 @@
 package com.visionfocus
 
 import android.os.Bundle
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.visionfocus.databinding.ActivityMainBinding
+import com.visionfocus.ui.viewmodels.SampleViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * Main activity for VisionFocus.
+ * 
+ * @AndroidEntryPoint enables Hilt dependency injection in this Activity.
+ * Required for injecting ViewModels and other dependencies.
+ */
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
+    
+    // Hilt automatically provides ViewModel via viewModels() delegate
+    private val sampleViewModel: SampleViewModel by viewModels()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -15,8 +28,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        // Demonstrate ViewBinding usage pattern for future stories
-        binding.textView.text = getString(R.string.app_name)
+        // Demonstrate dependency injection is working
+        val sampleData = sampleViewModel.getSampleData()
+        binding.textView.text = sampleData
         
         // Future stories will add:
         // - Fragment container for navigation (Story 1.2+)
