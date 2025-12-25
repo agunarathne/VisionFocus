@@ -17,11 +17,11 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Comprehensive integration tests for SettingsRepository.
@@ -85,11 +85,11 @@ class SettingsRepositoryIntegrationTest {
     fun speech_rate_is_clamped_to_valid_range() = runTest(testDispatcher) {
         // Try to set rate below minimum (0.5x)
         repository.setSpeechRate(0.3f)
-        assertEquals(0.5f, repository.getSpeechRate().first(), "Rate below 0.5 should be clamped")
+        assertEquals("Rate below 0.5 should be clamped", 0.5f, repository.getSpeechRate().first())
         
         // Try to set rate above maximum (2.0x)
         repository.setSpeechRate(3.0f)
-        assertEquals(2.0f, repository.getSpeechRate().first(), "Rate above 2.0 should be clamped")
+        assertEquals("Rate above 2.0 should be clamped", 2.0f, repository.getSpeechRate().first())
     }
     
     @Test
@@ -98,7 +98,7 @@ class SettingsRepositoryIntegrationTest {
         for (mode in VerbosityMode.values()) {
             repository.setVerbosity(mode)
             val readMode = repository.getVerbosity().first()
-            assertEquals(mode, readMode, "Failed for mode: $mode")
+            assertEquals("Failed for mode: $mode", mode, readMode)
         }
     }
     
@@ -142,9 +142,9 @@ class SettingsRepositoryIntegrationTest {
         val repository2 = SettingsRepositoryImpl(dataStore2)
         
         // Verify preferences persisted
-        assertEquals(1.75f, repository2.getSpeechRate().first(), "Speech rate should persist")
-        assertEquals(VerbosityMode.DETAILED, repository2.getVerbosity().first(), "Verbosity should persist")
-        assertTrue(repository2.getHighContrastMode().first(), "High contrast should persist")
+        assertEquals("Speech rate should persist", 1.75f, repository2.getSpeechRate().first())
+        assertEquals("Verbosity should persist", VerbosityMode.DETAILED, repository2.getVerbosity().first())
+        assertTrue("High contrast should persist", repository2.getHighContrastMode().first())
     }
     
     @Test
@@ -165,7 +165,7 @@ class SettingsRepositoryIntegrationTest {
         val finalRate = repository.getSpeechRate().first()
         
         // Final value should be one of the written values (in valid range)
-        assertTrue(finalRate in 0.5f..2.0f, "Final rate $finalRate should be in valid range")
+        assertTrue("Final rate $finalRate should be in valid range", finalRate in 0.5f..2.0f)
     }
     
     @Test
@@ -192,7 +192,7 @@ class SettingsRepositoryIntegrationTest {
         
         // All reads should return valid values (no corruption)
         readResults.forEach { rate ->
-            assertTrue(rate in 0.5f..2.0f, "Rate $rate should be in valid range")
+            assertTrue("Rate $rate should be in valid range", rate in 0.5f..2.0f)
         }
     }
 }

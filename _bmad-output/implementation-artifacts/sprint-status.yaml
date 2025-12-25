@@ -45,7 +45,7 @@ development_status:
   1-1-android-project-bootstrapping-with-material-design-3: done
   1-2-dependency-injection-setup-with-hilt: done
   1-3-datastore-preferences-infrastructure: done
-  1-4-room-database-foundation: backlog
+  1-4-room-database-foundation: done
   1-5-camera-permissions-talkback-testing-framework: backlog
   epic-1-retrospective: optional
 

@@ -15,11 +15,11 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Integration test verifying DataStore preferences persist across app restarts.
@@ -76,8 +76,8 @@ class DataStorePersistenceTest {
         val repository2 = SettingsRepositoryImpl(dataStore2)
         
         // Verify preferences persisted
-        assertEquals(1.75f, repository2.getSpeechRate().first(), "Speech rate should persist")
-        assertEquals(VerbosityMode.DETAILED, repository2.getVerbosity().first(), "Verbosity should persist")
-        assertTrue(repository2.getHighContrastMode().first(), "High contrast should persist")
+        assertEquals("Speech rate should persist", 1.75f, repository2.getSpeechRate().first())
+        assertEquals("Verbosity should persist", VerbosityMode.DETAILED, repository2.getVerbosity().first())
+        assertTrue("High contrast should persist", repository2.getHighContrastMode().first())
     }
 }
