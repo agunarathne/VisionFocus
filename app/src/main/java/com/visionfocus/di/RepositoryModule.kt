@@ -2,6 +2,8 @@ package com.visionfocus.di
 
 import com.visionfocus.data.repository.SampleRepository
 import com.visionfocus.data.repository.SampleRepositoryImpl
+import com.visionfocus.data.repository.SettingsRepository
+import com.visionfocus.data.repository.SettingsRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -22,4 +24,15 @@ abstract class RepositoryModule {
     abstract fun bindSampleRepository(
         sampleRepositoryImpl: SampleRepositoryImpl
     ): SampleRepository
+    
+    /**
+     * Binds SettingsRepository interface to DataStore implementation.
+     * 
+     * @Binds is more efficient than @Provides for interface → implementation bindings.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(
+        settingsRepositoryImpl: SettingsRepositoryImpl
+    ): SettingsRepository
 }

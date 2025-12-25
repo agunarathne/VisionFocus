@@ -62,9 +62,19 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-ktx:1.8.2")
     
+    // DataStore Preferences (Story 1.3)
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("androidx.datastore:datastore-preferences-core:1.0.0")
+    
+    // Coroutines for DataStore
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("javax.inject:javax.inject:1")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.22")
     testImplementation("com.google.dagger:hilt-android-testing:2.50")
     kaptTest("com.google.dagger:hilt-compiler:2.50")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
