@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permissions will be added in subsequent stories -->
-    <!-- CAMERA permission - Story 1.5 -->
+    <!-- Camera permission for object recognition (FR53, Story 1.5) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- Hardware feature - camera optional for graceful degradation (FR57) -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    
+    <!-- Future permissions -->
     <!-- ACCESS_FINE_LOCATION - Epic 6 -->
     <!-- RECORD_AUDIO - Epic 3 -->
     

@@ -1,11 +1,18 @@
 package com.visionfocus
 
 import android.os.Bundle
+import android.view.View
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.visionfocus.databinding.ActivityMainBinding
+import com.visionfocus.permissions.manager.AccessibilityAnnouncementHelper
+import com.visionfocus.permissions.manager.PermissionManager
 import com.visionfocus.ui.viewmodels.SampleViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Main activity for VisionFocus.
@@ -21,6 +28,14 @@ class MainActivity : AppCompatActivity() {
     // Hilt automatically provides ViewModel via viewModels() delegate
     private val sampleViewModel: SampleViewModel by viewModels()
     
+    @Inject
+    lateinit var permissionManager: PermissionManager
+    
+    @Inject
+    lateinit var accessibilityHelper: AccessibilityAnnouncementHelper
+    
+    private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
@@ -32,9 +47,78 @@ class MainActivity : AppCompatActivity() {
         val sampleData = sampleViewModel.getSampleData()
         binding.textView.text = sampleData
         
+        // Setup permission launcher and check camera permission (Story 1.5)
+        setupPermissionLauncher()
+        checkCameraPermission()
+        
         // Future stories will add:
         // - Fragment container for navigation (Story 1.2+)
         // - FAB for recognition trigger (Epic 2)
         // - Bottom navigation for main features (Epic 2-3)
+    }
+    
+    private fun setupPermissionLauncher() {
+        cameraPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            handleCameraPermissionResult(isGranted)
+        }
+    }
+    
+    private fun checkCameraPermission() {
+        when {
+            permissionManager.isCameraPermissionGranted() -> {
+                // Permission already granted - no action needed for Story 1.5
+                // Epic 2 will enable camera capture here
+            }
+            shouldShowRequestPermissionRationale(android.Manifest.permission.CAMERA) -> {
+                showCameraRationale()
+            }
+            else -> {
+                requestCameraPermission()
+            }
+        }
+    }
+    
+    private fun showCameraRationale() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_permission_rationale, null)
+        
+        AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+            .apply {
+                dialogView.findViewById<View>(R.id.rationaleAllowButton).setOnClickListener {
+                    dismiss()
+                    requestCameraPermission()
+                }
+                
+                dialogView.findViewById<View>(R.id.rationaleDeclineButton).setOnClickListener {
+                    dismiss()
+                    handleCameraPermissionResult(false)
+                }
+                
+                show()
+            }
+    }
+    
+    private fun requestCameraPermission() {
+        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+    }
+    
+    private fun handleCameraPermissionResult(isGranted: Boolean) {
+        val announcement = if (isGranted) {
+            getString(R.string.camera_permission_granted)
+        } else {
+            getString(R.string.camera_permission_denied)
+        }
+        
+        accessibilityHelper.announce(binding.root, announcement)
+        
+        if (!isGranted) {
+            // Epic 9 will implement graceful degradation UI here
+            // For Story 1.5, just log the denial
+            android.util.Log.w("VisionFocus", "Camera permission denied")
+        }
     }
 }

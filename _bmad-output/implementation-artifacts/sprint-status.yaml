@@ -46,7 +46,7 @@ development_status:
   1-2-dependency-injection-setup-with-hilt: done
   1-3-datastore-preferences-infrastructure: done
   1-4-room-database-foundation: done
-  1-5-camera-permissions-talkback-testing-framework: backlog
+  1-5-camera-permissions-talkback-testing-framework: review
   epic-1-retrospective: optional
 
   # Epic 2: Accessible Object Recognition

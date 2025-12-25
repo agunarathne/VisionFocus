@@ -16,7 +16,8 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         
-        testInstrumentationRunner = "com.visionfocus.HiltTestRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
     
     buildTypes {
@@ -45,6 +46,15 @@ android {
     sourceSets {
         getByName("main") {
             assets.srcDirs("src/main/assets", "schemas")
+        }
+    }
+    
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
         }
     }
 }
@@ -97,10 +107,26 @@ dependencies {
     kaptTest("com.google.dagger:hilt-compiler:2.50")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    
+    // AndroidX Test Framework (Story 1.5)
+    androidTestImplementation("androidx.test:core:1.5.0")
     androidTestImplementation("androidx.test:core-ktx:1.5.0")
-    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
+    androidTestImplementation("androidx.test:runner:1.5.2")
+    androidTestImplementation("androidx.test:rules:1.5.0")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.ext:junit-ktx:1.1.5")
+    
+    // Espresso Accessibility (Story 1.5)
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.espresso:espresso-accessibility:3.5.1")
+    
+    // Accessibility Test Framework (Story 1.5)
+    androidTestImplementation("com.google.android.apps.common.testing.accessibility.framework:accessibility-test-framework:4.0.0")
+    
+    // Test Orchestrator (Story 1.5)
+    androidTestUtil("androidx.test:orchestrator:1.4.2")
+    
+    androidTestImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.50")
     kaptAndroidTest("com.google.dagger:hilt-compiler:2.50")
 }

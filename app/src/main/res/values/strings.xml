@@ -1,4 +1,17 @@
 <resources>
     <string name="app_name">VisionFocus</string>
     <string name="main_screen_placeholder_description">VisionFocus application launched successfully. This is a placeholder screen. Future features will be added in subsequent development stories.</string>
+    
+    <!-- Camera permission strings (Story 1.5) -->
+    <string name="camera_permission_rationale_title">Camera Access Needed</string>
+    <string name="camera_permission_rationale_message">VisionFocus needs camera access to identify objects in your environment. Your images stay private on your device and are never uploaded.</string>
+    
+    <string name="permission_allow">Allow</string>
+    <string name="permission_allow_description">Allow camera access, button</string>
+    <string name="permission_deny">Deny</string>
+    <string name="permission_deny_description">Deny camera access, button</string>
+    
+    <!-- TalkBack announcements -->
+    <string name="camera_permission_granted">Camera permission granted. You can now recognize objects.</string>
+    <string name="camera_permission_denied">Camera permission denied. Object recognition will not work without camera access.</string>
 </resources>
