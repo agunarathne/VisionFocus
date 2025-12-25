@@ -7,9 +7,9 @@
     <string name="camera_permission_rationale_message">VisionFocus needs camera access to identify objects in your environment. Your images stay private on your device and are never uploaded.</string>
     
     <string name="permission_allow">Allow</string>
-    <string name="permission_allow_description">Allow camera access, button</string>
+    <string name="permission_allow_description">Grant camera permission</string>
     <string name="permission_deny">Deny</string>
-    <string name="permission_deny_description">Deny camera access, button</string>
+    <string name="permission_deny_description">Decline camera permission</string>
     
     <!-- TalkBack announcements -->
     <string name="camera_permission_granted">Camera permission granted. You can now recognize objects.</string>

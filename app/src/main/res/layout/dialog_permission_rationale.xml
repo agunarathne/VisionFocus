@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="@dimen/dialog_padding">
     
     <!-- Dialog title with TalkBack support -->
     <TextView
@@ -11,12 +11,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/camera_permission_rationale_title"
-        android:textSize="20sp"
+        android:textSize="@dimen/text_size_title"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface"
         android:contentDescription="@string/camera_permission_rationale_title"
         android:accessibilityHeading="true"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="@dimen/spacing_medium" />
     
     <!-- Rationale message explaining why permission is needed -->
     <TextView
@@ -24,10 +24,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/camera_permission_rationale_message"
-        android:textSize="16sp"
+        android:textSize="@dimen/text_size_dialog"
         android:textColor="?attr/colorOnSurface"
         android:lineSpacingMultiplier="1.5"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="@dimen/spacing_large" />
     
     <!-- Button container with 48×48 dp touch targets -->
     <LinearLayout
@@ -41,20 +41,20 @@
             android:id="@+id/rationaleDeclineButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:minWidth="88dp"
-            android:minHeight="48dp"
+            android:minWidth="@dimen/button_min_width"
+            android:minHeight="@dimen/min_touch_target_size"
             android:text="@string/permission_deny"
             android:contentDescription="@string/permission_deny_description"
             style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="@dimen/spacing_small" />
         
         <!-- Allow button (primary action) -->
         <Button
             android:id="@+id/rationaleAllowButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:minWidth="88dp"
-            android:minHeight="48dp"
+            android:minWidth="@dimen/button_min_width"
+            android:minHeight="@dimen/min_touch_target_size"
             android:text="@string/permission_allow"
             android:contentDescription="@string/permission_allow_description"
             style="@style/Widget.MaterialComponents.Button" />

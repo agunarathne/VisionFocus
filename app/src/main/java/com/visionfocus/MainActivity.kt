@@ -43,6 +43,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        // Fix Issue #4: Enable TalkBack announcements on root view
+        binding.root.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES
+        
         // Demonstrate dependency injection is working
         val sampleData = sampleViewModel.getSampleData()
         binding.textView.text = sampleData
@@ -71,7 +74,7 @@ class MainActivity : AppCompatActivity() {
                 // Permission already granted - no action needed for Story 1.5
                 // Epic 2 will enable camera capture here
             }
-            shouldShowRequestPermissionRationale(android.Manifest.permission.CAMERA) -> {
+            permissionManager.shouldShowCameraRationale(this) -> {
                 showCameraRationale()
             }
             else -> {

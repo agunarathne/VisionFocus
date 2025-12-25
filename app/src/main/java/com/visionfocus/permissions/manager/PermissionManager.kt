@@ -1,8 +1,11 @@
 package com.visionfocus.permissions.manager
 
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,5 +38,40 @@ class PermissionManager @Inject constructor(
             context,
             android.Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
+    }
+    
+    /**
+     * Determine if rationale should be shown for camera permission.
+     * Returns true if user previously denied permission.
+     */
+    fun shouldShowCameraRationale(activity: Activity): Boolean {
+        return ActivityCompat.shouldShowRequestPermissionRationale(
+            activity,
+            android.Manifest.permission.CAMERA
+        )
+    }
+    
+    /**
+     * Request camera permission with TalkBack announcements.
+     * 
+     * @param launcher ActivityResultLauncher from Activity
+     */
+    fun requestCameraPermission(launcher: ActivityResultLauncher<String>) {
+        launcher.launch(android.Manifest.permission.CAMERA)
+    }
+    
+    /**
+     * Register permission result launcher in Activity.
+     * Must be called during Activity initialization (before onCreate completes).
+     */
+    fun registerCameraPermissionLauncher(
+        activity: Activity,
+        onResult: (Boolean) -> Unit
+    ): ActivityResultLauncher<String> {
+        return (activity as androidx.activity.ComponentActivity).registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            onResult(isGranted)
+        }
     }
 }

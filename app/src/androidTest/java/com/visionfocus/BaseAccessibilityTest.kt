@@ -23,9 +23,9 @@ abstract class BaseAccessibilityTest {
         @BeforeClass
         fun setupAccessibilityChecks() {
             // Enable accessibility checks for all Espresso interactions
+            // Fix Issue #7: Proper configuration for WCAG 2.1 AA validation
             AccessibilityChecks.enable()
                 .setRunChecksFromRootView(true)
-                .setSuppressingResultMatcher(null)  // Report all violations
         }
     }
 }
