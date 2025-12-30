@@ -14,7 +14,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="?attr/colorSurface">
+    android:background="?attr/colorSurface"
+    android:importantForAccessibility="no"
+    android:screenReaderFocusable="false">
     
     <!-- Camera Preview (Story 2.4)
          - 1x1 dp size (invisible to users, but needed for CameraX)
@@ -30,7 +32,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
     
-    <!-- App Title (for TalkBack context) -->
+    <!-- App Title (visual only, hidden from TalkBack to avoid redundant reading) -->
     <TextView
         android:id="@+id/titleTextView"
         android:layout_width="0dp"
@@ -39,7 +41,7 @@
         android:textSize="24sp"
         android:textStyle="bold"
         android:textColor="?attr/colorOnSurface"
-        android:accessibilityHeading="true"
+        android:importantForAccessibility="no"
         android:layout_margin="16dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -54,6 +56,7 @@
         android:text="@string/recognition_instructions_short"
         android:textSize="18sp"
         android:textColor="?attr/colorOnSurface"
+        android:importantForAccessibility="no"
         android:layout_margin="16dp"
         app:layout_constraintTop_toBottomOf="@id/titleTextView"
         app:layout_constraintStart_toStartOf="parent"
@@ -71,6 +74,8 @@
         android:layout_height="56dp"
         android:contentDescription="@string/recognize_fab_description"
         android:src="@drawable/ic_camera"
+        android:importantForAccessibility="yes"
+        android:screenReaderFocusable="true"
         app:fabSize="normal"
         app:rippleColor="?attr/colorControlHighlight"
         app:tint="?attr/colorOnPrimary"
@@ -78,8 +83,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_margin="16dp"
-        android:nextFocusUp="@id/instructionsTextView"
-        android:accessibilityTraversalAfter="@id/instructionsTextView"
         tools:ignore="UnusedAttribute" />
     
 </androidx.constraintlayout.widget.ConstraintLayout>
