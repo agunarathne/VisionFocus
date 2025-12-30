@@ -52,7 +52,7 @@ development_status:
   # Epic 2: Accessible Object Recognition
   epic-2: in-progress
   2-1-tflite-model-integration-on-device-inference: done
-  2-2-high-confidence-detection-filtering-tts-announcement: review
+  2-2-high-confidence-detection-filtering-tts-announcement: done
   2-3-recognition-fab-with-talkback-semantic-annotations: backlog
   2-4-camera-capture-with-accessibility-focus-management: backlog
   2-5-high-contrast-mode-large-text-support: backlog
