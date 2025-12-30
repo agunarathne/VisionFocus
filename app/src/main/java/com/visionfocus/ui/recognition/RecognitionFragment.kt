@@ -118,9 +118,22 @@ class RecognitionFragment : Fragment() {
         observeUiState()
         
         // Story 2.4 Task 1.2: Initialize CameraX if permission granted
+        checkPermissionAndStartCamera()
+    }
+    
+    /**
+     * Check camera permission and start camera if granted, otherwise show permission UI
+     */
+    private fun checkPermissionAndStartCamera() {
         if (hasCameraPermission()) {
-            startCamera()
+            // Permission granted - start camera if not already running
+            if (imageCapture == null) {
+                startCamera()
+            }
+            // Enable FAB
+            binding.recognizeFab.isEnabled = true
         } else {
+            // Permission denied - show permission required UI
             handleCameraPermissionDenied()
         }
     }
@@ -606,10 +619,8 @@ class RecognitionFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         
-        // Re-check permission and start camera if granted and not already bound
-        if (hasCameraPermission() && imageCapture == null) {
-            startCamera()
-        }
+        // Re-check permission when returning from Settings
+        checkPermissionAndStartCamera()
     }
     
     override fun onDestroyView() {
