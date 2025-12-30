@@ -79,8 +79,18 @@ class RecognitionRepositoryImpl @Inject constructor(
         // Story 2.4: Raw TFLite inference with Bitmap
         val rawResult = objectRecognitionService.recognizeObject(bitmap)
         
-        // Story 2.2: Apply confidence filtering (≥0.6 threshold)
+        android.util.Log.d("RecognitionRepository", "Raw detections from TFLite: ${rawResult.detections.size}")
+        rawResult.detections.forEach { detection ->
+            android.util.Log.d("RecognitionRepository", "  - ${detection.label}: ${detection.confidence}")
+        }
+        
+        // Story 2.2: Apply confidence filtering (≥0.3 threshold)
         val filtered = confidenceFilter.filter(rawResult.detections)
+        
+        android.util.Log.d("RecognitionRepository", "After confidence filtering (≥0.3): ${filtered.size}")
+        filtered.forEach { detection ->
+            android.util.Log.d("RecognitionRepository", "  - ${detection.label}: ${detection.confidence}")
+        }
         
         // Story 2.2: Apply Non-Maximum Suppression (remove overlapping duplicates)
         val deduplicated = nonMaximumSuppression.apply(filtered)

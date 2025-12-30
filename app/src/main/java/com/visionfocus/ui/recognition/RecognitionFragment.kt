@@ -290,6 +290,7 @@ class RecognitionFragment : Fragment() {
                     
                     // Story 2.4 HIGH-5: Pause camera after capture (AC5 - prevent battery drain)
                     cameraProvider?.unbindAll()
+                    this@RecognitionFragment.imageCapture = null  // Clear reference so camera rebinds on next recognition
                     
                     // Story 2.4 Task 2.5: Pass to recognition pipeline
                     viewModel.performRecognition(bitmap)

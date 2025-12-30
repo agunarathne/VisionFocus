@@ -38,7 +38,7 @@ class TFLiteInferenceEngine @Inject constructor(
         private const val LABELS_PATH = "models/coco_labels.txt"
         private const val MAX_DETECTIONS = 10
         private const val NUM_THREADS = 4
-        private const val EXPECTED_COCO_LABELS = 80
+        private const val EXPECTED_COCO_LABELS = 91  // Full COCO dataset (80 objects + 11 unused IDs)
     }
     
     /**
@@ -184,7 +184,7 @@ class TFLiteInferenceEngine @Inject constructor(
                 reader.readLines().map { it.trim() }
             }
             
-            // Validate we have exactly 80 COCO labels
+            // Validate we have exactly 91 COCO labels (80 objects + 11 unused IDs)
             require(loadedLabels.size == EXPECTED_COCO_LABELS) {
                 "Expected $EXPECTED_COCO_LABELS COCO labels, found ${loadedLabels.size}"
             }
@@ -204,6 +204,8 @@ class TFLiteInferenceEngine @Inject constructor(
     ): List<DetectionResult> {
         val results = mutableListOf<DetectionResult>()
         
+        Log.d(TAG, "Parsing $detectionCount detections from model output")
+        
         for (i in 0 until detectionCount) {
             val classId = classIds[0][i].toInt()
             val confidence = scores[0][i]
@@ -212,8 +214,11 @@ class TFLiteInferenceEngine @Inject constructor(
             // Get label for class ID
             val label = mapClassIdToLabel(classId)
             
+            Log.d(TAG, "Detection $i: classId=$classId label='$label' confidence=$confidence bbox=[${bbox[0]}, ${bbox[1]}, ${bbox[2]}, ${bbox[3]}]")
+            
             // Skip invalid detections
             if (label == "???" || label == "unknown") {
+                Log.d(TAG, "  ↳ Skipping: invalid label")
                 continue
             }
             

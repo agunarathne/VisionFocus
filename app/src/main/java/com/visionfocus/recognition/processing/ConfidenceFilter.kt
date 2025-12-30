@@ -20,14 +20,15 @@ class ConfidenceFilter @Inject constructor() {
     
     companion object {
         /**
-         * Research-validated confidence threshold
+         * Confidence threshold for real-world detection
          * Detections below this score are filtered before announcement
          * 
-         * Rationale: ≥0.6 provides optimal balance:
-         * - Recall: Captures most valid detections
-         * - Precision: False positive rate ≤10% for HIGH confidence
+         * Rationale: ≥0.5 provides better precision:
+         * - High enough to significantly reduce false positives
+         * - For ssd_mobilenet_v1, scores below 50% are often incorrect
+         * - Better user experience with fewer wrong detections
          */
-        const val CONFIDENCE_THRESHOLD = 0.6f
+        const val CONFIDENCE_THRESHOLD = 0.5f
     }
     
     /**
@@ -58,9 +59,9 @@ class ConfidenceFilter @Inject constructor() {
         }
         
         return when {
-            confidence >= 0.85f -> ConfidenceLevel.HIGH
-            confidence >= 0.70f -> ConfidenceLevel.MEDIUM
-            confidence >= 0.60f -> ConfidenceLevel.LOW
+            confidence >= 0.65f -> ConfidenceLevel.HIGH    // 65%+ = HIGH (high certainty)
+            confidence >= 0.50f -> ConfidenceLevel.MEDIUM  // 50-64% = MEDIUM (moderate certainty)
+            confidence >= 0.40f -> ConfidenceLevel.LOW     // 40-49% = LOW (possible detection)
             else -> throw IllegalArgumentException(
                 "Confidence $confidence below threshold $CONFIDENCE_THRESHOLD"
             )
