@@ -10,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.visionfocus.databinding.ActivityMainBinding
 import com.visionfocus.permissions.manager.AccessibilityAnnouncementHelper
 import com.visionfocus.permissions.manager.PermissionManager
+import com.visionfocus.recognition.service.ObjectRecognitionService
+import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.ui.viewmodels.SampleViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -33,6 +35,12 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var accessibilityHelper: AccessibilityAnnouncementHelper
     
+    @Inject
+    lateinit var objectRecognitionService: ObjectRecognitionService
+    
+    @Inject
+    lateinit var ttsManager: TTSManager
+    
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +52,18 @@ class MainActivity : AppCompatActivity() {
         
         // Fix Issue #4: Enable TalkBack announcements on root view
         binding.root.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES
+        
+        // Story 2.1: Initialize ObjectRecognitionService (TFLite model loading)
+        // Must be called before any recognition attempts
+        try {
+            objectRecognitionService.initialize()
+            android.util.Log.d("MainActivity", "ObjectRecognitionService initialized successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to initialize ObjectRecognitionService", e)
+        }
+        
+        // Story 2.2: Initialize TTSManager (Text-to-Speech engine)
+        ttsManager.initialize()
         
         // Story 2.3 Task 7.3: RecognitionFragment auto-loaded via FragmentContainerView
         // No manual fragment transaction needed - android:name attribute handles it
@@ -116,5 +136,19 @@ class MainActivity : AppCompatActivity() {
             // For Story 1.5, just log the denial
             android.util.Log.w("VisionFocus", "Camera permission denied")
         }
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        
+        // Story 2.1: Cleanup ObjectRecognitionService resources
+        try {
+            objectRecognitionService.shutdown()
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Error shutting down ObjectRecognitionService", e)
+        }
+        
+        // Story 2.2: Cleanup TTSManager resources
+        ttsManager.shutdown()
     }
 }

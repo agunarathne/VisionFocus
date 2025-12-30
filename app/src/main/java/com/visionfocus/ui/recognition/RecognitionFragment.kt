@@ -436,7 +436,11 @@ class RecognitionFragment : Fragment() {
                 
                 // Restart camera if unbound after capture (AC5 requirement)
                 if (hasCameraPermission() && imageCapture == null) {
-                    startCamera()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        // Small delay to ensure state is stable before camera restart
+                        delay(100)
+                        startCamera()
+                    }
                 }
             }
             
@@ -507,12 +511,24 @@ class RecognitionFragment : Fragment() {
      * Announce message for TalkBack users
      * 
      * Story 2.3 Task 5.8: State change announcements
+     * Fix: Use ACCESSIBILITY_LIVE_REGION_POLITE for more reliable announcements
      * 
      * Uses View.announceForAccessibility() which is handled by TalkBack automatically
      */
     private fun announceForAccessibility(message: String) {
-        // Priority: Use TalkBack-specific announcement
-        binding.root.announceForAccessibility(message)
+        // Use post() to ensure announcement happens on UI thread after state updates
+        binding.root.post {
+            // Set live region for more reliable announcements
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                binding.root.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+            }
+            
+            // Make announcement
+            binding.root.announceForAccessibility(message)
+            
+            // Log for debugging
+            android.util.Log.d("RecognitionFragment", "TalkBack announcement: $message")
+        }
     }
     
     /**
