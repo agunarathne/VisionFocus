@@ -12,6 +12,14 @@ import com.visionfocus.recognition.models.RecognitionResult
 interface RecognitionRepository {
     
     /**
+     * Ensure ObjectRecognitionService is initialized
+     * Fallback initialization if Application.onCreate() didn't work
+     * 
+     * @throws IllegalStateException if initialization fails
+     */
+    fun ensureInitialized()
+    
+    /**
      * Perform object recognition on current camera frame
      * 
      * @return RecognitionResult with detected objects and timing info

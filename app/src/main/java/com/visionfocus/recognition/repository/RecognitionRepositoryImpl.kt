@@ -31,6 +31,21 @@ class RecognitionRepositoryImpl @Inject constructor(
     // In-memory storage (Story 2.1 - no persistence yet)
     private var lastResult: RecognitionResult? = null
     
+    /**
+     * CRITICAL FIX: Ensure ObjectRecognitionService is initialized
+     * This is a fallback in case Application.onCreate() didn't run or failed
+     */
+    override fun ensureInitialized() {
+        try {
+            Log.d(TAG, "Ensuring ObjectRecognitionService is initialized...")
+            objectRecognitionService.initialize()
+            Log.d(TAG, "✓ Service initialization confirmed")
+        } catch (e: Exception) {
+            Log.e(TAG, "✗ Service initialization failed in ensureInitialized()", e)
+            throw IllegalStateException("Failed to initialize recognition service: ${e.message}", e)
+        }
+    }
+    
     override suspend fun performRecognition(): RecognitionResult {
         // Story 2.1: Raw TFLite inference
         val rawResult = objectRecognitionService.recognizeObject()

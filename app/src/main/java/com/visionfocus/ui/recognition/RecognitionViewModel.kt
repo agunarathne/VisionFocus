@@ -111,6 +111,16 @@ class RecognitionViewModel @Inject constructor(
                 // Story 2.4 Task 9.2: State transition - Capturing → Recognizing
                 _uiState.value = RecognitionUiState.Recognizing
                 
+                // CRITICAL FIX: Ensure service is initialized before recognition
+                // Fallback initialization if Application.onCreate() didn't work
+                try {
+                    recognitionRepository.ensureInitialized()
+                } catch (e: Exception) {
+                    android.util.Log.e(TAG, "Failed to ensure initialization", e)
+                    handleError("Initialization failed: ${e.message}")
+                    return@launch
+                }
+                
                 // Story 2.1: TFLite inference (≤320ms)
                 val result = recognitionRepository.performRecognition(bitmap)
                 

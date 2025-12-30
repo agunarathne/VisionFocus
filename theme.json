@@ -1,0 +1,14 @@
+{
+  "name": "VisionFocus Material",
+  "palette": {
+    "background": "#FAFAFA",
+    "surface": "#FFFFFF",
+    "primary": "#6200EE",
+    "secondary": "#03DAC6",
+    "textPrimary": "#000000",
+    "textSecondary": "#666666",
+    "border": "#E0E0E0",
+    "success": "#4CAF50",
+    "error": "#B00020"
+  }
+}
