@@ -50,6 +50,9 @@ class CameraManager @Inject constructor(
         private const val TARGET_WIDTH = 640
         private const val TARGET_HEIGHT = 480
         private const val MODEL_INPUT_SIZE = 300
+        private const val CHANNELS = 3
+        private const val BYTES_PER_FLOAT = 4
+        private const val BUFFER_SIZE = BYTES_PER_FLOAT * MODEL_INPUT_SIZE * MODEL_INPUT_SIZE * CHANNELS
     }
     
     /**
@@ -112,6 +115,7 @@ class CameraManager @Inject constructor(
      */
     suspend fun captureFrame(): ByteBuffer = suspendCancellableCoroutine { continuation ->
         var resumed = false
+        var tempAnalysis: ImageAnalysis? = null
         
         val provider = cameraProvider ?: run {
             if (!resumed) {
@@ -124,7 +128,7 @@ class CameraManager @Inject constructor(
         }
         
         // Create temporary ImageAnalysis use case
-        val tempAnalysis = ImageAnalysis.Builder()
+        tempAnalysis = ImageAnalysis.Builder()
             .setTargetResolution(android.util.Size(TARGET_WIDTH, TARGET_HEIGHT))
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
@@ -140,6 +144,12 @@ class CameraManager @Inject constructor(
                             continuation.resumeWithException(e)
                         } finally {
                             imageProxy.close()
+                            // Unbind to prevent memory leak
+                            try {
+                                provider.unbind(analysis)
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to unbind temp analysis", e)
+                            }
                         }
                     } else {
                         imageProxy.close()
@@ -148,7 +158,7 @@ class CameraManager @Inject constructor(
             }
         
         continuation.invokeOnCancellation {
-            provider.unbind(tempAnalysis)
+            tempAnalysis?.let { provider.unbind(it) }
         }
     }
     
@@ -202,11 +212,13 @@ class CameraManager @Inject constructor(
         // Convert to ByteBuffer
         val byteBuffer = bitmapToByteBuffer(resized)
         
-        // Clean up
-        if (resized != bitmap) {
+        // Clean up - check recycled state before recycling
+        if (resized != bitmap && !resized.isRecycled) {
             resized.recycle()
         }
-        bitmap.recycle()
+        if (!bitmap.isRecycled) {
+            bitmap.recycle()
+        }
         
         return byteBuffer
     }
@@ -242,9 +254,7 @@ class CameraManager @Inject constructor(
      * Output: 300×300×3 RGB image as Float32 [0-255]
      */
     private fun bitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(
-            4 * MODEL_INPUT_SIZE * MODEL_INPUT_SIZE * 3  // 4 bytes per float × width × height × channels
-        )
+        val byteBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE)
         byteBuffer.order(ByteOrder.nativeOrder())
         
         val intValues = IntArray(MODEL_INPUT_SIZE * MODEL_INPUT_SIZE)

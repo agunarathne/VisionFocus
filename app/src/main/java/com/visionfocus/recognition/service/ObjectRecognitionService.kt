@@ -4,11 +4,26 @@ import android.util.Log
 import com.visionfocus.permissions.manager.PermissionManager
 import com.visionfocus.recognition.camera.CameraManager
 import com.visionfocus.recognition.inference.TFLiteInferenceEngine
+import com.visionfocus.recognition.models.DetectionResult
 import com.visionfocus.recognition.models.RecognitionResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * Recognition state machine for accessibility integration (Story 2.4+)
+ */
+sealed class RecognitionState {
+    object Idle : RecognitionState()
+    object Capturing : RecognitionState()
+    object Analyzing : RecognitionState()
+    data class Success(val results: List<DetectionResult>) : RecognitionState()
+    data class Error(val message: String) : RecognitionState()
+}
 
 /**
  * Service orchestrating camera capture and TFLite inference for object recognition
@@ -17,6 +32,8 @@ import javax.inject.Singleton
  * 
  * Validates latency requirements: ≤320ms average, ≤500ms maximum
  * Ensures zero network calls (all processing on-device)
+ * 
+ * State management: Exposes RecognitionState via StateFlow for TalkBack announcements (Story 2.4)
  */
 @Singleton
 class ObjectRecognitionService @Inject constructor(
@@ -31,6 +48,10 @@ class ObjectRecognitionService @Inject constructor(
     }
     
     private var isInitialized = false
+    
+    // State management for accessibility integration (Story 2.4+)
+    private val _state = MutableStateFlow<RecognitionState>(RecognitionState.Idle)
+    val state: StateFlow<RecognitionState> = _state.asStateFlow()
     
     /**
      * Initialize the recognition service
@@ -68,19 +89,27 @@ class ObjectRecognitionService @Inject constructor(
     suspend fun recognizeObject(): RecognitionResult = withContext(Dispatchers.Default) {
         // Pre-check: Story 1.5 permission system
         if (!permissionManager.isCameraPermissionGranted()) {
+            _state.value = RecognitionState.Error("Camera permission not granted")
             throw SecurityException("Camera permission not granted")
         }
         
         // Verify initialization
         if (!isInitialized) {
+            _state.value = RecognitionState.Error("Service not initialized")
             throw IllegalStateException("Service not initialized. Call initialize() first.")
         }
         
         val startTime = System.currentTimeMillis()
         
         try {
+            // State: Starting capture
+            _state.value = RecognitionState.Capturing
+            
             // Capture frame from camera
             val frame = cameraManager.captureFrame()
+            
+            // State: Running inference
+            _state.value = RecognitionState.Analyzing
             
             // Run TFLite inference
             val detections = tfliteEngine.infer(frame)
@@ -96,14 +125,20 @@ class ObjectRecognitionService @Inject constructor(
                 Log.w(TAG, "Latency exceeded maximum: ${latency}ms > ${MAX_LATENCY_MS}ms")
             }
             
-            return@withContext RecognitionResult(
+            val result = RecognitionResult(
                 detections = detections,
                 timestampMs = System.currentTimeMillis(),
                 latencyMs = latency
             )
             
+            // State: Success
+            _state.value = RecognitionState.Success(detections)
+            
+            return@withContext result
+            
         } catch (e: Exception) {
             Log.e(TAG, "Recognition failed", e)
+            _state.value = RecognitionState.Error(e.message ?: "Unknown error")
             throw IllegalStateException("Recognition failed: ${e.message}", e)
         }
     }
@@ -115,6 +150,7 @@ class ObjectRecognitionService @Inject constructor(
         cameraManager.shutdown()
         tfliteEngine.close()
         isInitialized = false
+        _state.value = RecognitionState.Idle
         Log.d(TAG, "Recognition service shutdown")
     }
     

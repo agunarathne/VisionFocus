@@ -16,22 +16,29 @@ import java.nio.ByteBuffer
 @RunWith(AndroidJUnit4::class)
 class CameraManagerTest {
     
+    companion object {
+        private const val MODEL_INPUT_SIZE = 300
+        private const val CHANNELS = 3
+        private const val BYTES_PER_FLOAT = 4
+        private const val BUFFER_SIZE = BYTES_PER_FLOAT * MODEL_INPUT_SIZE * MODEL_INPUT_SIZE * CHANNELS
+    }
+    
     @Test
     fun testBitmapToByteBufferConversion() {
         // Create a test bitmap (300×300 RGB)
-        val bitmap = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, Bitmap.Config.ARGB_8888)
         
         // Fill with known color (Red = 255, Green = 128, Blue = 64)
-        val pixels = IntArray(300 * 300)
+        val pixels = IntArray(MODEL_INPUT_SIZE * MODEL_INPUT_SIZE)
         val testColor = (255 shl 16) or (128 shl 8) or 64  // ARGB
         pixels.fill(testColor)
-        bitmap.setPixels(pixels, 0, 300, 0, 0, 300, 300)
+        bitmap.setPixels(pixels, 0, MODEL_INPUT_SIZE, 0, 0, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
         
         // Convert to ByteBuffer (simulating CameraManager's bitmapToByteBuffer)
         val byteBuffer = bitmapToByteBufferTestHelper(bitmap)
         
-        // Verify buffer size (300 × 300 × 3 channels × 4 bytes per float)
-        assertEquals(4 * 300 * 300 * 3, byteBuffer.capacity())
+        // Verify buffer size using constant
+        assertEquals(BUFFER_SIZE, byteBuffer.capacity())
         
         // Verify first pixel RGB values
         byteBuffer.rewind()
@@ -46,7 +53,7 @@ class CameraManagerTest {
     
     @Test
     fun testByteBufferHasCorrectFormat() {
-        val bitmap = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, Bitmap.Config.ARGB_8888)
         val byteBuffer = bitmapToByteBufferTestHelper(bitmap)
         
         // Verify native byte order
@@ -58,23 +65,23 @@ class CameraManagerTest {
     
     @Test
     fun testByteBufferValuesInExpectedRange() {
-        val bitmap = Bitmap.createBitmap(300, 300, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, Bitmap.Config.ARGB_8888)
         
         // Fill with random colors
-        val pixels = IntArray(300 * 300)
+        val pixels = IntArray(MODEL_INPUT_SIZE * MODEL_INPUT_SIZE)
         for (i in pixels.indices) {
             val r = (0..255).random()
             val g = (0..255).random()
             val b = (0..255).random()
             pixels[i] = (r shl 16) or (g shl 8) or b
         }
-        bitmap.setPixels(pixels, 0, 300, 0, 0, 300, 300)
+        bitmap.setPixels(pixels, 0, MODEL_INPUT_SIZE, 0, 0, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
         
         val byteBuffer = bitmapToByteBufferTestHelper(bitmap)
         
         // Verify all values are in [0-255] range
         byteBuffer.rewind()
-        repeat(300 * 300 * 3) {
+        repeat(MODEL_INPUT_SIZE * MODEL_INPUT_SIZE * CHANNELS) {
             val value = byteBuffer.float
             assertTrue(
                 "Pixel value $value out of range [0-255]",
@@ -89,10 +96,10 @@ class CameraManagerTest {
         val original = Bitmap.createBitmap(640, 480, Bitmap.Config.ARGB_8888)
         
         // Resize to 300×300 (simulating CameraManager behavior)
-        val resized = Bitmap.createScaledBitmap(original, 300, 300, true)
+        val resized = Bitmap.createScaledBitmap(original, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, true)
         
-        assertEquals(300, resized.width)
-        assertEquals(300, resized.height)
+        assertEquals(MODEL_INPUT_SIZE, resized.width)
+        assertEquals(MODEL_INPUT_SIZE, resized.height)
         
         resized.recycle()
         original.recycle()
@@ -107,12 +114,12 @@ class CameraManagerTest {
         )
         
         configs.forEach { config ->
-            val bitmap = Bitmap.createBitmap(300, 300, config)
+            val bitmap = Bitmap.createBitmap(MODEL_INPUT_SIZE, MODEL_INPUT_SIZE, config)
             assertNotNull("Failed to create bitmap with config $config", bitmap)
             
             // Should be able to get pixels
-            val pixels = IntArray(300 * 300)
-            bitmap.getPixels(pixels, 0, 300, 0, 0, 300, 300)
+            val pixels = IntArray(MODEL_INPUT_SIZE * MODEL_INPUT_SIZE)
+            bitmap.getPixels(pixels, 0, MODEL_INPUT_SIZE, 0, 0, MODEL_INPUT_SIZE, MODEL_INPUT_SIZE)
             
             bitmap.recycle()
         }
@@ -120,15 +127,15 @@ class CameraManagerTest {
     
     // Test helper mimicking CameraManager's private bitmapToByteBuffer method
     private fun bitmapToByteBufferTestHelper(bitmap: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * 300 * 300 * 3)
+        val byteBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE)
         byteBuffer.order(java.nio.ByteOrder.nativeOrder())
         
-        val intValues = IntArray(300 * 300)
+        val intValues = IntArray(MODEL_INPUT_SIZE * MODEL_INPUT_SIZE)
         bitmap.getPixels(intValues, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         
         var pixel = 0
-        for (i in 0 until 300) {
-            for (j in 0 until 300) {
+        for (i in 0 until MODEL_INPUT_SIZE) {
+            for (j in 0 until MODEL_INPUT_SIZE) {
                 val pixelValue = intValues[pixel++]
                 
                 // Extract RGB channels

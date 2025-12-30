@@ -65,23 +65,14 @@ class RecognitionPipelineIntegrationTest {
     @Test
     fun testRecognitionPipelineCompletesSuccessfully() = runBlocking {
         // Note: This test requires a physical device/emulator with camera
-        // May fail in headless CI environments
+        val result = recognitionRepository.performRecognition()
         
-        try {
-            val result = recognitionRepository.performRecognition()
-            
-            assertNotNull("Result should not be null", result)
-            assertNotNull("Detections list should not be null", result.detections)
-            assertTrue("Timestamp should be positive", result.timestampMs > 0)
-            assertTrue("Latency should be positive", result.latencyMs > 0)
-            
-            println("Recognition completed: ${result.detections.size} detections in ${result.latencyMs}ms")
-            
-        } catch (e: Exception) {
-            // Camera may not be available in test environment
-            println("Recognition pipeline test skipped: ${e.message}")
-            println("This is expected in environments without camera hardware")
-        }
+        assertNotNull("Result should not be null", result)
+        assertNotNull("Detections list should not be null", result.detections)
+        assertTrue("Timestamp should be positive", result.timestampMs > 0)
+        assertTrue("Latency should be positive", result.latencyMs > 0)
+        
+        println("Recognition completed: ${result.detections.size} detections in ${result.latencyMs}ms")
     }
     
     @Test
@@ -89,36 +80,30 @@ class RecognitionPipelineIntegrationTest {
         val latencies = mutableListOf<Long>()
         val targetRuns = 10
         
-        try {
-            repeat(targetRuns) {
-                val result = recognitionRepository.performRecognition()
-                latencies.add(result.latencyMs)
-                
-                // Log individual latency
-                println("Run ${it + 1}: ${result.latencyMs}ms")
-            }
+        repeat(targetRuns) {
+            val result = recognitionRepository.performRecognition()
+            latencies.add(result.latencyMs)
             
-            val averageLatency = latencies.average()
-            val maxLatency = latencies.maxOrNull() ?: 0L
-            
-            println("Average latency: ${averageLatency}ms (target: ≤320ms)")
-            println("Max latency: ${maxLatency}ms (target: ≤500ms)")
-            
-            // Validate requirements
-            assertTrue(
-                "Average latency ${averageLatency}ms exceeds 320ms target",
-                averageLatency <= 320.0
-            )
-            
-            assertTrue(
-                "Max latency ${maxLatency}ms exceeds 500ms maximum",
-                maxLatency <= 500
-            )
-            
-        } catch (e: Exception) {
-            println("Latency test skipped: ${e.message}")
-            println("This is expected in environments without camera hardware")
+            // Log individual latency
+            println("Run ${it + 1}: ${result.latencyMs}ms")
         }
+        
+        val averageLatency = latencies.average()
+        val maxLatency = latencies.maxOrNull() ?: 0L
+        
+        println("Average latency: ${averageLatency}ms (target: ≤320ms)")
+        println("Max latency: ${maxLatency}ms (target: ≤500ms)")
+        
+        // Validate requirements
+        assertTrue(
+            "Average latency ${averageLatency}ms exceeds 320ms target",
+            averageLatency <= 320.0
+        )
+        
+        assertTrue(
+            "Max latency ${maxLatency}ms exceeds 500ms maximum",
+            maxLatency <= 500
+        )
     }
     
     @Test
@@ -146,27 +131,13 @@ class RecognitionPipelineIntegrationTest {
     fun testRecognitionWorksOffline() = runBlocking {
         // This test validates that recognition doesn't require network
         // In a real scenario, you would disable network and verify operation
-        // For now, we just verify no network calls are made
+        val result = recognitionRepository.performRecognition()
         
-        try {
-            val result = recognitionRepository.performRecognition()
-            
-            // If we get here without network exceptions, offline capability is proven
-            assertNotNull(result)
-            
-            println("Offline recognition test passed: No network required")
-            
-        } catch (e: SecurityException) {
-            // Expected if camera permission not granted
-            println("Offline test skipped: ${e.message}")
-        } catch (e: Exception) {
-            // Should not be network-related exceptions
-            assertFalse(
-                "Network exception detected: ${e.message}",
-                e.message?.contains("network", ignoreCase = true) == true ||
-                e.message?.contains("internet", ignoreCase = true) == true
-            )
-        }
+        // If we get here without network exceptions, offline capability is validated
+        assertNotNull("Result should not be null in offline mode", result)
+        assertNotNull("Detections should be available offline", result.detections)
+        
+        println("Offline recognition test passed: No network required for ${result.detections.size} detections")
     }
     
     @Test
@@ -178,7 +149,11 @@ class RecognitionPipelineIntegrationTest {
         assertNotNull("Model file should exist in assets", modelStream)
         
         val modelSize = modelStream.available()
-        assertTrue("Model size should be ~4MB", modelSize > 3_000_000 && modelSize < 5_000_000)
+        // Tightened validation: ~4MB expected (was 3-5MB, now 3.5-4.5MB)
+        assertTrue(
+            "Model size ${modelSize} bytes outside expected range (3.5-4.5MB)",
+            modelSize > 3_500_000 && modelSize < 4_500_000
+        )
         
         modelStream.close()
     }
@@ -198,18 +173,13 @@ class RecognitionPipelineIntegrationTest {
     
     @Test
     fun testLastResultStoredInMemory() = runBlocking {
-        try {
-            // Perform recognition
-            val result = recognitionRepository.performRecognition()
-            
-            // Verify last result is stored
-            val lastResult = recognitionRepository.getLastResult()
-            assertNotNull("Last result should be stored", lastResult)
-            assertEquals("Last result should match", result.timestampMs, lastResult?.timestampMs)
-            
-        } catch (e: Exception) {
-            println("Last result test skipped: ${e.message}")
-        }
+        // Perform recognition
+        val result = recognitionRepository.performRecognition()
+        
+        // Verify last result is stored
+        val lastResult = recognitionRepository.getLastResult()
+        assertNotNull("Last result should be stored", lastResult)
+        assertEquals("Last result should match", result.timestampMs, lastResult?.timestampMs)
     }
     
     // Helper method to find class ID for a given label

@@ -30,6 +30,7 @@ class TFLiteInferenceEngine @Inject constructor(
 ) {
     private var interpreter: Interpreter? = null
     private val labels: List<String> by lazy { loadLabels() }
+    private var isNnapiEnabled = false
     
     companion object {
         private const val TAG = "TFLiteInferenceEngine"
@@ -37,6 +38,7 @@ class TFLiteInferenceEngine @Inject constructor(
         private const val LABELS_PATH = "models/coco_labels.txt"
         private const val MAX_DETECTIONS = 10
         private const val NUM_THREADS = 4
+        private const val EXPECTED_COCO_LABELS = 80
     }
     
     /**
@@ -70,6 +72,9 @@ class TFLiteInferenceEngine @Inject constructor(
     fun infer(input: ByteBuffer): List<DetectionResult> {
         val interpreter = interpreter 
             ?: throw IllegalStateException("Interpreter not initialized. Call initialize() first.")
+        
+        // Rewind buffer for potential reuse
+        input.rewind()
         
         // Allocate output tensors
         // Output 0: Bounding boxes [1, 10, 4] - (ymin, xmin, ymax, xmax) normalized [0-1]
@@ -117,6 +122,12 @@ class TFLiteInferenceEngine @Inject constructor(
     }
     
     /**
+     * Check if NNAPI hardware acceleration is enabled
+     * Useful for performance monitoring and debugging
+     */
+    fun isHardwareAccelerationEnabled(): Boolean = isNnapiEnabled
+    
+    /**
      * Release interpreter resources
      * Should be called when engine is no longer needed
      */
@@ -146,22 +157,33 @@ class TFLiteInferenceEngine @Inject constructor(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 try {
                     addDelegate(NnApiDelegate())
+                    isNnapiEnabled = true
                     Log.d(TAG, "NNAPI delegate enabled")
                 } catch (e: Exception) {
+                    isNnapiEnabled = false
                     Log.w(TAG, "NNAPI delegate unavailable, using CPU: ${e.message}")
                 }
+            } else {
+                isNnapiEnabled = false
             }
         }
     }
     
     private fun loadLabels(): List<String> {
         return try {
-            context.assets.open(LABELS_PATH).bufferedReader().use { reader ->
+            val loadedLabels = context.assets.open(LABELS_PATH).bufferedReader().use { reader ->
                 reader.readLines().map { it.trim() }
             }
+            
+            // Validate we have exactly 80 COCO labels
+            require(loadedLabels.size == EXPECTED_COCO_LABELS) {
+                "Expected $EXPECTED_COCO_LABELS COCO labels, found ${loadedLabels.size}"
+            }
+            
+            loadedLabels
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load labels", e)
-            emptyList()
+            throw IllegalStateException("Label loading failed: ${e.message}", e)
         }
     }
     
