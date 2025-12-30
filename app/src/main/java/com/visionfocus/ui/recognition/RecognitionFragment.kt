@@ -472,10 +472,32 @@ class RecognitionFragment : Fragment() {
                 announceForAccessibility(getString(R.string.starting_recognition))
                 shouldRestoreFocus = true
                 
-                // Story 2.4 Task 2.2: Trigger capture after stabilization delay
-                viewLifecycleOwner.lifecycleScope.launch {
-                    delay(STABILIZATION_DELAY_MS)
-                    captureFrame()
+                // Check if camera is initialized, start it if needed
+                if (imageCapture == null && hasCameraPermission()) {
+                    android.util.Log.d("RecognitionFragment", "Camera not started - initializing now")
+                    startCamera()
+                    // Wait for camera to be ready before capturing
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        // Wait for camera to bind (max 2 seconds)
+                        var attempts = 0
+                        while (imageCapture == null && attempts < 20) {
+                            delay(100)
+                            attempts++
+                        }
+                        if (imageCapture != null) {
+                            captureFrame()
+                        } else {
+                            handleCameraError("Camera failed to initialize")
+                        }
+                    }
+                } else if (!hasCameraPermission()) {
+                    handleCameraError("Camera permission not granted")
+                } else {
+                    // Camera already initialized - capture immediately after stabilization
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        delay(STABILIZATION_DELAY_MS)
+                        captureFrame()
+                    }
                 }
             }
             
