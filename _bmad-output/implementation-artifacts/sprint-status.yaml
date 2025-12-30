@@ -50,8 +50,8 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Accessible Object Recognition
-  epic-2: backlog
-  2-1-tflite-model-integration-on-device-inference: backlog
+  epic-2: in-progress
+  2-1-tflite-model-integration-on-device-inference: review
   2-2-high-confidence-detection-filtering-tts-announcement: backlog
   2-3-recognition-fab-with-talkback-semantic-annotations: backlog
   2-4-camera-capture-with-accessibility-focus-management: backlog
