@@ -32,7 +32,9 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
     
-    <!-- App Title (visual only, hidden from TalkBack to avoid redundant reading) -->
+    <!-- App Title (visual only, hidden from TalkBack to avoid redundant reading)
+         Story 2.7: Marked decorative - app name visible in status bar, no TalkBack announcement needed
+    -->
     <TextView
         android:id="@+id/titleTextView"
         android:layout_width="0dp"
@@ -48,7 +50,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:ignore="UnusedAttribute" />
     
-    <!-- Instructions Text (TalkBack guidance) -->
+    <!-- Instructions Text (TalkBack guidance)
+         Story 2.7: Marked decorative - FAB contentDescription already provides complete instructions
+         Rationale: Avoids redundant "Tap button to recognize objects" + FAB description
+    -->
     <TextView
         android:id="@+id/instructionsTextView"
         android:layout_width="0dp"

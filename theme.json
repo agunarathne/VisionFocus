@@ -1,14 +1,14 @@
 {
-  "name": "VisionFocus Material",
+  "name": "VisionFocus Dark",
   "palette": {
-    "background": "#FAFAFA",
-    "surface": "#FFFFFF",
-    "primary": "#6200EE",
-    "secondary": "#03DAC6",
-    "textPrimary": "#000000",
-    "textSecondary": "#666666",
-    "border": "#E0E0E0",
+    "background": "#121212",
+    "surface": "#1E1E1E",
+    "primary": "#D0BCFF",
+    "secondary": "#CCC2DC",
+    "textPrimary": "#FFFFFF",
+    "textSecondary": "#E6E1E5",
+    "border": "#49454F",
     "success": "#4CAF50",
-    "error": "#B00020"
+    "error": "#F2B8B5"
   }
 }

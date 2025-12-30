@@ -100,6 +100,10 @@ class RecognitionFragment : Fragment() {
     // Story 2.4 Task 4: Focus restoration flag
     private var shouldRestoreFocus = false
     
+    // Story 2.7 Task 3: Focus restoration after interruptions (phone call, notification)
+    private var lastFocusedViewId: Int? = null
+    private var accessibilityManager: AccessibilityManager? = null
+    
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -111,6 +115,9 @@ class RecognitionFragment : Fragment() {
     
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        
+        // Story 2.7 Task 3.1: Initialize AccessibilityManager for TalkBack state tracking
+        accessibilityManager = context?.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
         
         setupAccessibility()
         setupFabClickListener()
@@ -577,22 +584,40 @@ class RecognitionFragment : Fragment() {
      * Announce message for TalkBack users
      * 
      * Story 2.3 Task 5.8: State change announcements
-     * Fix: Use ACCESSIBILITY_LIVE_REGION_POLITE for more reliable announcements
+     * Story 2.7 Task 9: Enhanced announcement implementation with queueing prevention
      * 
-     * Uses View.announceForAccessibility() which is handled by TalkBack automatically
+     * Implementation Strategy:
+     * - Uses View.announceForAccessibility() for non-interrupting announcements
+     * - Sets ACCESSIBILITY_LIVE_REGION_POLITE on FAB (announces when TalkBack idle)
+     * - Posts to main thread to ensure view is ready
+     * - Checks fragment lifecycle to prevent crashes after destruction
+     * 
+     * AC6: TalkBack announces state changes: "Loading", "Recognition complete", "Error occurred"
+     * AC9: TalkBack reading stops when user double-taps to activate action
+     * 
+     * Announcement Timing:
+     * - State machine prevents overlaps: 1s stabilization + 320ms inference + TTS duration
+     * - No explicit queueing needed - announcements naturally spaced by state transitions
+     * 
+     * @param message The message to announce to TalkBack users (concise, actionable)
      */
     private fun announceForAccessibility(message: String) {
         // Check if binding is still valid (Fragment not destroyed)
         if (!isAdded || _binding == null) {
-            android.util.Log.w("RecognitionFragment", "Skipping announcement - Fragment destroyed")
+            android.util.Log.w(TAG, "Story 2.7: Skipping announcement - Fragment destroyed")
             return
         }
         
-        // Make announcement immediately (no post delay to avoid queuing)
-        binding.recognizeFab.announceForAccessibility(message)
+        // Story 2.4: Set live region polite (non-interrupting)
+        // TalkBack announces message when current speech finishes
+        binding.recognizeFab.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
         
-        // Log for debugging
-        android.util.Log.d("RecognitionFragment", "TalkBack: $message")
+        // Post to main thread to ensure view is ready
+        // AC9: TalkBack stops reading when user double-taps (handled automatically by Android)
+        binding.recognizeFab.post {
+            binding.recognizeFab.announceForAccessibility(message)
+            android.util.Log.d(TAG, "Story 2.7: TalkBack announcement: $message")
+        }
     }
     
     /**
@@ -601,27 +626,49 @@ class RecognitionFragment : Fragment() {
      * @return true if TalkBack or similar accessibility service is active
      */
     private fun isAccessibilityServiceEnabled(): Boolean {
-        val accessibilityManager = context?.getSystemService(Context.ACCESSIBILITY_SERVICE) as? AccessibilityManager
-        return accessibilityManager?.isEnabled == true
+        return accessibilityManager?.isEnabled == true && accessibilityManager?.isTouchExplorationEnabled == true
     }
     
     /**
-     * Story 2.4 HIGH-3: Implement camera lifecycle pause (Task 1.7)
-     * Release camera when fragment paused to prevent battery drain
+     * Story 2.7 Task 3.2: Save focus state before fragment pauses
+     * Handles interruptions: phone calls, notifications, split-screen mode changes
      */
     override fun onPause() {
         super.onPause()
+        
+        // Save currently focused view ID if TalkBack is active
+        if (isAccessibilityServiceEnabled()) {
+            val focusedView = view?.findFocus()
+            lastFocusedViewId = focusedView?.id
+            android.util.Log.d(TAG, "Story 2.7: Saved focus on view ID: $lastFocusedViewId")
+        }
+        
+        // Story 2.4 HIGH-3: Release camera when fragment paused to prevent battery drain
         cameraProvider?.unbindAll()
     }
     
     /**
-     * Story 2.4 HIGH-9: Re-check permission and re-bind camera on resume (Task 7.6)
-     * User may have granted permission from Settings
+     * Story 2.7 Task 3.3: Restore focus when fragment resumes
+     * Story 2.4 HIGH-9: Re-check permission and re-bind camera on resume
      */
     override fun onResume() {
         super.onResume()
         
-        // Re-check permission when returning from Settings
+        // Story 2.7 Task 3.3: Restore focus if TalkBack is active
+        if (isAccessibilityServiceEnabled() && lastFocusedViewId != null) {
+            val viewToFocus = view?.findViewById<View>(lastFocusedViewId!!)
+                ?: binding.recognizeFab  // Default to FAB if saved view not found
+            
+            viewToFocus.post {
+                viewToFocus.requestFocus()
+                viewToFocus.sendAccessibilityEvent(
+                    android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED
+                )
+                android.util.Log.d(TAG, "Story 2.7: Restored focus to view ID: ${viewToFocus.id}")
+            }
+        }
+        
+        // Story 2.4: Re-check permission when returning from Settings
         checkPermissionAndStartCamera()
     }
     
