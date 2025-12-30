@@ -572,25 +572,17 @@ class RecognitionFragment : Fragment() {
      * Uses View.announceForAccessibility() which is handled by TalkBack automatically
      */
     private fun announceForAccessibility(message: String) {
-        // Use post() to ensure announcement happens on UI thread after state updates
-        view?.post {
-            // Check if binding is still valid (Fragment not destroyed)
-            if (!isAdded || _binding == null) {
-                android.util.Log.w("RecognitionFragment", "Skipping announcement - Fragment destroyed")
-                return@post
-            }
-            
-            // Set live region for more reliable announcements
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                binding.root.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
-            }
-            
-            // Make announcement
-            binding.root.announceForAccessibility(message)
-            
-            // Log for debugging
-            android.util.Log.d("RecognitionFragment", "TalkBack announcement: $message")
+        // Check if binding is still valid (Fragment not destroyed)
+        if (!isAdded || _binding == null) {
+            android.util.Log.w("RecognitionFragment", "Skipping announcement - Fragment destroyed")
+            return
         }
+        
+        // Make announcement immediately (no post delay to avoid queuing)
+        binding.recognizeFab.announceForAccessibility(message)
+        
+        // Log for debugging
+        android.util.Log.d("RecognitionFragment", "TalkBack: $message")
     }
     
     /**

@@ -30,11 +30,11 @@
     <string name="state_error">Recognition error: %1$s. Please try again.</string>
     
     <!-- Story 2.4: Camera lifecycle state announcements -->
-    <string name="starting_recognition">Starting recognition. Point camera at object.</string>
-    <string name="analyzing_image">Analyzing image</string>
-    <string name="camera_error_message">Camera error. Please try again.</string>
-    <string name="no_objects_detected">No objects detected. Try pointing camera at a different area.</string>
-    <string name="recognition_cancelled">Recognition cancelled</string>
+    <string name="starting_recognition">Starting recognition</string>
+    <string name="analyzing_image">Analyzing</string>
+    <string name="camera_error_message">Error. Try again.</string>
+    <string name="no_objects_detected">No objects found</string>
+    <string name="recognition_cancelled">Cancelled</string>
     <string name="camera_permission_required">Recognition unavailable. Camera permission required. Double-tap to enable in settings.</string>
     <string name="camera_permission_denied_message">Camera permission denied. Object recognition requires camera access.</string>
     <string name="camera_unavailable">Camera unavailable. Check if another app is using the camera.</string>
