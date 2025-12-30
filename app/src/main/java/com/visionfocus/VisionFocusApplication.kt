@@ -5,9 +5,12 @@ import android.util.Log
 import android.widget.Toast
 import com.visionfocus.recognition.service.ObjectRecognitionService
 import com.visionfocus.tts.engine.TTSManager
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.components.SingletonComponent
 import java.io.IOException
-import javax.inject.Inject
 
 /**
  * Application class for VisionFocus.
@@ -18,9 +21,9 @@ import javax.inject.Inject
  * 
  * This class must be registered in AndroidManifest.xml
  * 
- * CRITICAL FIX: ObjectRecognitionService and TTSManager are initialized HERE
- * in Application.onCreate() BEFORE any Activity/Fragment lifecycle starts.
- * This prevents race conditions where Fragment loads before service initialization.
+ * CRITICAL FIX: Uses Hilt EntryPoint to manually retrieve and initialize services
+ * AFTER super.onCreate() completes (when Hilt injection is ready).
+ * This prevents race conditions and ensures proper initialization timing.
  */
 @HiltAndroidApp
 class VisionFocusApplication : Application() {
@@ -30,17 +33,28 @@ class VisionFocusApplication : Application() {
         private const val TFLITE_MODEL_PATH = "models/ssd_mobilenet_v1_quantized.tflite"
     }
     
-    // Inject services for Application-level initialization
-    @Inject
-    lateinit var objectRecognitionService: ObjectRecognitionService
-    
-    @Inject
-    lateinit var ttsManager: TTSManager
+    /**
+     * Hilt EntryPoint for manual dependency retrieval in Application.onCreate()
+     * This allows us to get dependencies AFTER Hilt initialization completes
+     */
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface InitializationEntryPoint {
+        fun objectRecognitionService(): ObjectRecognitionService
+        fun ttsManager(): TTSManager
+    }
     
     override fun onCreate() {
         super.onCreate()
         
         Log.d(TAG, "VisionFocus application starting...")
+        
+        // Get EntryPoint to access Hilt dependencies manually
+        // This works because it's called AFTER super.onCreate() when Hilt is ready
+        val entryPoint = EntryPointAccessors.fromApplication(
+            this,
+            InitializationEntryPoint::class.java
+        )
         
         // Verify TFLite model file exists before attempting initialization
         if (!verifyModelFileExists()) {
@@ -52,23 +66,25 @@ class VisionFocusApplication : Application() {
         }
         
         // Initialize ObjectRecognitionService (TFLite model loading)
-        // This happens BEFORE any Activity starts, ensuring service is ready
+        // Using EntryPoint ensures we get the SAME singleton instance that will be injected elsewhere
         try {
             val startTime = System.currentTimeMillis()
+            val objectRecognitionService = entryPoint.objectRecognitionService()
             objectRecognitionService.initialize()
             val duration = System.currentTimeMillis() - startTime
             Log.d(TAG, "✓ ObjectRecognitionService initialized successfully (${duration}ms)")
         } catch (e: IllegalStateException) {
             Log.e(TAG, "✗ ObjectRecognitionService initialization failed", e)
-            Toast.makeText(this, "Recognition service initialization failed", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Recognition service initialization failed: ${e.message}", Toast.LENGTH_LONG).show()
             // Don't crash - allow app to show error state
         } catch (e: Exception) {
             Log.e(TAG, "✗ Unexpected error during ObjectRecognitionService initialization", e)
-            Toast.makeText(this, "Unexpected initialization error", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Unexpected initialization error: ${e.message}", Toast.LENGTH_LONG).show()
         }
         
         // Initialize TTSManager (Text-to-Speech engine)
         try {
+            val ttsManager = entryPoint.ttsManager()
             ttsManager.initialize()
             Log.d(TAG, "✓ TTSManager initialized successfully")
         } catch (e: Exception) {
