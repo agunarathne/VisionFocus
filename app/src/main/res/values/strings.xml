@@ -16,14 +16,10 @@
     <string name="camera_permission_denied">Camera permission denied. Object recognition will not work without camera access.</string>
     
     <!-- Story 2.3: Recognition UI strings -->
-    <string name="app_title_description">VisionFocus, application title</string>
-    
-    <string name="recognition_instructions">Tap the button below to identify objects using your camera. Point your camera at an object and tap to hear what it is.</string>
-    <string name="instructions_description">Instructions: Tap the button below to identify objects using your camera.</string>
+    <string name="recognition_instructions_short">Tap the button to recognize objects</string>
     
     <!-- Story 2.3 AC2: FAB content description (minimum 56x56 dp) -->
-    <string name="recognize_fab_description">Recognize objects. Double-tap to activate camera and identify objects in your environment.</string>
-    <string name="recognize_fab_action_hint">Activate object recognition</string>
+    <string name="recognize_fab_description">Recognize objects</string>
     
     <!-- Story 2.3 Task 5.8: State announcements for TalkBack -->
     <string name="state_idle">Ready to recognize objects</string>
