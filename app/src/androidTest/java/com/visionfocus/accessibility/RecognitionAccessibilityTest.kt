@@ -47,10 +47,11 @@ class RecognitionAccessibilityTest {
         hiltRule.inject()
         
         // Story 2.7 Task 7.3: Enable Accessibility Scanner checks
-        // This runs automatically on every Espresso view interaction
+        // HIGH-7 FIX: Configure to fail tests on accessibility errors
         AccessibilityChecks.enable()
             .setRunChecksFromRootView(true)
-            .setSuppressingResultMatcher(null)  // No suppressions - enforce zero errors
+            .setSuppressingResultMatcher(null)
+            .setThrowExceptionForErrors(true)  // Fail test on any accessibility error
     }
     
     /**
@@ -80,27 +81,44 @@ class RecognitionAccessibilityTest {
     
     /**
      * Story 2.7 Task 7.4: Test FAB tap triggers accessibility checks during state transitions
+     * HIGH-4 FIX: Add proper assertions and avoid Thread.sleep()
      * 
      * Validates accessibility compliance throughout recognition state machine:
      * - Idle → Capturing → Recognizing → Success/Error → Idle
      */
     @Test
     fun recognitionFragment_stateTransitionsPassAccessibilityChecks() {
-        // Verify FAB is displayed
+        // Verify FAB is displayed and enabled initially
         onView(withId(R.id.recognizeFab))
             .check(matches(isDisplayed()))
+            .check(matches(isEnabled()))
         
         // Tap FAB to trigger recognition
-        // Accessibility Scanner checks run during state transitions
         onView(withId(R.id.recognizeFab))
             .perform(click())
         
-        // Wait for recognition to complete (state transitions trigger checks)
-        Thread.sleep(3000)
+        // Verify FAB disabled during recognition (state transition validation)
+        onView(withId(R.id.recognizeFab))
+            .check(matches(not(isEnabled())))
         
-        // Verify FAB re-enabled after recognition
+        // Wait for recognition completion using polling instead of sleep
+        var attempts = 0
+        while (attempts < 30) {  // 3 seconds max (30 * 100ms)
+            try {
+                onView(withId(R.id.recognizeFab))
+                    .check(matches(isEnabled()))
+                break  // FAB re-enabled, recognition complete
+            } catch (e: AssertionError) {
+                Thread.sleep(100)
+                attempts++
+            }
+        }
+        
+        // Final verification: FAB re-enabled after recognition
         onView(withId(R.id.recognizeFab))
             .check(matches(isEnabled()))
+        
+        // AccessibilityChecks automatically fails if any errors detected
     }
     
     /**

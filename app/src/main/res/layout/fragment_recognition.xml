@@ -51,8 +51,8 @@
         tools:ignore="UnusedAttribute" />
     
     <!-- Instructions Text (TalkBack guidance)
-         Story 2.7: Marked decorative - FAB contentDescription already provides complete instructions
-         Rationale: Avoids redundant "Tap button to recognize objects" + FAB description
+         HIGH-5 FIX: Make accessible to provide context before FAB
+         TalkBack flow: Title → Instructions → FAB (logical order per AC1)
     -->
     <TextView
         android:id="@+id/instructionsTextView"
@@ -61,7 +61,8 @@
         android:text="@string/recognition_instructions_short"
         android:textSize="18sp"
         android:textColor="?attr/colorOnSurface"
-        android:importantForAccessibility="no"
+        android:importantForAccessibility="yes"
+        android:accessibilityHeading="true"
         android:layout_margin="16dp"
         app:layout_constraintTop_toBottomOf="@id/titleTextView"
         app:layout_constraintStart_toStartOf="parent"

@@ -78,6 +78,12 @@ class RecognitionFragment : Fragment() {
          * Story 2.4 AC3: 1 second delay for camera focus/exposure adjustment
          */
         private const val STABILIZATION_DELAY_MS = 1000L
+        
+        /**
+         * Camera restart delay after capture completion
+         * LOW-1 FIX: Named constant for camera restart timing
+         */
+        private const val CAMERA_RESTART_DELAY_MS = 100L
     }
     
     // View Binding
@@ -168,9 +174,13 @@ class RecognitionFragment : Fragment() {
     
     /**
      * Story 2.3 Task 4: Implement FAB click handler with haptic feedback
+     * HIGH-8 FIX: Stop TTS/announcements before starting new recognition (AC9)
      */
     private fun setupFabClickListener() {
         binding.recognizeFab.setOnClickListener {
+            // AC9: Stop TalkBack announcements when user activates FAB
+            view?.announceForAccessibility("")  // Interrupts current announcement
+            
             // Task 4.2-4.3: Trigger haptic feedback on tap
             performHapticFeedback()
             
@@ -479,8 +489,8 @@ class RecognitionFragment : Fragment() {
                 // Restart camera if unbound after capture (AC5 requirement)
                 if (hasCameraPermission() && imageCapture == null) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        // Small delay to ensure state is stable before camera restart
-                        delay(100)
+                        // LOW-1 FIX: Named constant for camera restart delay
+                        delay(CAMERA_RESTART_DELAY_MS)
                         startCamera()
                     }
                 }
@@ -504,26 +514,26 @@ class RecognitionFragment : Fragment() {
                             while (imageCapture == null && attempts < 20) {
                                 delay(100)
                                 attempts++
-                                android.util.Log.d("RecognitionFragment", "Waiting for camera... attempt $attempts")
+                                android.util.Log.d(TAG, "Waiting for camera... attempt $attempts")
                             }
                             if (imageCapture != null) {
-                                android.util.Log.d("RecognitionFragment", "Camera ready, capturing frame")
+                                android.util.Log.d(TAG, "Camera ready, capturing frame")
                                 captureFrame()
                             } else {
-                                android.util.Log.e("RecognitionFragment", "Camera initialization timeout")
+                                android.util.Log.e(TAG, "Camera initialization timeout")
                                 handleCameraError("Camera failed to initialize")
                             }
                         } catch (e: Exception) {
-                            android.util.Log.e("RecognitionFragment", "Camera start failed", e)
+                            android.util.Log.e(TAG, "Camera start failed", e)
                             handleCameraError("Camera error: ${e.message}")
                         }
                     }
                 } else if (!hasCameraPermission()) {
-                    android.util.Log.e("RecognitionFragment", "Camera permission not granted")
+                    android.util.Log.e(TAG, "Camera permission not granted")
                     handleCameraError("Camera permission not granted")
                 } else {
                     // Camera already initialized - capture immediately after stabilization
-                    android.util.Log.d("RecognitionFragment", "Camera already initialized, capturing after delay")
+                    android.util.Log.d(TAG, "Camera already initialized, capturing after delay")
                     viewLifecycleOwner.lifecycleScope.launch {
                         delay(STABILIZATION_DELAY_MS)
                         captureFrame()
@@ -632,16 +642,16 @@ class RecognitionFragment : Fragment() {
     /**
      * Story 2.7 Task 3.2: Save focus state before fragment pauses
      * Handles interruptions: phone calls, notifications, split-screen mode changes
+     * 
+     * HIGH-3 FIX: Always save focus state (onResume decides whether to restore)
      */
     override fun onPause() {
         super.onPause()
         
-        // Save currently focused view ID if TalkBack is active
-        if (isAccessibilityServiceEnabled()) {
-            val focusedView = view?.findFocus()
-            lastFocusedViewId = focusedView?.id
-            android.util.Log.d(TAG, "Story 2.7: Saved focus on view ID: $lastFocusedViewId")
-        }
+        // Always save focus state - restoration logic checks TalkBack state
+        val focusedView = view?.findFocus()
+        lastFocusedViewId = focusedView?.id
+        android.util.Log.d(TAG, "Story 2.7: Saved focus on view ID: $lastFocusedViewId")
         
         // Story 2.4 HIGH-3: Release camera when fragment paused to prevent battery drain
         cameraProvider?.unbindAll()
@@ -650,16 +660,21 @@ class RecognitionFragment : Fragment() {
     /**
      * Story 2.7 Task 3.3: Restore focus when fragment resumes
      * Story 2.4 HIGH-9: Re-check permission and re-bind camera on resume
+     * 
+     * HIGH-1 FIX: Restore camera first, then restore focus after views stabilize
      */
     override fun onResume() {
         super.onResume()
         
-        // Story 2.7 Task 3.3: Restore focus if TalkBack is active
+        // Story 2.4: Re-check permission when returning from Settings (must come first)
+        checkPermissionAndStartCamera()
+        
+        // Story 2.7 Task 3.3: Restore focus if TalkBack is active (after camera binding)
         if (isAccessibilityServiceEnabled() && lastFocusedViewId != null) {
-            val viewToFocus = view?.findViewById<View>(lastFocusedViewId!!)
-                ?: binding.recognizeFab  // Default to FAB if saved view not found
-            
-            viewToFocus.post {
+            view?.post {  // Post to ensure camera binding completes
+                val viewToFocus = view?.findViewById<View>(lastFocusedViewId!!)
+                    ?: binding.recognizeFab  // Default to FAB if saved view not found
+                
                 viewToFocus.requestFocus()
                 viewToFocus.sendAccessibilityEvent(
                     android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED
@@ -667,9 +682,6 @@ class RecognitionFragment : Fragment() {
                 android.util.Log.d(TAG, "Story 2.7: Restored focus to view ID: ${viewToFocus.id}")
             }
         }
-        
-        // Story 2.4: Re-check permission when returning from Settings
-        checkPermissionAndStartCamera()
     }
     
     override fun onDestroyView() {
@@ -677,6 +689,9 @@ class RecognitionFragment : Fragment() {
         
         // Story 2.4 Task 1.7: Unbind camera use cases when view destroyed
         cameraProvider?.unbindAll()
+        
+        // HIGH-2 FIX: Clear system service reference to prevent memory leak
+        accessibilityManager = null
         
         // Clean up binding to prevent memory leaks
         _binding = null
