@@ -57,18 +57,26 @@ class ObjectRecognitionService @Inject constructor(
     /**
      * Initialize the recognition service
      * Must be called once before recognizeObject()
+     * 
+     * CRITICAL: This should be called in Application.onCreate() to ensure
+     * service is ready before any Fragment/Activity uses it
      */
     fun initialize() {
         if (isInitialized) {
-            Log.d(TAG, "Service already initialized")
+            Log.d(TAG, "Service already initialized - skipping")
             return
         }
         
+        Log.d(TAG, "Initializing recognition service...")
+        
         try {
+            val startTime = System.currentTimeMillis()
             tfliteEngine.initialize()
+            val duration = System.currentTimeMillis() - startTime
             isInitialized = true
-            Log.d(TAG, "Recognition service initialized successfully")
+            Log.d(TAG, "Recognition service initialized successfully in ${duration}ms")
         } catch (e: Exception) {
+            isInitialized = false
             Log.e(TAG, "Service initialization failed", e)
             throw IllegalStateException("Failed to initialize recognition service: ${e.message}", e)
         }

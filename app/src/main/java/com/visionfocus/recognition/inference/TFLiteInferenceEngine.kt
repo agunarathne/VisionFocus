@@ -140,12 +140,21 @@ class TFLiteInferenceEngine @Inject constructor(
     // Private helper methods
     
     private fun loadModelFile(): MappedByteBuffer {
-        val fileDescriptor = context.assets.openFd(MODEL_PATH)
-        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
-        val fileChannel = inputStream.channel
-        val startOffset = fileDescriptor.startOffset
-        val declaredLength = fileDescriptor.declaredLength
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+        try {
+            val fileDescriptor = context.assets.openFd(MODEL_PATH)
+            val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+            val fileChannel = inputStream.channel
+            val startOffset = fileDescriptor.startOffset
+            val declaredLength = fileDescriptor.declaredLength
+            Log.d(TAG, "Loading TFLite model: $MODEL_PATH (${declaredLength / 1024}KB)")
+            return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+        } catch (e: java.io.FileNotFoundException) {
+            Log.e(TAG, "TFLite model file not found: $MODEL_PATH", e)
+            throw IllegalStateException("TFLite model file missing from assets: $MODEL_PATH", e)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load TFLite model file: $MODEL_PATH", e)
+            throw IllegalStateException("Failed to load TFLite model: ${e.message}", e)
+        }
     }
     
     private fun createInterpreterOptions(): Interpreter.Options {

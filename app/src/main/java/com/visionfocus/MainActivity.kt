@@ -35,12 +35,6 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var accessibilityHelper: AccessibilityAnnouncementHelper
     
-    @Inject
-    lateinit var objectRecognitionService: ObjectRecognitionService
-    
-    @Inject
-    lateinit var ttsManager: TTSManager
-    
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,17 +47,9 @@ class MainActivity : AppCompatActivity() {
         // Fix Issue #4: Enable TalkBack announcements on root view
         binding.root.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES
         
-        // Story 2.1: Initialize ObjectRecognitionService (TFLite model loading)
-        // Must be called before any recognition attempts
-        try {
-            objectRecognitionService.initialize()
-            android.util.Log.d("MainActivity", "ObjectRecognitionService initialized successfully")
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Failed to initialize ObjectRecognitionService", e)
-        }
-        
-        // Story 2.2: Initialize TTSManager (Text-to-Speech engine)
-        ttsManager.initialize()
+        // REMOVED: ObjectRecognitionService and TTSManager initialization
+        // Now handled in VisionFocusApplication.onCreate() before any Activity starts
+        // This fixes race condition where Fragment loaded before initialization completed
         
         // Story 2.3 Task 7.3: RecognitionFragment auto-loaded via FragmentContainerView
         // No manual fragment transaction needed - android:name attribute handles it
@@ -140,15 +126,8 @@ class MainActivity : AppCompatActivity() {
     
     override fun onDestroy() {
         super.onDestroy()
-        
-        // Story 2.1: Cleanup ObjectRecognitionService resources
-        try {
-            objectRecognitionService.shutdown()
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "Error shutting down ObjectRecognitionService", e)
-        }
-        
-        // Story 2.2: Cleanup TTSManager resources
-        ttsManager.shutdown()
+        // Note: ObjectRecognitionService and TTSManager are Application-scoped singletons
+        // They are NOT cleaned up when Activity is destroyed - they live for app lifetime
+        // Cleanup happens when Android OS kills the app process
     }
 }
