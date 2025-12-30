@@ -17,6 +17,8 @@ import javax.inject.Inject
 /**
  * Main activity for VisionFocus.
  * 
+ * Story 2.3 Task 7: MainActivity integration with RecognitionFragment
+ * 
  * @AndroidEntryPoint enables Hilt dependency injection in this Activity.
  * Required for injecting ViewModels and other dependencies.
  */
@@ -24,9 +26,6 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
-    
-    // Hilt automatically provides ViewModel via viewModels() delegate
-    private val sampleViewModel: SampleViewModel by viewModels()
     
     @Inject
     lateinit var permissionManager: PermissionManager
@@ -46,18 +45,12 @@ class MainActivity : AppCompatActivity() {
         // Fix Issue #4: Enable TalkBack announcements on root view
         binding.root.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES
         
-        // Demonstrate dependency injection is working
-        val sampleData = sampleViewModel.getSampleData()
-        binding.textView.text = sampleData
+        // Story 2.3 Task 7.3: RecognitionFragment auto-loaded via FragmentContainerView
+        // No manual fragment transaction needed - android:name attribute handles it
         
         // Setup permission launcher and check camera permission (Story 1.5)
         setupPermissionLauncher()
         checkCameraPermission()
-        
-        // Future stories will add:
-        // - Fragment container for navigation (Story 1.2+)
-        // - FAB for recognition trigger (Epic 2)
-        // - Bottom navigation for main features (Epic 2-3)
     }
     
     private fun setupPermissionLauncher() {

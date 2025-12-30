@@ -33,6 +33,10 @@
         <item name="colorSurface">@color/high_contrast_background</item>
         <item name="colorOnSurface">@color/high_contrast_on_surface</item>
         <item name="colorOnBackground">@color/high_contrast_on_surface</item>
+        
+        <!-- Story 2.3 Task 6: FAB colors for high-contrast mode (21:1 ratio) -->
+        <item name="colorPrimary">@color/fab_primary_high_contrast</item>
+        <item name="colorOnPrimary">@color/fab_on_primary_high_contrast</item>
     </style>
     
     <style name="TextAppearance.VisionFocus.Body1" parent="TextAppearance.Material3.BodyLarge">

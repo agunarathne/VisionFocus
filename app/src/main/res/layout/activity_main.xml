@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Main activity layout with fragment container
+     Story 2.3 Task 7: Fragment container for RecognitionFragment
+-->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -6,22 +9,18 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
-    android:padding="@dimen/spacing_medium"
     tools:context=".MainActivity">
 
-    <!-- Placeholder for future content -->
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minHeight="@dimen/min_touch_target_size"
-        android:text="@string/app_name"
-        android:textAppearance="@style/TextAppearance.VisionFocus.Body1"
-        android:textColor="?android:attr/textColorPrimary"
-        android:contentDescription="@string/main_screen_placeholder_description"
+    <!-- Story 2.3 Task 7.2: Fragment container for navigation -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragmentContainer"
+        android:name="com.visionfocus.ui.recognition.RecognitionFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:layout="@layout/fragment_recognition" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

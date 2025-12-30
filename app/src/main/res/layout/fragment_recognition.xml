@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Recognition screen layout (Story 2.3)
+     
+     Accessibility features:
+     - 56x56 dp FAB (AC3: exceeds 48x48 dp requirement)
+     - Logical focus order: title → instructions → FAB
+     - Content descriptions for TalkBack (AC2, AC4, AC5)
+     - High-contrast theme support (AC9)
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface">
+    
+    <!-- App Title (for TalkBack context) -->
+    <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        android:contentDescription="@string/app_title_description"
+        android:accessibilityHeading="true"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:ignore="UnusedAttribute" />
+    
+    <!-- Instructions Text (TalkBack guidance) -->
+    <TextView
+        android:id="@+id/instructionsTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/recognition_instructions"
+        android:textSize="18sp"
+        android:textColor="?attr/colorOnSurface"
+        android:contentDescription="@string/instructions_description"
+        android:layout_margin="16dp"
+        app:layout_constraintTop_toBottomOf="@id/titleTextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+    
+    <!-- Recognition FAB (Primary Interaction)
+         Story 2.3 AC1: 56x56 dp size (exceeds 48x48 dp requirement)
+         Story 2.3 AC2: Content description for TalkBack
+         Story 2.3 AC7: Ripple effect
+         Story 2.3 AC8: Material Symbols photo_camera icon (24dp)
+    -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/recognizeFab"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:contentDescription="@string/recognize_fab_description"
+        android:src="@drawable/ic_camera"
+        app:fabSize="normal"
+        app:rippleColor="?attr/colorControlHighlight"
+        app:tint="?attr/colorOnPrimary"
+        app:backgroundTint="?attr/colorPrimary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp"
+        android:nextFocusUp="@id/instructionsTextView"
+        android:accessibilityTraversalAfter="@id/instructionsTextView"
+        tools:ignore="UnusedAttribute" />
+    
+</androidx.constraintlayout.widget.ConstraintLayout>

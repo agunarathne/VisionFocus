@@ -17,6 +17,16 @@
     <color name="high_contrast_background">#000000</color>
     <color name="high_contrast_on_surface">#FFFFFF</color>
     
+    <!-- Story 2.3 Task 6: FAB colors for high-contrast mode
+         Standard theme: colorPrimary (#BB86FC)
+         High-contrast: Pure black (#000000) background, white (#FFFFFF) icon
+         Contrast ratio: 21:1 (exceeds 7:1 requirement)
+    -->
+    <color name="fab_primary_standard">#BB86FC</color>
+    <color name="fab_on_primary_standard">#000000</color>
+    <color name="fab_primary_high_contrast">#000000</color>
+    <color name="fab_on_primary_high_contrast">#FFFFFF</color>
+    
     <!-- Semantic Colors -->
     <color name="success_green">#4CAF50</color>
     <color name="warning_amber">#FFC107</color>

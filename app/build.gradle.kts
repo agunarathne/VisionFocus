@@ -55,6 +55,11 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             isReturnDefaultValues = true
+            
+            // Enable ByteBuddy experimental mode for Java 23 support
+            all {
+                it.jvmArgs("-Dnet.bytebuddy.experimental=true")
+            }
         }
     }
 }
@@ -84,6 +89,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-livedata-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-ktx:1.8.2")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")  // For Fragment.viewModels()
     
     // DataStore Preferences (Story 1.3)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
@@ -118,6 +124,8 @@ dependencies {
     kaptTest("com.google.dagger:hilt-compiler:2.50")
     testImplementation("androidx.room:room-testing:2.6.1")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
+    testImplementation("org.mockito:mockito-core:5.8.0")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     
     // AndroidX Test Framework (Story 1.5)
     androidTestImplementation("androidx.test:core:1.5.0")
