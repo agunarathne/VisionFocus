@@ -1,5 +1,6 @@
 package com.visionfocus.recognition.repository
 
+import android.graphics.Bitmap
 import android.util.Log
 import com.visionfocus.recognition.models.RecognitionResult
 import com.visionfocus.recognition.processing.ConfidenceFilter
@@ -13,6 +14,7 @@ import javax.inject.Singleton
  * 
  * Story 2.1: In-memory storage only
  * Story 2.2: Added confidence filtering + NMS post-processing pipeline
+ * Story 2.4: Added Bitmap parameter for camera-captured frames
  * Story 4.2: Will add Room database for recognition history (last 50 results)
  */
 @Singleton
@@ -47,6 +49,35 @@ class RecognitionRepositoryImpl @Inject constructor(
         )
         
         // Store in-memory (Story 2.1 scope)
+        lastResult = result
+        
+        return result
+    }
+    
+    /**
+     * Story 2.4: Perform recognition on captured Bitmap
+     * 
+     * @param bitmap Camera-captured frame
+     * @return RecognitionResult with detections and timing
+     */
+    override suspend fun performRecognition(bitmap: Bitmap): RecognitionResult {
+        // Story 2.4: Raw TFLite inference with Bitmap
+        val rawResult = objectRecognitionService.recognizeObject(bitmap)
+        
+        // Story 2.2: Apply confidence filtering (≥0.6 threshold)
+        val filtered = confidenceFilter.filter(rawResult.detections)
+        
+        // Story 2.2: Apply Non-Maximum Suppression (remove overlapping duplicates)
+        val deduplicated = nonMaximumSuppression.apply(filtered)
+        
+        // Create filtered result
+        val result = RecognitionResult(
+            detections = deduplicated,
+            timestampMs = rawResult.timestampMs,
+            latencyMs = rawResult.latencyMs
+        )
+        
+        // Store in-memory
         lastResult = result
         
         return result

@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Recognition screen layout (Story 2.3)
+<!-- Recognition screen layout (Story 2.3, 2.4)
      
      Accessibility features:
      - 56x56 dp FAB (AC3: exceeds 48x48 dp requirement)
      - Logical focus order: title → instructions → FAB
      - Content descriptions for TalkBack (AC2, AC4, AC5)
      - High-contrast theme support (AC9)
+     - Camera preview (Story 2.4, invisible for blind users)
 -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -14,6 +15,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
+    
+    <!-- Camera Preview (Story 2.4)
+         - 1x1 dp size (invisible to users, but needed for CameraX)
+         - Excluded from accessibility tree (blind users don't need visual preview)
+         - Required for CameraX lifecycle binding and frame capture
+    -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="invisible"
+        android:importantForAccessibility="no"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
     
     <!-- App Title (for TalkBack context) -->
     <TextView

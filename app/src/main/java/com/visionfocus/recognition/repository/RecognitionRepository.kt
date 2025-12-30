@@ -1,5 +1,6 @@
 package com.visionfocus.recognition.repository
 
+import android.graphics.Bitmap
 import com.visionfocus.recognition.models.RecognitionResult
 
 /**
@@ -18,6 +19,15 @@ interface RecognitionRepository {
      * @throws IllegalStateException if service not ready
      */
     suspend fun performRecognition(): RecognitionResult
+    
+    /**
+     * Perform object recognition on provided Bitmap (Story 2.4)
+     * 
+     * @param bitmap Camera-captured frame to analyze
+     * @return RecognitionResult with detected objects and timing info
+     * @throws IllegalStateException if service not ready
+     */
+    suspend fun performRecognition(bitmap: Bitmap): RecognitionResult
     
     /**
      * Get the last recognition result (in-memory only for Story 2.1)

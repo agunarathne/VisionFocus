@@ -1,5 +1,6 @@
 package com.visionfocus.ui.recognition
 
+import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.visionfocus.recognition.processing.ConfidenceFilter
@@ -7,6 +8,7 @@ import com.visionfocus.recognition.repository.RecognitionRepository
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.tts.formatter.TTSPhraseFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,16 +17,18 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel for recognition UI (Story 2.3)
+ * ViewModel for recognition UI (Story 2.3, 2.4)
  * 
  * Orchestrates:
- * - Story 2.1: RecognitionRepository.performRecognition() (camera + TFLite)
+ * - Story 2.1: RecognitionRepository.performRecognition() (TFLite inference)
  * - Story 2.2: TTSPhraseFormatter + TTSManager (formatting + announcement)
  * - Story 2.3: UI state management with StateFlow
+ * - Story 2.4: Camera lifecycle integration with capture state
  * 
  * State transitions:
- * Idle → Recognizing → Announcing → Success → Idle (2s delay)
- * Idle → Recognizing → Error → Idle (3s delay)
+ * Idle → Capturing → Recognizing → Announcing → Success → Idle (2s delay)
+ * Idle → Capturing → Recognizing → Error → Idle (3s delay)
+ * Idle → Capturing → CameraError → Idle (3s delay)
  * 
  * @param recognitionRepository Story 2.1 - Object recognition with TFLite
  * @param confidenceFilter Story 2.2 - Convert DetectionResult to FilteredDetection
@@ -56,43 +60,69 @@ class RecognitionViewModel @Inject constructor(
     }
     
     // Story 2.3 Task 1.5: Expose uiState as StateFlow
+    // Story 2.4 Task 9.5: Extended with Capturing and CameraError states
     private val _uiState = MutableStateFlow<RecognitionUiState>(RecognitionUiState.Idle)
     val uiState: StateFlow<RecognitionUiState> = _uiState.asStateFlow()
+    
+    // Story 2.4 Task 9.4: Track recognition job for cancellation
+    private var recognitionJob: Job? = null
     
     /**
      * Trigger object recognition pipeline
      * 
      * Story 2.3 Task 1.6: Implement recognizeObject() function
-     * Story 2.3 Task 1.7: Orchestrate complete pipeline
-     * Story 2.3 Task 1.8: Handle state transitions
+     * Story 2.4: EXTENDED to transition to Capturing state
      * 
-     * Pipeline:
-     * 1. Transition to Recognizing state
-     * 2. Call RecognitionRepository.performRecognition() (Story 2.1)
-     * 3. Format announcement with TTSPhraseFormatter (Story 2.2)
-     * 4. Transition to Announcing state
-     * 5. Call TTSManager.announce() (Story 2.2)
-     * 6. Transition to Success state with results
-     * 7. Auto-return to Idle after delay
-     * 
-     * Error handling:
-     * - SecurityException: Camera permission denied
-     * - IllegalStateException: TTS not initialized or camera not ready
-     * - Other exceptions: Generic recognition failure
+     * Flow:
+     * 1. Transition to Capturing state (camera frame capture initiated)
+     * 2. Fragment captures frame and calls performRecognition(bitmap)
+     * 3. Continue with TFLite inference and TTS announcement
      */
     fun recognizeObject() {
-        // Ignore if already in progress
+        // Story 2.4: Debounce - ignore if already in progress
         if (_uiState.value !is RecognitionUiState.Idle) {
             return
         }
         
-        viewModelScope.launch {
+        // Story 2.4 Task 9.2: State transition - Idle → Capturing
+        _uiState.value = RecognitionUiState.Capturing
+    }
+    
+    /**
+     * Perform recognition with captured camera frame
+     * 
+     * Story 2.4 Task 2: Called by fragment after camera capture completes
+     * 
+     * Pipeline:
+     * 1. Transition to Recognizing state
+     * 2. Call RecognitionRepository.performRecognition(bitmap) (Story 2.1)
+     * 3. Handle empty results (no objects detected)
+     * 4. Format announcement with TTSPhraseFormatter (Story 2.2)
+     * 5. Transition to Announcing state
+     * 6. Call TTSManager.announce() (Story 2.2)
+     * 7. Transition to Success state with results
+     * 8. Auto-return to Idle after delay
+     * 
+     * @param bitmap Captured camera frame to analyze
+     */
+    fun performRecognition(bitmap: Bitmap) {
+        recognitionJob = viewModelScope.launch {
             try {
-                // Story 2.3 Task 1.8: State transition - Idle → Recognizing
+                // Story 2.4 Task 9.2: State transition - Capturing → Recognizing
                 _uiState.value = RecognitionUiState.Recognizing
                 
-                // Story 2.1: Camera → TFLite inference (≤320ms)
-                val result = recognitionRepository.performRecognition()
+                // Story 2.1: TFLite inference (≤320ms)
+                val result = recognitionRepository.performRecognition(bitmap)
+                
+                // Story 2.4: Handle empty results (no objects detected)
+                if (result.detections.isEmpty()) {
+                    _uiState.value = RecognitionUiState.Error(
+                        "No objects detected. Try pointing camera at a different area."
+                    )
+                    delay(ERROR_DELAY_MS)
+                    _uiState.value = RecognitionUiState.Idle
+                    return@launch
+                }
                 
                 // Convert DetectionResult to FilteredDetection (Story 2.2)
                 val filteredDetections = result.detections.map { detection ->
@@ -102,13 +132,13 @@ class RecognitionViewModel @Inject constructor(
                 // Story 2.2: Format announcement with confidence-aware phrasing
                 val announcement = ttsFormatter.formatMultipleDetections(filteredDetections)
                 
-                // Story 2.3 Task 1.8: State transition - Recognizing → Announcing
+                // Story 2.4 Task 9.2: State transition - Recognizing → Announcing
                 _uiState.value = RecognitionUiState.Announcing
                 
                 // Story 2.2: TTS announcement (≤200ms initiation)
                 ttsManager.announce(announcement)
                 
-                // Story 2.3 Task 1.8: State transition - Announcing → Success
+                // Story 2.4 Task 9.2: State transition - Announcing → Success
                 _uiState.value = RecognitionUiState.Success(
                     results = filteredDetections,
                     announcement = announcement,
@@ -135,6 +165,46 @@ class RecognitionViewModel @Inject constructor(
     }
     
     /**
+     * Camera initialized successfully
+     * 
+     * Story 2.4: Called by fragment after CameraX binding completes
+     * No action needed, just confirms camera is ready
+     */
+    fun onCameraReady() {
+        // Camera initialization successful
+        // Fragment will trigger recognizeObject() on FAB tap
+    }
+    
+    /**
+     * Handle camera errors
+     * 
+     * Story 2.4 Task 8: Camera initialization or capture errors
+     * 
+     * @param message User-friendly error message
+     */
+    fun onCameraError(message: String) {
+        viewModelScope.launch {
+            // Story 2.4 Task 9.6: Transition to CameraError state
+            _uiState.value = RecognitionUiState.CameraError(message)
+            
+            // Auto-return to Idle after error announcement delay
+            delay(ERROR_DELAY_MS)
+            _uiState.value = RecognitionUiState.Idle
+        }
+    }
+    
+    /**
+     * Cancel recognition mid-flow
+     * 
+     * Story 2.4 Task 5: Back button cancellation
+     * Story 2.4 Task 6: Voice command cancellation (placeholder for Epic 3)
+     */
+    fun cancelRecognition() {
+        recognitionJob?.cancel()
+        _uiState.value = RecognitionUiState.Idle
+    }
+    
+    /**
      * Handle error state and auto-recovery
      * 
      * @param message User-friendly error message
@@ -146,5 +216,10 @@ class RecognitionViewModel @Inject constructor(
         // Auto-return to Idle after error announcement delay
         delay(ERROR_DELAY_MS)
         _uiState.value = RecognitionUiState.Idle
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        recognitionJob?.cancel()
     }
 }

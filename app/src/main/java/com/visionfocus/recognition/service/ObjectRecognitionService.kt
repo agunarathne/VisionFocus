@@ -1,5 +1,6 @@
 package com.visionfocus.recognition.service
 
+import android.graphics.Bitmap
 import android.util.Log
 import com.visionfocus.permissions.manager.PermissionManager
 import com.visionfocus.recognition.camera.CameraManager
@@ -141,6 +142,125 @@ class ObjectRecognitionService @Inject constructor(
             _state.value = RecognitionState.Error(e.message ?: "Unknown error")
             throw IllegalStateException("Recognition failed: ${e.message}", e)
         }
+    }
+    
+    /**
+     * Perform object recognition on provided Bitmap (Story 2.4)
+     * 
+     * Pipeline:
+     * 1. Verify service initialized
+     * 2. Convert Bitmap to ByteBuffer
+     * 3. Run TFLite inference on ByteBuffer
+     * 4. Parse and return results
+     * 
+     * @param bitmap Camera-captured frame to analyze
+     * @return RecognitionResult with detected objects, timestamp, and latency
+     * @throws IllegalStateException if service not initialized
+     */
+    suspend fun recognizeObject(bitmap: Bitmap): RecognitionResult = withContext(Dispatchers.Default) {
+        // Verify initialization
+        if (!isInitialized) {
+            _state.value = RecognitionState.Error("Service not initialized")
+            throw IllegalStateException("Service not initialized. Call initialize() first.")
+        }
+        
+        val startTime = System.currentTimeMillis()
+        
+        try {
+            // State: Running inference
+            _state.value = RecognitionState.Analyzing
+            
+            // Convert Bitmap to ByteBuffer
+            val byteBuffer = bitmapToByteBuffer(bitmap)
+            
+            // Run TFLite inference on ByteBuffer
+            val detections = tfliteEngine.infer(byteBuffer)
+            
+            // Calculate latency
+            val latency = System.currentTimeMillis() - startTime
+            
+            // Log performance
+            logPerformance(latency)
+            
+            // Validate latency requirements
+            if (latency > MAX_LATENCY_MS) {
+                Log.w(TAG, "Latency exceeded maximum: ${latency}ms > ${MAX_LATENCY_MS}ms")
+            }
+            
+            val result = RecognitionResult(
+                detections = detections,
+                timestampMs = System.currentTimeMillis(),
+                latencyMs = latency
+            )
+            
+            // State: Success
+            _state.value = RecognitionState.Success(detections)
+            
+            return@withContext result
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Recognition failed", e)
+            _state.value = RecognitionState.Error(e.message ?: "Unknown error")
+            throw IllegalStateException("Recognition failed: ${e.message}", e)
+        }
+    }
+    
+    /**
+     * Convert Bitmap to ByteBuffer for TFLite inference
+     * Story 2.4: Helper method for bitmap-based recognition
+     * 
+     * @param bitmap Camera-captured frame (will be scaled to 300×300)
+     * @return ByteBuffer with normalized RGB values [0-255]
+     */
+    private fun bitmapToByteBuffer(bitmap: Bitmap): java.nio.ByteBuffer {
+        val modelInputWidth = 300
+        val modelInputHeight = 300
+        val bytesPerChannel = 1 // INT8 quantized model
+        val pixelSize = 3 // RGB
+        
+        val inputBuffer = java.nio.ByteBuffer.allocateDirect(
+            modelInputWidth * modelInputHeight * pixelSize * bytesPerChannel
+        )
+        inputBuffer.order(java.nio.ByteOrder.nativeOrder())
+        
+        // Scale bitmap to 300×300 if needed
+        val scaledBitmap = if (bitmap.width != modelInputWidth || bitmap.height != modelInputHeight) {
+            android.graphics.Bitmap.createScaledBitmap(
+                bitmap,
+                modelInputWidth,
+                modelInputHeight,
+                true
+            )
+        } else {
+            bitmap
+        }
+        
+        // Convert bitmap to ByteBuffer (RGB format)
+        val intValues = IntArray(modelInputWidth * modelInputHeight)
+        scaledBitmap.getPixels(
+            intValues,
+            0,
+            scaledBitmap.width,
+            0,
+            0,
+            scaledBitmap.width,
+            scaledBitmap.height
+        )
+        
+        var pixel = 0
+        for (i in 0 until modelInputWidth) {
+            for (j in 0 until modelInputHeight) {
+                val value = intValues[pixel++]
+                
+                // Extract RGB values and put in buffer
+                inputBuffer.put(((value shr 16) and 0xFF).toByte()) // R
+                inputBuffer.put(((value shr 8) and 0xFF).toByte())  // G
+                inputBuffer.put((value and 0xFF).toByte())          // B
+            }
+        }
+        
+        inputBuffer.rewind()
+        return inputBuffer
     }
     
     /**
