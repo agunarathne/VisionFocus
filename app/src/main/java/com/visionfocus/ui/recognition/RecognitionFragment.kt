@@ -224,7 +224,7 @@ class RecognitionFragment : Fragment() {
         // MEDIUM-6: Use MAXIMIZE_QUALITY for better recognition (blind users need accuracy)
         imageCapture = ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-            .setTargetRotation(binding.previewView.display.rotation)
+            .setTargetRotation(binding.previewView.display?.rotation ?: android.view.Surface.ROTATION_0)
             .build()
         
         try {
