@@ -127,6 +127,16 @@ class ConfidenceFilterTest {
         filter.categorizeConfidence(0.25f)
     }
     
+    @Test(expected = IllegalArgumentException::class)
+    fun `categorizeConfidence throws exception for confidence above 1_0`() {
+        filter.categorizeConfidence(1.5f)
+    }
+    
+    @Test(expected = IllegalArgumentException::class)
+    fun `categorizeConfidence throws exception for invalid confidence value`() {
+        filter.categorizeConfidence(5.0f)
+    }
+    
     // Test toFilteredDetection conversion
     
     @Test

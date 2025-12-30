@@ -30,6 +30,13 @@ class NonMaximumSuppression @Inject constructor() {
          * Standard NMS threshold for object detection
          */
         const val IOU_THRESHOLD = 0.5f
+        
+        /**
+         * Maximum detections to process
+         * Prevents O(n²) performance issues with pathological inputs
+         * TFLite typically returns 10-100 detections; 200 is safe upper bound
+         */
+        const val MAX_DETECTIONS = 200
     }
     
     /**
@@ -43,7 +50,10 @@ class NonMaximumSuppression @Inject constructor() {
         if (detections.size <= 1) return detections
         
         // Sort by confidence descending (highest first)
-        val sorted = detections.sortedByDescending { it.confidence }
+        // Limit to MAX_DETECTIONS to prevent O(n²) performance issues
+        val sorted = detections
+            .sortedByDescending { it.confidence }
+            .take(MAX_DETECTIONS)
         
         val keep = mutableListOf<DetectionResult>()
         val discarded = mutableSetOf<Int>()
@@ -82,8 +92,10 @@ class NonMaximumSuppression @Inject constructor() {
  * 
  * IoU = Intersection Area / Union Area
  * Range: [0, 1] where 0 = no overlap, 1 = perfect overlap
+ * 
+ * Internal visibility: Implementation detail of NMS module
  */
-fun BoundingBox.calculateIoU(other: BoundingBox): Float {
+internal fun BoundingBox.calculateIoU(other: BoundingBox): Float {
     // Calculate intersection coordinates
     val intersectYMin = maxOf(this.yMin, other.yMin)
     val intersectXMin = maxOf(this.xMin, other.xMin)

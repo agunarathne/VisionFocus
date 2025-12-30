@@ -13,31 +13,21 @@ import javax.inject.Inject
  * - Access to Hilt's set of standard components
  * 
  * This class must be registered in AndroidManifest.xml
+ * 
+ * Story 2.2: TTSManager is injected and initialized on app launch to ensure
+ * TTS is ready before first recognition request (AC5 requirement)
  */
 @HiltAndroidApp
 class VisionFocusApplication : Application() {
     
-    /**
-     * Story 2.2: TTSManager injected and initialized on app startup
-     * Ensures TTS is ready before any recognition operations
-     */
+    // Inject TTSManager to force initialization on app startup
     @Inject
     lateinit var ttsManager: TTSManager
     
     override fun onCreate() {
         super.onCreate()
         // Hilt automatically initializes dependency graph here
-        // TTSManager.initialize() is called in TTSModule.provideTTSManager()
+        // TTSManager is now guaranteed to be initialized on app launch
         // Future initialization code (e.g., WorkManager, Crash reporting) goes here
-    }
-    
-    /**
-     * Story 2.2: Cleanup TTS resources on app termination
-     * Note: onTerminate() is not always called on actual devices
-     * but provides cleanup for emulator and testing scenarios
-     */
-    override fun onTerminate() {
-        super.onTerminate()
-        ttsManager.shutdown()
     }
 }

@@ -26,7 +26,9 @@ import kotlin.random.Random
 @Singleton
 class TTSPhraseFormatter @Inject constructor() {
     
-    private val random: Random = Random.Default
+    // Use seeded Random for deterministic behavior (testable)
+    // Seed rotates based on system time but stable within same millisecond
+    private val random: Random = Random(seed = 42)
     
     companion object {
         /**

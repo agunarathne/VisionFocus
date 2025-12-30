@@ -53,6 +53,10 @@ class ConfidenceFilter @Inject constructor() {
      * @throws IllegalArgumentException if confidence below threshold
      */
     fun categorizeConfidence(confidence: Float): ConfidenceLevel {
+        require(confidence in 0.0f..1.0f) {
+            "Confidence must be in range [0.0, 1.0], got $confidence"
+        }
+        
         return when {
             confidence >= 0.85f -> ConfidenceLevel.HIGH
             confidence >= 0.70f -> ConfidenceLevel.MEDIUM

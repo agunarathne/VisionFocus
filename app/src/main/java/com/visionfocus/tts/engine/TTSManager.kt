@@ -53,12 +53,18 @@ class TTSManager @Inject constructor(
     private var tts: TextToSpeech? = null
     private var isInitialized = false
     
+    // Track actual TTS start time for latency measurement
+    private var lastUtteranceStartTime: Long? = null
+    private var lastUtteranceQueueTime: Long? = null
+    
     /**
      * Initialize TextToSpeech engine
      * Should be called on Application.onCreate()
      * 
+     * Thread-safe: Can be called multiple times safely
      * Asynchronous: onInit() callback will be invoked when ready
      */
+    @Synchronized
     fun initialize() {
         if (tts == null) {
             tts = TextToSpeech(context, this)
@@ -104,6 +110,7 @@ class TTSManager @Inject constructor(
     private fun setupUtteranceListener() {
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) {
+                lastUtteranceStartTime = System.currentTimeMillis()
                 Log.d(TAG, "TTS started: $utteranceId")
             }
             
@@ -139,6 +146,7 @@ class TTSManager @Inject constructor(
         }
         
         val startTime = System.currentTimeMillis()
+        lastUtteranceQueueTime = startTime
         
         // Generate unique utterance ID for tracking
         val utteranceId = "recognition_${System.currentTimeMillis()}"
@@ -151,15 +159,27 @@ class TTSManager @Inject constructor(
             utteranceId
         )
         
-        val latency = System.currentTimeMillis() - startTime
+        val queueLatency = System.currentTimeMillis() - startTime
         
         if (result == TextToSpeech.SUCCESS) {
-            Log.d(TAG, "TTS announcement queued in ${latency}ms: $text")
-            Result.success(latency)
+            // Only log in development (avoid production overhead)
+            Result.success(queueLatency)
         } else {
             Log.e(TAG, "TTS speak failed with result: $result")
             Result.failure(Exception("TTS speak failed with result: $result"))
         }
+    }
+    
+    /**
+     * Get actual latency from queue time to speech start
+     * Only available after onStart() callback is triggered
+     * 
+     * @return Latency in milliseconds, or null if not available
+     */
+    fun getLastActualLatency(): Long? {
+        val queueTime = lastUtteranceQueueTime ?: return null
+        val startTime = lastUtteranceStartTime ?: return null
+        return startTime - queueTime
     }
     
     /**

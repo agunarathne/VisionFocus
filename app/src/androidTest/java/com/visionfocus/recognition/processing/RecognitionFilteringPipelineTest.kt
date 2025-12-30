@@ -168,6 +168,30 @@ class RecognitionFilteringPipelineTest {
     }
     
     /**
+     * MEDIUM #11: Test equal confidence detections (edge case)
+     */
+    @Test
+    fun testEqualConfidenceDetectionsOrdering() {
+        // All detections have same confidence - ordering should be stable
+        val detections = listOf(
+            FilteredDetection("chair", 0.85f, ConfidenceLevel.HIGH, mockBoundingBox()),
+            FilteredDetection("table", 0.85f, ConfidenceLevel.HIGH, mockBoundingBox()),
+            FilteredDetection("laptop", 0.85f, ConfidenceLevel.HIGH, mockBoundingBox())
+        )
+        
+        val announcement = ttsFormatter.formatMultipleDetections(detections)
+        
+        // Verify all objects mentioned
+        assertTrue("Should mention chair", announcement.contains("chair"))
+        assertTrue("Should mention table", announcement.contains("table"))
+        assertTrue("Should mention laptop", announcement.contains("laptop"))
+        
+        // Verify no crash and valid announcement format
+        assertTrue("Should have conjunctions", announcement.contains("and"))
+        assertFalse("Should not be robotic", announcement.contains("%"))
+    }
+    
+    /**
      * Story 2.2 AC7: Empty results handling
      */
     @Test
@@ -243,6 +267,34 @@ class RecognitionFilteringPipelineTest {
     }
     
     /**
+     * MEDIUM #13: Validate Story 2.1 + Story 2.2 integration
+     * Verify RecognitionRepository from Story 2.1 works with Story 2.2 filtering
+     */
+    @Test
+    fun testStory21And22Integration() = runBlocking {
+        // This test validates that Story 2.2's modifications to RecognitionRepositoryImpl
+        // don't break Story 2.1's inference pipeline
+        
+        // Note: Full test requires camera access and TFLite model loaded
+        // Here we verify the repository is properly injected and configured
+        assertNotNull("RecognitionRepository should be injected", recognitionRepository)
+        assertNotNull("ConfidenceFilter should be injected", confidenceFilter)
+        assertNotNull("NonMaximumSuppression should be injected", nonMaximumSuppression)
+        
+        // Verify filtering components work correctly
+        val testDetections = listOf(
+            DetectionResult("chair", 0.92f, mockBoundingBox()),
+            DetectionResult("table", 0.45f, mockBoundingBox())
+        )
+        
+        val filtered = confidenceFilter.filter(testDetections)
+        assertEquals("Should filter low confidence", 1, filtered.size)
+        
+        val deduplicated = nonMaximumSuppression.apply(filtered)
+        assertEquals("Should keep filtered result", 1, deduplicated.size)
+    }
+    
+    /**
      * Story 2.2 AC6: TTS announcement (smoke test)
      * Note: Full latency testing requires real device with TTS engine
      */
@@ -259,6 +311,38 @@ class RecognitionFilteringPipelineTest {
                 println("TTS announcement latency: ${latency}ms")
             }
         }
+    }
+    
+    /**
+     * CRITICAL #5 & MEDIUM #12: Actual latency validation test
+     * Story 2.2 Task 4.3: Validate announcement initiation ≤200ms
+     */
+    @Test
+    fun testTTSAnnouncementLatencyRequirement() = runBlocking {
+        // Skip if TTS not ready (CI environment may not have TTS engine)
+        if (!ttsManager.isReady()) {
+            println("Skipping latency test: TTS engine not available")
+            return@runBlocking
+        }
+        
+        val startTime = System.currentTimeMillis()
+        
+        // Queue TTS announcement
+        val result = ttsManager.announce("High confidence: chair")
+        
+        val queueLatency = System.currentTimeMillis() - startTime
+        
+        // Verify queue latency meets requirement
+        assertTrue(
+            "TTS queue latency ${queueLatency}ms exceeds 200ms target (Story 2.2 AC6)",
+            queueLatency <= 200L
+        )
+        
+        // Verify announce() succeeded
+        assertTrue("TTS announcement should succeed", result.isSuccess)
+        
+        // Note: Actual speech start time tracked via getLastActualLatency()
+        // but requires onStart() callback which may not fire in test environment
     }
     
     // Helper functions

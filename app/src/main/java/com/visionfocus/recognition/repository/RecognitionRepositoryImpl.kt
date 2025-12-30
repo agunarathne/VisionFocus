@@ -30,20 +30,14 @@ class RecognitionRepositoryImpl @Inject constructor(
     private var lastResult: RecognitionResult? = null
     
     override suspend fun performRecognition(): RecognitionResult {
-        Log.d(TAG, "Performing recognition...")
-        
         // Story 2.1: Raw TFLite inference
         val rawResult = objectRecognitionService.recognizeObject()
         
-        Log.d(TAG, "Raw inference: ${rawResult.detections.size} detections")
-        
         // Story 2.2: Apply confidence filtering (≥0.6 threshold)
         val filtered = confidenceFilter.filter(rawResult.detections)
-        Log.d(TAG, "After confidence filtering: ${filtered.size} detections (removed ${rawResult.detections.size - filtered.size})")
         
         // Story 2.2: Apply Non-Maximum Suppression (remove overlapping duplicates)
         val deduplicated = nonMaximumSuppression.apply(filtered)
-        Log.d(TAG, "After NMS: ${deduplicated.size} detections (removed ${filtered.size - deduplicated.size} duplicates)")
         
         // Create filtered result
         val result = RecognitionResult(
@@ -54,8 +48,6 @@ class RecognitionRepositoryImpl @Inject constructor(
         
         // Store in-memory (Story 2.1 scope)
         lastResult = result
-        
-        Log.d(TAG, "Recognition completed: ${result.detections.size} final detections, ${result.latencyMs}ms")
         
         return result
     }
