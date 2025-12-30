@@ -292,41 +292,62 @@ class RecognitionFragment : Fragment() {
     
     /**
      * Story 2.4 Task 2.4: Convert ImageProxy to Bitmap
-     * Fixed: Properly handle YUV_420_888 format from CameraX
+     * Fixed: Handle both JPEG and YUV formats from CameraX
      */
     private fun imageProxyToBitmap(image: ImageProxy): Bitmap {
-        // CameraX outputs YUV_420_888 format - must convert all planes
-        val yBuffer = image.planes[0].buffer
-        val uBuffer = image.planes[1].buffer
-        val vBuffer = image.planes[2].buffer
-        
-        val ySize = yBuffer.remaining()
-        val uSize = uBuffer.remaining()
-        val vSize = vBuffer.remaining()
-        
-        val nv21 = ByteArray(ySize + uSize + vSize)
-        
-        // Convert YUV planes to NV21 format
-        yBuffer.get(nv21, 0, ySize)
-        vBuffer.get(nv21, ySize, vSize)
-        uBuffer.get(nv21, ySize + vSize, uSize)
-        
-        // Convert NV21 to JPEG then to Bitmap
-        val yuvImage = android.graphics.YuvImage(
-            nv21, 
-            android.graphics.ImageFormat.NV21,
-            image.width, 
-            image.height, 
-            null
-        )
-        val out = java.io.ByteArrayOutputStream()
-        yuvImage.compressToJpeg(
-            android.graphics.Rect(0, 0, image.width, image.height), 
-            100, 
-            out
-        )
-        val imageBytes = out.toByteArray()
-        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        // Check image format - camera might output JPEG or YUV
+        return when (image.format) {
+            android.graphics.ImageFormat.JPEG -> {
+                // Direct JPEG conversion
+                val buffer = image.planes[0].buffer
+                val bytes = ByteArray(buffer.remaining())
+                buffer.get(bytes)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            }
+            android.graphics.ImageFormat.YUV_420_888 -> {
+                // YUV conversion (3 planes required)
+                if (image.planes.size < 3) {
+                    throw IllegalArgumentException("YUV format requires 3 planes, got ${image.planes.size}")
+                }
+                
+                val yBuffer = image.planes[0].buffer
+                val uBuffer = image.planes[1].buffer
+                val vBuffer = image.planes[2].buffer
+                
+                val ySize = yBuffer.remaining()
+                val uSize = uBuffer.remaining()
+                val vSize = vBuffer.remaining()
+                
+                val nv21 = ByteArray(ySize + uSize + vSize)
+                
+                // Convert YUV planes to NV21 format
+                yBuffer.get(nv21, 0, ySize)
+                vBuffer.get(nv21, ySize, vSize)
+                uBuffer.get(nv21, ySize + vSize, uSize)
+                
+                // Convert NV21 to JPEG then to Bitmap
+                val yuvImage = android.graphics.YuvImage(
+                    nv21, 
+                    android.graphics.ImageFormat.NV21,
+                    image.width, 
+                    image.height, 
+                    null
+                )
+                val out = java.io.ByteArrayOutputStream()
+                yuvImage.compressToJpeg(
+                    android.graphics.Rect(0, 0, image.width, image.height), 
+                    100, 
+                    out
+                )
+                val imageBytes = out.toByteArray()
+                BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+            }
+            else -> {
+                // Unsupported format - log and throw error
+                android.util.Log.e("RecognitionFragment", "Unsupported image format: ${image.format}")
+                throw IllegalArgumentException("Unsupported camera image format: ${image.format}")
+            }
+        }
     }
     
     /**
@@ -517,7 +538,13 @@ class RecognitionFragment : Fragment() {
      */
     private fun announceForAccessibility(message: String) {
         // Use post() to ensure announcement happens on UI thread after state updates
-        binding.root.post {
+        view?.post {
+            // Check if binding is still valid (Fragment not destroyed)
+            if (!isAdded || _binding == null) {
+                android.util.Log.w("RecognitionFragment", "Skipping announcement - Fragment destroyed")
+                return@post
+            }
+            
             // Set live region for more reliable announcements
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 binding.root.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
