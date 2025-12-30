@@ -46,10 +46,14 @@ object ThemeManager {
             else -> R.style.Theme_VisionFocus
         }
         
-        (context as? Activity)?.let { activity ->
-            activity.setTheme(themeResId)
-            activity.recreate()  // Trigger activity recreation to apply theme
-        }
+        // HIGH-8 fix: Explicit error handling for non-Activity context
+        val activity = context as? Activity
+            ?: throw IllegalArgumentException(
+                "ThemeManager.applyTheme() requires Activity context, got ${context.javaClass.simpleName}"
+            )
+        
+        activity.setTheme(themeResId)
+        activity.recreate()  // Trigger activity recreation to apply theme
     }
     
     /**

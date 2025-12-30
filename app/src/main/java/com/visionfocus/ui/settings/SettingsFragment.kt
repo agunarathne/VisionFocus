@@ -50,6 +50,12 @@ class SettingsFragment : Fragment() {
     
     private val viewModel: SettingsViewModel by viewModels()
     
+    // Guard flag to prevent double theme application (HIGH-2 fix)
+    private var isUpdatingFromObserver = false
+    
+    // Job tracking for memory leak prevention (MEDIUM-2 fix)
+    private val observerJobs = mutableListOf<kotlinx.coroutines.Job>()
+    
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -76,34 +82,44 @@ class SettingsFragment : Fragment() {
      */
     private fun setupObservers() {
         // Observe high-contrast mode preference
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.highContrastMode.collect { enabled ->
-                    binding.highContrastSwitch.isChecked = enabled
-                    
-                    // Update content description for TalkBack
-                    binding.highContrastSwitch.contentDescription = getString(
-                        if (enabled) R.string.high_contrast_mode_description_on
-                        else R.string.high_contrast_mode_description_off
-                    )
+        observerJobs.add(
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.highContrastMode.collect { enabled ->
+                        // Set guard flag to prevent listener from triggering during update
+                        isUpdatingFromObserver = true
+                        binding.highContrastSwitch.isChecked = enabled
+                        isUpdatingFromObserver = false
+                        
+                        // Update content description for TalkBack
+                        binding.highContrastSwitch.contentDescription = getString(
+                            if (enabled) R.string.high_contrast_mode_description_on
+                            else R.string.high_contrast_mode_description_off
+                        )
+                    }
                 }
             }
-        }
+        )
         
         // Observe large text mode preference
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.largeTextMode.collect { enabled ->
-                    binding.largeTextSwitch.isChecked = enabled
-                    
-                    // Update content description for TalkBack
-                    binding.largeTextSwitch.contentDescription = getString(
-                        if (enabled) R.string.large_text_mode_description_on
-                        else R.string.large_text_mode_description_off
-                    )
+        observerJobs.add(
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.largeTextMode.collect { enabled ->
+                        // Set guard flag to prevent listener from triggering during update
+                        isUpdatingFromObserver = true
+                        binding.largeTextSwitch.isChecked = enabled
+                        isUpdatingFromObserver = false
+                        
+                        // Update content description for TalkBack
+                        binding.largeTextSwitch.contentDescription = getString(
+                            if (enabled) R.string.large_text_mode_description_on
+                            else R.string.large_text_mode_description_off
+                        )
+                    }
                 }
             }
-        }
+        )
     }
     
     /**
@@ -118,6 +134,10 @@ class SettingsFragment : Fragment() {
      */
     private fun setupListeners() {
         binding.highContrastSwitch.setOnCheckedChangeListener { _, isChecked ->
+            // Guard: Ignore programmatic updates from observer (HIGH-2 fix)
+            if (isUpdatingFromObserver) return@setOnCheckedChangeListener
+            
+            android.util.Log.d("VisionFocus", "High-contrast mode toggled: $isChecked")
             viewModel.toggleHighContrastMode()
             
             // Announce theme change via TalkBack
@@ -138,6 +158,10 @@ class SettingsFragment : Fragment() {
         }
         
         binding.largeTextSwitch.setOnCheckedChangeListener { _, isChecked ->
+            // Guard: Ignore programmatic updates from observer (HIGH-2 fix)
+            if (isUpdatingFromObserver) return@setOnCheckedChangeListener
+            
+            android.util.Log.d("VisionFocus", "Large text mode toggled: $isChecked")
             viewModel.toggleLargeTextMode()
             
             // Announce theme change via TalkBack
@@ -160,6 +184,9 @@ class SettingsFragment : Fragment() {
     
     override fun onDestroyView() {
         super.onDestroyView()
+        // Cancel all observer jobs to prevent memory leaks (MEDIUM-2 fix)
+        observerJobs.forEach { it.cancel() }
+        observerJobs.clear()
         _binding = null
     }
 }

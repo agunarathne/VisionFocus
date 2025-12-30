@@ -50,13 +50,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
     
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Story 2.5: Apply theme preferences BEFORE setContentView to prevent flicker
-        // Note: Theme application happens synchronously via runBlocking
-        // Safe in onCreate as preferences load is fast (<5ms from DataStore)
+        // Story 2.5: Apply theme preferences BEFORE super.onCreate() to prevent flicker
+        // Code review fix: Use runBlocking here as theme MUST be set before Activity creation
+        // This is the ONE acceptable use of runBlocking in onCreate() for theme initialization
+        // DataStore read is fast (<5ms) and blocking is necessary for proper theme application
         kotlinx.coroutines.runBlocking {
-            val highContrast = settingsRepository.getHighContrastMode().first()
-            val largeText = settingsRepository.getLargeTextMode().first()
-            ThemeManager.setThemeWithoutRecreate(this@MainActivity, highContrast, largeText)
+            try {
+                val highContrast = settingsRepository.getHighContrastMode().first()
+                val largeText = settingsRepository.getLargeTextMode().first()
+                ThemeManager.setThemeWithoutRecreate(this@MainActivity, highContrast, largeText)
+            } catch (e: Exception) {
+                android.util.Log.e("VisionFocus", "Failed to load theme preferences", e)
+                // Fallback to default theme on error
+                ThemeManager.setThemeWithoutRecreate(this@MainActivity, false, false)
+            }
         }
         
         super.onCreate(savedInstanceState)

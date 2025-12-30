@@ -36,6 +36,12 @@ class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
     
+    companion object {
+        // LOW-2 fix: Keep StateFlow active 5 seconds after last collector disconnects
+        // This prevents unnecessary DataStore re-reads during configuration changes
+        private const val FLOW_SUBSCRIPTION_TIMEOUT_MS = 5000L
+    }
+    
     /**
      * High-contrast mode enabled state.
      * 
@@ -48,7 +54,7 @@ class SettingsViewModel @Inject constructor(
         .getHighContrastMode()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(FLOW_SUBSCRIPTION_TIMEOUT_MS),
             initialValue = false
         )
     
@@ -66,7 +72,7 @@ class SettingsViewModel @Inject constructor(
         .getLargeTextMode()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(FLOW_SUBSCRIPTION_TIMEOUT_MS),
             initialValue = false
         )
     

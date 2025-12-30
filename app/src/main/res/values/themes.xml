@@ -37,6 +37,11 @@
         <!-- Story 2.3 Task 6: FAB colors for high-contrast mode (21:1 ratio) -->
         <item name="colorPrimary">@color/fab_primary_high_contrast</item>
         <item name="colorOnPrimary">@color/fab_on_primary_high_contrast</item>
+        
+        <!-- HIGH-7 fix: Ripple effect and switch colors for sufficient contrast -->
+        <item name="colorControlHighlight">#FFFFFF</item> <!-- 100% white ripple for visibility -->
+        <item name="colorSwitchThumbNormal">#FFFFFF</item> <!-- White switch thumb -->
+        <item name="android:colorControlActivated">#FFFFFF</item> <!-- White when active -->
     </style>
     
     <!-- Large text theme variant (150% scaling) - Story 2.5 -->

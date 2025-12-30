@@ -55,7 +55,7 @@ development_status:
   2-2-high-confidence-detection-filtering-tts-announcement: done
   2-3-recognition-fab-with-talkback-semantic-annotations: done
   2-4-camera-capture-with-accessibility-focus-management: done
-  2-5-high-contrast-mode-large-text-support: review
+  2-5-high-contrast-mode-large-text-support: done
   2-6-haptic-feedback-for-recognition-events: ready-for-dev
   2-7-complete-talkback-navigation-for-primary-flow: done
   epic-2-retrospective: optional
@@ -70,10 +70,10 @@ development_status:
   epic-3-retrospective: optional
 
   # Epic 4: Advanced Recognition Features
-  epic-4: backlog
+  epic-4: in-progress
   4-1-verbosity-mode-selection-brief-standard-detailed: backlog
-  4-2-recognition-history-storage-with-room-database: backlog
-  4-3-recognition-history-review-ui: backlog
+  4-2-recognition-history-storage-with-room-database: ready-for-dev
+  4-3-recognition-history-review-ui: ready-for-dev
   4-4-continuous-scanning-mode-for-environment-mapping: backlog
   4-5-distance-and-position-information-in-detailed-mode: backlog
   epic-4-retrospective: optional
@@ -100,7 +100,7 @@ development_status:
   # Epic 7: Saved Locations & Offline Navigation
   epic-7: backlog
   7-1-save-current-location-with-custom-labels: backlog
-  7-2-saved-locations-management-ui: backlog
+  7-2-saved-locations-management-ui: ready-for-dev
   7-3-quick-navigation-to-saved-locations: backlog
   7-4-offline-map-pre-caching: backlog
   7-5-automatic-gps-offline-navigation-mode-switching: backlog
