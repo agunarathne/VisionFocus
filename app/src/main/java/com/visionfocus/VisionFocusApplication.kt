@@ -11,6 +11,10 @@ import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
 import dagger.hilt.components.SingletonComponent
 import java.io.IOException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 /**
  * Application class for VisionFocus.
@@ -33,6 +37,9 @@ class VisionFocusApplication : Application() {
         private const val TFLITE_MODEL_PATH = "models/ssd_mobilenet_v1_quantized.tflite"
     }
     
+    // Application-scoped coroutine scope for async initialization
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    
     /**
      * Hilt EntryPoint for manual dependency retrieval in Application.onCreate()
      * This allows us to get dependencies AFTER Hilt initialization completes
@@ -49,10 +56,23 @@ class VisionFocusApplication : Application() {
         
         Log.d(TAG, "VisionFocus application starting...")
         
+        // Initialize services in background thread to avoid blocking UI
+        applicationScope.launch {
+            initializeServices()
+        }
+        
+        Log.d(TAG, "VisionFocus application startup complete (services initializing in background)")
+    }
+    
+    /**
+     * Initialize heavy services (TFLite, TTS) on background thread
+     * This prevents blocking the UI thread during app startup
+     */
+    private suspend fun initializeServices() {
         // Get EntryPoint to access Hilt dependencies manually
         // This works because it's called AFTER super.onCreate() when Hilt is ready
         val entryPoint = EntryPointAccessors.fromApplication(
-            this,
+            applicationContext,
             InitializationEntryPoint::class.java
         )
         
@@ -60,7 +80,6 @@ class VisionFocusApplication : Application() {
         if (!verifyModelFileExists()) {
             val errorMsg = "FATAL: TFLite model file not found at assets/$TFLITE_MODEL_PATH"
             Log.e(TAG, errorMsg)
-            Toast.makeText(this, "App initialization failed: Model file missing", Toast.LENGTH_LONG).show()
             // Don't crash - allow app to show error UI
             return
         }
@@ -75,11 +94,9 @@ class VisionFocusApplication : Application() {
             Log.d(TAG, "✓ ObjectRecognitionService initialized successfully (${duration}ms)")
         } catch (e: IllegalStateException) {
             Log.e(TAG, "✗ ObjectRecognitionService initialization failed", e)
-            Toast.makeText(this, "Recognition service initialization failed: ${e.message}", Toast.LENGTH_LONG).show()
             // Don't crash - allow app to show error state
         } catch (e: Exception) {
             Log.e(TAG, "✗ Unexpected error during ObjectRecognitionService initialization", e)
-            Toast.makeText(this, "Unexpected initialization error: ${e.message}", Toast.LENGTH_LONG).show()
         }
         
         // Initialize TTSManager (Text-to-Speech engine)
@@ -91,8 +108,6 @@ class VisionFocusApplication : Application() {
             Log.e(TAG, "✗ TTSManager initialization failed", e)
             // Non-fatal - TTS will be unavailable but app can still function
         }
-        
-        Log.d(TAG, "VisionFocus application startup complete")
     }
     
     /**
