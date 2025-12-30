@@ -38,4 +38,21 @@
     <string name="camera_permission_required">Recognition unavailable. Camera permission required. Double-tap to enable in settings.</string>
     <string name="camera_permission_denied_message">Camera permission denied. Object recognition requires camera access.</string>
     <string name="camera_unavailable">Camera unavailable. Check if another app is using the camera.</string>
+    
+    <!-- Story 2.5: Settings screen strings -->
+    <string name="settings_title">Settings</string>
+    <string name="theme_settings_section">Theme Settings</string>
+    <string name="high_contrast_mode_label">High Contrast Mode</string>
+    <string name="high_contrast_mode_explanation">Pure black and white theme with 7:1 contrast ratio for improved visibility</string>
+    <string name="high_contrast_mode_description_off">High contrast mode, switch, currently off</string>
+    <string name="high_contrast_mode_description_on">High contrast mode, switch, currently on</string>
+    <string name="large_text_mode_label">Large Text Mode</string>
+    <string name="large_text_mode_explanation">Increases all text sizes by 150% for easier reading</string>
+    <string name="large_text_mode_description_off">Large text mode, switch, currently off</string>
+    <string name="large_text_mode_description_on">Large text mode, switch, currently on</string>
+    <string name="theme_change_announcement">%1$s %2$s. App will restart to apply theme.</string>
+    <string name="theme_enabled">enabled</string>
+    <string name="theme_disabled">disabled</string>
+    <string name="settings_menu_description">Settings, opens app settings screen</string>
 </resources>
+

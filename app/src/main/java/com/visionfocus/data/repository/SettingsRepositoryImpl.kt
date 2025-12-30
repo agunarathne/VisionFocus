@@ -32,6 +32,7 @@ class SettingsRepositoryImpl @Inject constructor(
         private const val DEFAULT_SPEECH_RATE = 1.0f
         private val DEFAULT_VERBOSITY_MODE = VerbosityMode.STANDARD
         private const val DEFAULT_HIGH_CONTRAST = false
+        private const val DEFAULT_LARGE_TEXT = false
         
         // Speech rate constraints (FR30, FR46)
         private const val MIN_SPEECH_RATE = 0.5f
@@ -100,6 +101,26 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setHighContrastMode(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferenceKeys.HIGH_CONTRAST_MODE] = enabled
+        }
+    }
+    
+    override fun getLargeTextMode(): Flow<Boolean> {
+        return dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }
+            .map { preferences ->
+                preferences[PreferenceKeys.LARGE_TEXT_MODE] ?: DEFAULT_LARGE_TEXT
+            }
+    }
+    
+    override suspend fun setLargeTextMode(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferenceKeys.LARGE_TEXT_MODE] = enabled
         }
     }
 }

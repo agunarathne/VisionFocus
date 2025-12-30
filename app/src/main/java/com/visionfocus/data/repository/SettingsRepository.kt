@@ -59,4 +59,19 @@ interface SettingsRepository {
      * @param enabled True to enable high-contrast theme (7:1 ratio).
      */
     suspend fun setHighContrastMode(enabled: Boolean)
+    
+    /**
+     * Observes large text mode preference.
+     * 
+     * @return Flow emitting boolean state.
+     *         Default: false if not set.
+     */
+    fun getLargeTextMode(): Flow<Boolean>
+    
+    /**
+     * Updates large text mode preference.
+     * 
+     * @param enabled True to enable large text (150% scaling).
+     */
+    suspend fun setLargeTextMode(enabled: Boolean)
 }

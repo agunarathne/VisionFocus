@@ -55,8 +55,8 @@ development_status:
   2-2-high-confidence-detection-filtering-tts-announcement: done
   2-3-recognition-fab-with-talkback-semantic-annotations: done
   2-4-camera-capture-with-accessibility-focus-management: done
-  2-5-high-contrast-mode-large-text-support: backlog
-  2-6-haptic-feedback-for-recognition-events: backlog
+  2-5-high-contrast-mode-large-text-support: review
+  2-6-haptic-feedback-for-recognition-events: ready-for-dev
   2-7-complete-talkback-navigation-for-primary-flow: done
   epic-2-retrospective: optional
 
@@ -79,11 +79,11 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Personalization & Settings
-  epic-5: backlog
-  5-1-tts-speech-rate-adjustment: backlog
+  epic-5: in-progress
+  5-1-tts-speech-rate-adjustment: ready-for-dev
   5-2-tts-voice-selection: backlog
-  5-3-settings-screen-with-persistent-preferences: backlog
-  5-4-haptic-feedback-intensity-adjustment: backlog
+  5-3-settings-screen-with-persistent-preferences: ready-for-dev
+  5-4-haptic-feedback-intensity-adjustment: ready-for-dev
   5-5-quick-settings-toggle-via-voice-commands: backlog
   epic-5-retrospective: optional
 

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".ui.settings.SettingsFragment">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_medium">
+
+        <!-- Settings Title -->
+        <TextView
+            android:id="@+id/settingsTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_title"
+            android:textAppearance="?attr/textAppearanceHeadline5"
+            android:paddingBottom="@dimen/spacing_large"
+            android:importantForAccessibility="yes" />
+
+        <!-- Theme Settings Section -->
+        <TextView
+            android:id="@+id/themeSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/theme_settings_section"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:paddingTop="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="yes" />
+
+        <!-- High Contrast Mode Switch -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingVertical="@dimen/spacing_small">
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/highContrastSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/min_touch_target_size"
+                android:text="@string/high_contrast_mode_label"
+                android:textAppearance="?attr/textAppearanceBody1"
+                android:contentDescription="@string/high_contrast_mode_description_off" />
+
+            <TextView
+                android:id="@+id/highContrastDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/high_contrast_mode_explanation"
+                android:textAppearance="?attr/textAppearanceCaption"
+                android:paddingStart="16dp"
+                android:paddingEnd="0dp"
+                android:paddingTop="4dp"
+                android:importantForAccessibility="no" />
+        </LinearLayout>
+
+        <!-- Large Text Mode Switch -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingVertical="@dimen/spacing_small">
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/largeTextSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/min_touch_target_size"
+                android:text="@string/large_text_mode_label"
+                android:textAppearance="?attr/textAppearanceBody1"
+                android:contentDescription="@string/large_text_mode_description_off" />
+
+            <TextView
+                android:id="@+id/largeTextDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/large_text_mode_explanation"
+                android:textAppearance="?attr/textAppearanceCaption"
+                android:paddingStart="16dp"
+                android:paddingEnd="0dp"
+                android:paddingTop="4dp"
+                android:importantForAccessibility="no" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

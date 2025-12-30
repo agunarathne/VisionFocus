@@ -1,25 +1,34 @@
 package com.visionfocus
 
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.visionfocus.data.repository.SettingsRepository
 import com.visionfocus.databinding.ActivityMainBinding
 import com.visionfocus.permissions.manager.AccessibilityAnnouncementHelper
 import com.visionfocus.permissions.manager.PermissionManager
 import com.visionfocus.recognition.service.ObjectRecognitionService
+import com.visionfocus.theme.ThemeManager
 import com.visionfocus.tts.engine.TTSManager
+import com.visionfocus.ui.settings.SettingsFragment
 import com.visionfocus.ui.viewmodels.SampleViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
  * Main activity for VisionFocus.
  * 
  * Story 2.3 Task 7: MainActivity integration with RecognitionFragment
+ * Story 2.5: Theme preferences applied on startup before setContentView
  * 
  * @AndroidEntryPoint enables Hilt dependency injection in this Activity.
  * Required for injecting ViewModels and other dependencies.
@@ -35,9 +44,21 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var accessibilityHelper: AccessibilityAnnouncementHelper
     
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+    
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
     
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Story 2.5: Apply theme preferences BEFORE setContentView to prevent flicker
+        // Note: Theme application happens synchronously via runBlocking
+        // Safe in onCreate as preferences load is fast (<5ms from DataStore)
+        kotlinx.coroutines.runBlocking {
+            val highContrast = settingsRepository.getHighContrastMode().first()
+            val largeText = settingsRepository.getLargeTextMode().first()
+            ThemeManager.setThemeWithoutRecreate(this@MainActivity, highContrast, largeText)
+        }
+        
         super.onCreate(savedInstanceState)
         
         // View Binding setup
@@ -122,6 +143,44 @@ class MainActivity : AppCompatActivity() {
             // For Story 1.5, just log the denial
             android.util.Log.w("VisionFocus", "Camera permission denied")
         }
+    }
+    
+    /**
+     * Creates options menu with Settings item.
+     * 
+     * Story 2.5 Task 10: Settings menu for navigation to SettingsFragment
+     */
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+    
+    /**
+     * Handles menu item selections.
+     * 
+     * Story 2.5 Task 10: Navigate to SettingsFragment on Settings menu tap
+     */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> {
+                navigateToSettings()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+    
+    /**
+     * Navigates to SettingsFragment.
+     * 
+     * Replaces current fragment with SettingsFragment and adds to back stack
+     * for proper back navigation.
+     */
+    private fun navigateToSettings() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, SettingsFragment())
+            .addToBackStack(null)
+            .commit()
     }
     
     override fun onDestroy() {

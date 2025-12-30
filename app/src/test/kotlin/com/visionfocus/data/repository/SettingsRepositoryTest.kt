@@ -76,4 +76,10 @@ class SettingsRepositoryTest {
         val highContrast = repository.getHighContrastMode().first()
         assertEquals(false, highContrast)
     }
+    
+    @Test
+    fun `large text mode defaults to false when not set`() = runTest(testDispatcher) {
+        val largeTextMode = repository.getLargeTextMode().first()
+        assertEquals(false, largeTextMode)
+    }
 }

@@ -29,4 +29,10 @@ object PreferenceKeys {
      * Default: false
      */
     val HIGH_CONTRAST_MODE = booleanPreferencesKey("high_contrast_mode")
+    
+    /**
+     * Large text mode enabled state (150% text scaling).
+     * Default: false
+     */
+    val LARGE_TEXT_MODE = booleanPreferencesKey("large_text_mode")
 }

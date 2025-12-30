@@ -39,6 +39,16 @@
         <item name="colorOnPrimary">@color/fab_on_primary_high_contrast</item>
     </style>
     
+    <!-- Large text theme variant (150% scaling) - Story 2.5 -->
+    <style name="Theme.VisionFocus.LargeText" parent="Theme.VisionFocus">
+        <item name="textAppearanceBody1">@style/TextAppearance.VisionFocus.Body1.Large</item>
+    </style>
+    
+    <!-- Combined high-contrast and large text theme - Story 2.5 -->
+    <style name="Theme.VisionFocus.HighContrast.LargeText" parent="Theme.VisionFocus.HighContrast">
+        <item name="textAppearanceBody1">@style/TextAppearance.VisionFocus.Body1.Large</item>
+    </style>
+    
     <style name="TextAppearance.VisionFocus.Body1" parent="TextAppearance.Material3.BodyLarge">
         <item name="android:textSize">20sp</item>  <!-- Increased from default 16sp -->
         <item name="android:fontFamily">sans-serif</item>  <!-- Roboto (system default on Android) -->
