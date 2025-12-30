@@ -77,34 +77,42 @@ class SettingsViewModel @Inject constructor(
         )
     
     /**
-     * Toggles high-contrast mode preference.
+     * Sets high-contrast mode preference.
      * 
-     * Negates current value and persists to DataStore.
+     * Persists to DataStore.
      * UI automatically updates via StateFlow observation.
      * 
      * Note: Theme change requires activity recreation
      * (handled in Fragment/ThemeManager).
+     * 
+     * This is a suspend function to ensure DataStore write completes
+     * before activity recreation.
+     * 
+     * @param enabled The desired high-contrast mode state
      */
-    fun toggleHighContrastMode() {
-        viewModelScope.launch {
-            val newValue = !highContrastMode.value
-            settingsRepository.setHighContrastMode(newValue)
-        }
+    suspend fun setHighContrastMode(enabled: Boolean) {
+        android.util.Log.d("VisionFocus", "[ViewModel] setHighContrastMode called with: $enabled")
+        settingsRepository.setHighContrastMode(enabled)
+        android.util.Log.d("VisionFocus", "[ViewModel] setHighContrastMode DataStore write completed")
     }
     
     /**
-     * Toggles large text mode preference.
+     * Sets large text mode preference.
      * 
-     * Negates current value and persists to DataStore.
+     * Persists to DataStore.
      * UI automatically updates via StateFlow observation.
      * 
      * Note: Theme change requires activity recreation
      * (handled in Fragment/ThemeManager).
+     * 
+     * This is a suspend function to ensure DataStore write completes
+     * before activity recreation.
+     * 
+     * @param enabled The desired large text mode state
      */
-    fun toggleLargeTextMode() {
-        viewModelScope.launch {
-            val newValue = !largeTextMode.value
-            settingsRepository.setLargeTextMode(newValue)
-        }
+    suspend fun setLargeTextMode(enabled: Boolean) {
+        android.util.Log.d("VisionFocus", "[ViewModel] setLargeTextMode called with: $enabled")
+        settingsRepository.setLargeTextMode(enabled)
+        android.util.Log.d("VisionFocus", "[ViewModel] setLargeTextMode DataStore write completed")
     }
 }

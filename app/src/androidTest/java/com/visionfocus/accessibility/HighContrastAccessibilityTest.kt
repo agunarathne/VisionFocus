@@ -13,7 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.test.assertTrue
+import org.junit.Assert.assertTrue
 
 /**
  * Accessibility tests for high-contrast theme (Story 2.5).
@@ -57,8 +57,8 @@ class HighContrastAccessibilityTest {
         // WCAG 2.1 AA requires 7:1 for normal text, 4.5:1 for large text
         // VisionFocus achieves 21:1 (exceeds requirement)
         assertTrue(
-            contrastRatio >= 7.0,
-            "High-contrast theme must meet WCAG 2.1 AA (7:1 ratio). Actual: $contrastRatio:1"
+            "High-contrast theme must meet WCAG 2.1 AA (7:1 ratio). Actual: $contrastRatio:1",
+            contrastRatio >= 7.0
         )
     }
     
@@ -76,16 +76,16 @@ class HighContrastAccessibilityTest {
         val errorRatio = calculateContrastRatio(backgroundColor, errorRed)
         
         assertTrue(
-            successRatio >= 4.5,
-            "Success green must meet 4.5:1 contrast on black. Actual: $successRatio:1"
+            "Success green must meet 4.5:1 contrast on black. Actual: $successRatio:1",
+            successRatio >= 4.5
         )
         assertTrue(
-            warningRatio >= 4.5,
-            "Warning amber must meet 4.5:1 contrast on black. Actual: $warningRatio:1"
+            "Warning amber must meet 4.5:1 contrast on black. Actual: $warningRatio:1",
+            warningRatio >= 4.5
         )
         assertTrue(
-            errorRatio >= 4.5,
-            "Error red must meet 4.5:1 contrast on black. Actual: $errorRatio:1"
+            "Error red must meet 4.5:1 contrast on black. Actual: $errorRatio:1",
+            errorRatio >= 4.5
         )
     }
     
@@ -105,7 +105,7 @@ class HighContrastAccessibilityTest {
                 Thread.sleep(1000)
                 
                 // If we reach here, AccessibilityChecks passed (no errors thrown)
-                assertTrue(true, "High-contrast theme passes Accessibility Scanner")
+                assertTrue("High-contrast theme passes Accessibility Scanner", true)
             }
         }
     }
@@ -127,7 +127,7 @@ class HighContrastAccessibilityTest {
                 // - No text truncation
                 // - Proper content descriptions
                 
-                assertTrue(true, "Large text mode passes Accessibility Scanner")
+                assertTrue("Large text mode passes Accessibility Scanner", true)
             }
         }
     }
@@ -144,7 +144,7 @@ class HighContrastAccessibilityTest {
                 Thread.sleep(1000)
                 
                 // Verify combined mode maintains accessibility compliance
-                assertTrue(true, "Combined mode passes Accessibility Scanner")
+                assertTrue("Combined mode passes Accessibility Scanner", true)
             }
         }
     }

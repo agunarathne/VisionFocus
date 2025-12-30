@@ -50,27 +50,33 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
     
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Story 2.5: Apply theme preferences BEFORE super.onCreate() to prevent flicker
-        // Code review fix: Use runBlocking here as theme MUST be set before Activity creation
-        // This is the ONE acceptable use of runBlocking in onCreate() for theme initialization
-        // DataStore read is fast (<5ms) and blocking is necessary for proper theme application
+        // Story 2.5: Apply theme preferences BEFORE setContentView() to prevent flicker
+        // CRITICAL: super.onCreate() MUST be called first for Hilt dependency injection
+        // After super.onCreate(), settingsRepository is injected and ready to use
+        android.util.Log.d("VisionFocus", "[MainActivity] onCreate started")
+        super.onCreate(savedInstanceState)
+        
+        // Load and apply theme preferences (runBlocking is acceptable here - fast DataStore read)
         kotlinx.coroutines.runBlocking {
             try {
                 val highContrast = settingsRepository.getHighContrastMode().first()
                 val largeText = settingsRepository.getLargeTextMode().first()
+                android.util.Log.d("VisionFocus", "[MainActivity] Theme preferences: highContrast=$highContrast, largeText=$largeText")
                 ThemeManager.setThemeWithoutRecreate(this@MainActivity, highContrast, largeText)
+                android.util.Log.d("VisionFocus", "[MainActivity] Theme applied successfully")
             } catch (e: Exception) {
-                android.util.Log.e("VisionFocus", "Failed to load theme preferences", e)
+                android.util.Log.e("VisionFocus", "[MainActivity] Failed to load theme preferences", e)
                 // Fallback to default theme on error
                 ThemeManager.setThemeWithoutRecreate(this@MainActivity, false, false)
             }
         }
         
-        super.onCreate(savedInstanceState)
-        
         // View Binding setup
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        // Story 2.5: Set up toolbar with menu
+        setSupportActionBar(binding.toolbar)
         
         // Fix Issue #4: Enable TalkBack announcements on root view
         binding.root.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES

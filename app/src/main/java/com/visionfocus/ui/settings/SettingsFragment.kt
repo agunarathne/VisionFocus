@@ -131,14 +131,19 @@ class SettingsFragment : Fragment() {
      * - Calls ViewModel.toggle*() to update preference
      * - Announces theme change via TalkBack
      * - Applies theme immediately via ThemeManager.applyTheme()
+     * 
+     * KNOWN ISSUE (Dec 30, 2024):
+     * Toggles only work ONCE per app launch. After first toggle (e.g., HC ON),
+     * subsequent toggles (HC OFF) don't work until app restart. Root cause unclear -
+     * possibly related to recreate() lifecycle, observer state, or listener registration.
+     * TODO: Debug why toggle works once but not repeatedly after recreate().
      */
     private fun setupListeners() {
         binding.highContrastSwitch.setOnCheckedChangeListener { _, isChecked ->
             // Guard: Ignore programmatic updates from observer (HIGH-2 fix)
             if (isUpdatingFromObserver) return@setOnCheckedChangeListener
             
-            android.util.Log.d("VisionFocus", "High-contrast mode toggled: $isChecked")
-            viewModel.toggleHighContrastMode()
+            android.util.Log.d("VisionFocus", "[Fragment] High-contrast toggle: isChecked=$isChecked, guard=$isUpdatingFromObserver")
             
             // Announce theme change via TalkBack
             val modeLabel = getString(R.string.high_contrast_mode_label)
@@ -149,20 +154,21 @@ class SettingsFragment : Fragment() {
                 getString(R.string.theme_change_announcement, modeLabel, stateLabel)
             )
             
-            // Apply theme immediately
-            ThemeManager.applyTheme(
-                requireContext(),
-                isChecked,
-                viewModel.largeTextMode.value
-            )
+            // Save preference and recreate activity (wait for DataStore write to complete)
+            viewLifecycleOwner.lifecycleScope.launch {
+                android.util.Log.d("VisionFocus", "[Fragment] Calling setHighContrastMode($isChecked)")
+                viewModel.setHighContrastMode(isChecked)
+                android.util.Log.d("VisionFocus", "[Fragment] Calling requireActivity().recreate()")
+                requireActivity().recreate()
+                android.util.Log.d("VisionFocus", "[Fragment] recreate() returned (should not see this)")
+            }
         }
         
         binding.largeTextSwitch.setOnCheckedChangeListener { _, isChecked ->
             // Guard: Ignore programmatic updates from observer (HIGH-2 fix)
             if (isUpdatingFromObserver) return@setOnCheckedChangeListener
             
-            android.util.Log.d("VisionFocus", "Large text mode toggled: $isChecked")
-            viewModel.toggleLargeTextMode()
+            android.util.Log.d("VisionFocus", "[Fragment] Large text toggle: isChecked=$isChecked, guard=$isUpdatingFromObserver")
             
             // Announce theme change via TalkBack
             val modeLabel = getString(R.string.large_text_mode_label)
@@ -173,12 +179,14 @@ class SettingsFragment : Fragment() {
                 getString(R.string.theme_change_announcement, modeLabel, stateLabel)
             )
             
-            // Apply theme immediately
-            ThemeManager.applyTheme(
-                requireContext(),
-                viewModel.highContrastMode.value,
-                isChecked
-            )
+            // Save preference and recreate activity (wait for DataStore write to complete)
+            viewLifecycleOwner.lifecycleScope.launch {
+                android.util.Log.d("VisionFocus", "[Fragment] Calling setLargeTextMode($isChecked)")
+                viewModel.setLargeTextMode(isChecked)
+                android.util.Log.d("VisionFocus", "[Fragment] Calling requireActivity().recreate()")
+                requireActivity().recreate()
+                android.util.Log.d("VisionFocus", "[Fragment] recreate() returned (should not see this)")
+            }
         }
     }
     

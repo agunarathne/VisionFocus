@@ -25,8 +25,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import javax.inject.Inject
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 
 /**
  * Integration tests for theme switching (Story 2.5 Task 12).
@@ -143,8 +143,8 @@ class ThemeSwitchingIntegrationTest {
         val highContrast = runBlocking { settingsRepository.getHighContrastMode().first() }
         val largeText = runBlocking { settingsRepository.getLargeTextMode().first() }
         
-        assertTrue(highContrast, "High-contrast mode should be saved")
-        assertTrue(largeText, "Large text mode should be saved")
+        assertTrue("High-contrast mode should be saved", highContrast)
+        assertTrue("Large text mode should be saved", largeText)
         
         // Step 3: Simulate app restart by launching new activity
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
