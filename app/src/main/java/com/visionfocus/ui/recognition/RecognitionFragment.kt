@@ -488,25 +488,34 @@ class RecognitionFragment : Fragment() {
                 // Check if camera is initialized, start it if needed
                 if (imageCapture == null && hasCameraPermission()) {
                     android.util.Log.d("RecognitionFragment", "Camera not started - initializing now")
-                    startCamera()
-                    // Wait for camera to be ready before capturing
                     viewLifecycleOwner.lifecycleScope.launch {
-                        // Wait for camera to bind (max 2 seconds)
-                        var attempts = 0
-                        while (imageCapture == null && attempts < 20) {
-                            delay(100)
-                            attempts++
-                        }
-                        if (imageCapture != null) {
-                            captureFrame()
-                        } else {
-                            handleCameraError("Camera failed to initialize")
+                        try {
+                            startCamera()
+                            // Wait for camera to be ready before capturing (max 2 seconds)
+                            var attempts = 0
+                            while (imageCapture == null && attempts < 20) {
+                                delay(100)
+                                attempts++
+                                android.util.Log.d("RecognitionFragment", "Waiting for camera... attempt $attempts")
+                            }
+                            if (imageCapture != null) {
+                                android.util.Log.d("RecognitionFragment", "Camera ready, capturing frame")
+                                captureFrame()
+                            } else {
+                                android.util.Log.e("RecognitionFragment", "Camera initialization timeout")
+                                handleCameraError("Camera failed to initialize")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("RecognitionFragment", "Camera start failed", e)
+                            handleCameraError("Camera error: ${e.message}")
                         }
                     }
                 } else if (!hasCameraPermission()) {
+                    android.util.Log.e("RecognitionFragment", "Camera permission not granted")
                     handleCameraError("Camera permission not granted")
                 } else {
                     // Camera already initialized - capture immediately after stabilization
+                    android.util.Log.d("RecognitionFragment", "Camera already initialized, capturing after delay")
                     viewLifecycleOwner.lifecycleScope.launch {
                         delay(STABILIZATION_DELAY_MS)
                         captureFrame()
