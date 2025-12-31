@@ -1,7 +1,7 @@
 package com.visionfocus.accessibility.haptic
 
 /**
- * Distinct haptic patterns for recognition events (Story 2.6)
+ * Distinct haptic patterns for recognition events (Story 2.6) and voice commands (Story 3.2)
  * 
  * Patterns designed for tactile discrimination by deaf-blind users:
  * 
@@ -16,6 +16,10 @@ package com.visionfocus.accessibility.haptic
  * - **RecognitionError**: Long vibration (300ms)
  *   - Feels like: Extended buzz - "Something went wrong, pay attention"
  *   - Triggers on: Any → Error or CameraError state transition
+ * 
+ * - **CommandExecuted**: Single short vibration (100ms) - Story 3.2
+ *   - Feels like: Brief tap - "Command received and executing"
+ *   - Triggers on: Voice command execution
  * 
  * Pattern distinctness designed based on UX research principles (3x duration difference).
  * TODO: Validate with deaf-blind participants before production release.
@@ -50,4 +54,15 @@ sealed class HapticPattern {
      * immediate tactile distinction for urgent error attention.
      */
     object RecognitionError : HapticPattern()
+    
+    /**
+     * Single short vibration indicating voice command executed
+     * Story 3.2 Task 4.4: Haptic feedback on command execution
+     * Duration: 100ms
+     * Timing: [0ms, 100ms]
+     * 
+     * Same pattern as RecognitionStart for consistency -
+     * indicates system acknowledgment of user action.
+     */
+    object CommandExecuted : HapticPattern()
 }

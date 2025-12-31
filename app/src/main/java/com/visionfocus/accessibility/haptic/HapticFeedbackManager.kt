@@ -162,6 +162,15 @@ class HapticFeedbackManager @Inject constructor(
                     repeat = -1
                 )
             }
+            
+            HapticPattern.CommandExecuted -> {
+                // Story 3.2 Task 4.4: Same pattern as RecognitionStart for consistency
+                vibratePattern(
+                    timings = longArrayOf(0, 100), // [0ms delay, 100ms vibration]
+                    amplitudes = intArrayOf(0, getAmplitude(intensity)),
+                    repeat = -1
+                )
+            }
         }
         } catch (e: SecurityException) {
             android.util.Log.e(TAG, "Haptic trigger failed: VIBRATE permission revoked", e)

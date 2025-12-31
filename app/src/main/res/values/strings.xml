@@ -93,4 +93,24 @@
     <string name="haptic_strong_description">Strong haptic feedback, powerful vibrations, radio button</string>
     <string name="haptic_unavailable">Haptic feedback unavailable. This device has no vibrator.</string>
     <string name="haptic_sample_triggered">Sample vibration at %1$s intensity</string>
+    
+    <!-- Story 3.2: Voice command confirmation messages -->
+    <string name="cmd_recognize_received">Recognize command received</string>
+    <string name="cmd_navigate_received">Opening navigation</string>
+    <string name="cmd_repeat_received">Repeating last announcement</string>
+    <string name="cmd_cancel_received">Canceling operation</string>
+    <string name="cmd_settings_received">Opening settings</string>
+    <string name="cmd_save_location_received">Saving current location</string>
+    <string name="cmd_high_contrast_on">High contrast on</string>
+    <string name="cmd_high_contrast_off">High contrast off</string>
+    <string name="cmd_increase_speed">Increasing speech speed</string>
+    <string name="cmd_decrease_speed">Decreasing speech speed</string>
+    <string name="cmd_history_received">Opening history</string>
+    <string name="cmd_help_received">Available commands</string>
+    <string name="cmd_back_received">Going back</string>
+    <string name="cmd_home_received">Going home</string>
+    <string name="cmd_where_am_i">Getting your location</string>
+    <string name="cmd_what_do_i_see">Repeating last recognition</string>
+    <string name="cmd_unrecognized">Command not recognized. Say \'Help\' for available commands.</string>
+    <string name="cmd_fuzzy_match_prefix">Did you mean \'%1$s\'?</string>
 </resources>

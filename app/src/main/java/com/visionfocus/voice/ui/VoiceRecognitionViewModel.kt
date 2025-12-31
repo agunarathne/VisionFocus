@@ -8,6 +8,7 @@ import com.visionfocus.accessibility.haptic.HapticPattern
 import com.visionfocus.permissions.manager.AccessibilityAnnouncementHelper
 import com.visionfocus.permissions.manager.PermissionManager
 import com.visionfocus.tts.engine.TTSManager
+import com.visionfocus.voice.processor.VoiceCommandProcessor
 import com.visionfocus.voice.recognizer.VoiceRecognitionManager
 import com.visionfocus.voice.recognizer.VoiceRecognitionState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +21,7 @@ import javax.inject.Inject
 /**
  * Voice Recognition ViewModel
  * Story 3.1 Task 7: State management for voice recognition UI
+ * Story 3.2 Task 3: Voice command processor integration
  * 
  * Manages voice recognition lifecycle, permission state, and UI interactions.
  * Integrates with existing accessibility infrastructure (TTSManager, HapticFeedbackManager).
@@ -30,22 +32,26 @@ import javax.inject.Inject
  * - Coordinate TTS announcements for state changes
  * - Provide haptic feedback on button interactions
  * - Stop TTS before starting listening (avoid self-recognition)
+ * - Process voice commands via VoiceCommandProcessor (Story 3.2)
  * 
  * Integration Points:
  * - VoiceRecognitionManager: Core speech recognition logic
+ * - VoiceCommandProcessor: Command execution (Story 3.2)
  * - PermissionManager: Microphone permission checks
  * - HapticFeedbackManager: Tactile feedback on button press
  * - TTSManager: TTS announcements and stop before listening
  * 
  * @param voiceRecognitionManager Core voice recognition manager
+ * @param voiceCommandProcessor Voice command dispatcher (Story 3.2)
  * @param permissionManager Permission state checks
  * @param hapticManager Haptic feedback
  * @param ttsManager TTS control for announcements and stopping before listening
- * @since Story 3.1
+ * @since Story 3.1, extended Story 3.2
  */
 @HiltViewModel
 class VoiceRecognitionViewModel @Inject constructor(
     private val voiceRecognitionManager: VoiceRecognitionManager,
+    private val voiceCommandProcessor: VoiceCommandProcessor,
     private val permissionManager: PermissionManager,
     private val hapticManager: HapticFeedbackManager,
     private val ttsManager: TTSManager
@@ -91,11 +97,15 @@ class VoiceRecognitionViewModel @Inject constructor(
             handleStateChange(newState)
         }
         
-        // Set recognized text callback (Story 3.2 integration point)
+        // Set recognized text callback (Story 3.2 Task 3.2)
         voiceRecognitionManager.setOnRecognizedTextCallback { transcription ->
             Log.d(TAG, "Recognized text: \"$transcription\"")
-            // Story 3.2 will implement command processing here
-            // For now, just log the transcription
+            
+            // Story 3.2 Task 3.2: Process command via VoiceCommandProcessor
+            viewModelScope.launch {
+                val result = voiceCommandProcessor.processCommand(transcription)
+                Log.d(TAG, "Command processing result: $result")
+            }
         }
     }
     
@@ -183,6 +193,27 @@ class VoiceRecognitionViewModel @Inject constructor(
     fun stopListening() {
         Log.d(TAG, "stopListening() called")
         voiceRecognitionManager.stopListening()
+    }
+    
+    /**
+     * Cancel listening and announce cancellation.
+     * Story 3.2: CancelCommand integration
+     * 
+     * Stops listening and provides TTS feedback for cancellation.
+     */
+    fun cancelListening() {
+        Log.d(TAG, "cancelListening() called - voice command initiated cancellation")
+        
+        // Stop listening
+        voiceRecognitionManager.stopListening()
+        
+        // Reset state to Idle
+        _state.value = VoiceRecognitionState.Idle
+        
+        // Announce cancellation
+        viewModelScope.launch {
+            ttsManager.announce("Voice recognition cancelled")
+        }
     }
     
     /**

@@ -2,6 +2,10 @@ package com.visionfocus
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -64,6 +68,24 @@ class MainActivity : AppCompatActivity() {
     // Story 3.1 Task 4.3: Pulsing animation for listening state
     private var pulsingAnimator: AnimatorSet? = null
     
+    // Story 3.2: Broadcast receiver for voice commands
+    private val voiceCommandReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                ACTION_RECOGNIZE -> {
+                    // RecognizeCommand: Trigger object recognition
+                    // TODO Epic 2: Start camera capture and recognition
+                    android.util.Log.d("VisionFocus", "RecognizeCommand received - camera recognition will be implemented in Epic 2")
+                }
+                ACTION_CANCEL -> {
+                    // CancelCommand: Cancel voice recognition
+                    voiceViewModel.cancelListening()
+                    android.util.Log.d("VisionFocus", "CancelCommand received - voice recognition cancelled")
+                }
+            }
+        }
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         // Story 2.5: Apply theme preferences BEFORE setContentView() to prevent flicker
         // CRITICAL: super.onCreate() MUST be called first for Hilt dependency injection
@@ -111,6 +133,22 @@ class MainActivity : AppCompatActivity() {
         // Story 3.1: Setup voice button and observe voice recognition state
         setupVoiceButton()
         observeVoiceRecognitionState()
+        
+        // Story 3.2: Register broadcast receiver for voice commands
+        registerVoiceCommandReceiver()
+    }
+    
+    /**
+     * Register broadcast receiver for voice commands.
+     * Story 3.2 Task 6: RecognizeCommand and CancelCommand integration
+     */
+    private fun registerVoiceCommandReceiver() {
+        val filter = IntentFilter().apply {
+            addAction(ACTION_RECOGNIZE)
+            addAction(ACTION_CANCEL)
+        }
+        registerReceiver(voiceCommandReceiver, filter, RECEIVER_NOT_EXPORTED)
+        android.util.Log.d("VisionFocus", "Voice command receiver registered")
     }
     
     private fun setupPermissionLaunchers() {
@@ -446,9 +484,24 @@ class MainActivity : AppCompatActivity() {
         // Story 3.1: Stop pulsing animation if active
         stopPulsingAnimation()
         
+        // Story 3.2: Unregister broadcast receiver
+        try {
+            unregisterReceiver(voiceCommandReceiver)
+            android.util.Log.d("VisionFocus", "Voice command receiver unregistered")
+        } catch (e: IllegalArgumentException) {
+            // Receiver not registered - safe to ignore
+            android.util.Log.d("VisionFocus", "Voice command receiver was not registered")
+        }
+        
         // Note: ObjectRecognitionService and TTSManager are Application-scoped singletons
         // They are NOT cleaned up when Activity is destroyed - they live for app lifetime
         // Cleanup happens when Android OS kills the app process
         // VoiceRecognitionManager is cleaned up by VoiceRecognitionViewModel.onCleared()
+    }
+    
+    companion object {
+        // Story 3.2: Voice command broadcast actions
+        const val ACTION_RECOGNIZE = "com.visionfocus.ACTION_RECOGNIZE"
+        const val ACTION_CANCEL = "com.visionfocus.ACTION_CANCEL"
     }
 }
