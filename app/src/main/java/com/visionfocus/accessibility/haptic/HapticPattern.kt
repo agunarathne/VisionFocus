@@ -65,4 +65,16 @@ sealed class HapticPattern {
      * indicates system acknowledgment of user action.
      */
     object CommandExecuted : HapticPattern()
+    
+    /**
+     * Short vibration indicating operation cancelled
+     * Story 3.3 Task 2.4: Distinct cancellation feedback
+     * Duration: 50ms
+     * Timing: [0ms, 50ms]
+     * 
+     * Shorter than CommandExecuted (50ms vs 100ms) to create
+     * distinct tactile sensation for cancellation vs confirmation.
+     * Feels like: Quick tap - "Action stopped"
+     */
+    object Cancelled : HapticPattern()
 }

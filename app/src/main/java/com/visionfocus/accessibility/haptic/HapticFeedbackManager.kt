@@ -171,6 +171,15 @@ class HapticFeedbackManager @Inject constructor(
                     repeat = -1
                 )
             }
+            
+            HapticPattern.Cancelled -> {
+                // Story 3.3 Task 2.4: Distinct cancellation pattern (shorter than CommandExecuted)
+                vibratePattern(
+                    timings = longArrayOf(0, 50), // [0ms delay, 50ms vibration]
+                    amplitudes = intArrayOf(0, getAmplitude(intensity)),
+                    repeat = -1
+                )
+            }
         }
         } catch (e: SecurityException) {
             android.util.Log.e(TAG, "Haptic trigger failed: VIBRATE permission revoked", e)

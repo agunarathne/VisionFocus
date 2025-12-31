@@ -9,6 +9,8 @@ import com.visionfocus.recognition.processing.ConfidenceFilter
 import com.visionfocus.recognition.repository.RecognitionRepository
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.tts.formatter.TTSPhraseFormatter
+import com.visionfocus.voice.operation.Operation
+import com.visionfocus.voice.operation.OperationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,7 +21,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel for recognition UI (Story 2.3, 2.4, 2.6)
+ * ViewModel for recognition UI (Story 2.3, 2.4, 2.6, 3.3)
  * 
  * Orchestrates:
  * - Story 2.1: RecognitionRepository.performRecognition() (TFLite inference)
@@ -27,17 +29,20 @@ import javax.inject.Inject
  * - Story 2.3: UI state management with StateFlow
  * - Story 2.4: Camera lifecycle integration with capture state
  * - Story 2.6: Haptic feedback patterns for recognition events
+ * - Story 3.3: Operation cancellation support via OperationManager
  * 
  * State transitions:
  * Idle → Capturing → Recognizing → Announcing → Success → Idle (2s delay)
  * Idle → Capturing → Recognizing → Error → Idle (3s delay)
  * Idle → Capturing → CameraError → Idle (3s delay)
+ * Any state → Cancelled → Idle (Story 3.3)
  * 
  * @param recognitionRepository Story 2.1 - Object recognition with TFLite
  * @param confidenceFilter Story 2.2 - Convert DetectionResult to FilteredDetection
  * @param ttsManager Story 2.2 - Text-to-speech engine
  * @param ttsFormatter Story 2.2 - Confidence-aware phrase formatting
  * @param hapticFeedbackManager Story 2.6 - Haptic feedback for deaf-blind users
+ * @param operationManager Story 3.3 - Operation cancellation tracking
  */
 @HiltViewModel
 class RecognitionViewModel @Inject constructor(
@@ -45,7 +50,8 @@ class RecognitionViewModel @Inject constructor(
     private val confidenceFilter: ConfidenceFilter,
     private val ttsManager: TTSManager,
     private val ttsFormatter: TTSPhraseFormatter,
-    private val hapticFeedbackManager: HapticFeedbackManager
+    private val hapticFeedbackManager: HapticFeedbackManager,
+    private val operationManager: OperationManager
 ) : ViewModel() {
     
     companion object {
@@ -130,6 +136,13 @@ class RecognitionViewModel @Inject constructor(
     fun performRecognition(bitmap: Bitmap) {
         recognitionJob = viewModelScope.launch {
             try {
+                // Story 3.3 Task 4.2: Register operation BEFORE state transition (race condition fix)
+                operationManager.startOperation(
+                    Operation.RecognitionOperation(
+                        onCancel = { cancelRecognitionInternal() }
+                    )
+                )
+                
                 // Story 2.4 Task 9.2: State transition - Capturing → Recognizing
                 _uiState.value = RecognitionUiState.Recognizing
                 
@@ -139,6 +152,7 @@ class RecognitionViewModel @Inject constructor(
                     recognitionRepository.ensureInitialized()
                 } catch (e: Exception) {
                     android.util.Log.e(TAG, "Failed to ensure initialization", e)
+                    operationManager.completeOperation()
                     handleError("Initialization failed: ${e.message}")
                     return@launch
                 }
@@ -148,6 +162,8 @@ class RecognitionViewModel @Inject constructor(
                 
                 // Story 2.4: Handle empty results (no objects detected)
                 if (result.detections.isEmpty()) {
+                    operationManager.completeOperation()
+                    
                     _uiState.value = RecognitionUiState.Error(
                         "No objects detected. Try pointing camera at a different area."
                     )
@@ -192,20 +208,26 @@ class RecognitionViewModel @Inject constructor(
                     android.util.Log.w(TAG, "Haptic feedback failed during success state", e)
                 }
                 
+                // Story 3.3: Complete operation after success
+                operationManager.completeOperation()
+                
                 // Auto-return to Idle after brief delay (allows user to see success)
                 delay(SUCCESS_DELAY_MS)
                 _uiState.value = RecognitionUiState.Idle
                 
             } catch (e: SecurityException) {
                 // Camera permission denied
+                operationManager.completeOperation()
                 handleError("Camera permission required. Please enable camera access in settings.")
                 
             } catch (e: IllegalStateException) {
                 // TTS not initialized or camera not ready
+                operationManager.completeOperation()
                 handleError(e.message ?: "Recognition service not ready. Please try again.")
                 
             } catch (e: Exception) {
                 // Generic recognition failure
+                operationManager.completeOperation()
                 handleError(e.message ?: "Recognition failed. Please try again.")
             }
         }
@@ -249,11 +271,46 @@ class RecognitionViewModel @Inject constructor(
      * Cancel recognition mid-flow
      * 
      * Story 2.4 Task 5: Back button cancellation
-     * Story 2.4 Task 6: Voice command cancellation (placeholder for Epic 3)
+     * Story 3.3 Task 4: Enhanced to support voice command cancellation via OperationManager
+     * 
+     * Public entry point for cancellation - used by voice commands.
+     * Delegates to internal cancellation logic.
      */
     fun cancelRecognition() {
+        viewModelScope.launch {
+            cancelRecognitionInternal()
+        }
+    }
+    
+    /**
+     * Internal cancellation implementation
+     * Story 3.3 Task 4: Cancellation logic invoked by OperationManager
+     * 
+     * AC: Cancel works mid-recognition (camera, inference, or TTS phase)
+     * 
+     * Cancellation phases:
+     * - Capturing: Cancel before inference starts
+     * - Recognizing: Cancel TFLite inference (Job cancellation)
+     * - Announcing: Stop TTS mid-announcement
+     * 
+     * Note: "Cancelled" announcement handled by OperationManager
+     */
+    private suspend fun cancelRecognitionInternal() {
+        android.util.Log.d(TAG, "Cancelling recognition, current state: ${_uiState.value::class.simpleName}")
+        
+        // Cancel recognition job if running
         recognitionJob?.cancel()
+        
+        // Stop TTS if announcing
+        if (_uiState.value is RecognitionUiState.Announcing) {
+            ttsManager.stop()
+        }
+        
+        // Transition directly to Idle (cancellation announced by OperationManager)
+        // Note: Removed intermediate Cancelled state to avoid unnecessary StateFlow emission
         _uiState.value = RecognitionUiState.Idle
+        
+        android.util.Log.d(TAG, "Recognition cancelled successfully")
     }
     
     /**

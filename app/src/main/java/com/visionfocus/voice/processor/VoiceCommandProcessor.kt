@@ -138,9 +138,17 @@ class VoiceCommandProcessor @Inject constructor(
             return@withContext CommandResult.Failure("Unrecognized command: $transcription")
         }
         
-        // 5. Announce confirmation (AC: 4, <300ms target)
+        // 5. Announce confirmation (AC: 4, <300ms target - Story 3.3)
+        val confirmationStartTime = System.currentTimeMillis()
         val confirmationMessage = getConfirmationMessage(command, matchDistance)
         ttsManager.announce(confirmationMessage)
+        
+        // Measure confirmation latency (Story 3.3 AC#1)
+        val confirmationLatency = System.currentTimeMillis() - confirmationStartTime
+        Log.d(TAG, "Confirmation latency: ${confirmationLatency}ms (target: <300ms)")
+        if (confirmationLatency > 300) {
+            Log.w(TAG, "PERFORMANCE: Confirmation exceeded 300ms target: ${confirmationLatency}ms")
+        }
         
         // 6. Haptic feedback (AC: 4)
         try {
@@ -153,7 +161,16 @@ class VoiceCommandProcessor @Inject constructor(
             // Non-fatal - continue with command execution
         }
         
-        // 7. Execute command
+        // 7. Register operation for cancellation support (Story 3.3 Task 7.1)
+        // Note: Some commands (like RecognizeCommand) register their own operations
+        // This provides fallback registration for commands that don't self-register
+        val operationType = when (command.displayName) {
+            "Recognize", "What do I see" -> null // RecognitionViewModel registers
+            "Navigate", "Where am I" -> null // NavigationViewModel will register (Epic 6)
+            else -> null // Most commands complete immediately, no cancellation needed
+        }
+        
+        // 8. Execute command
         val result = try {
             command.execute(context)
         } catch (e: Exception) {

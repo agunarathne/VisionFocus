@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.ui.recognition.RecognitionViewModel
+import com.visionfocus.voice.operation.OperationManager
 import com.visionfocus.voice.processor.CommandResult
 import com.visionfocus.voice.processor.VoiceCommand
 import javax.inject.Inject
@@ -65,9 +66,10 @@ class RepeatCommand @Inject constructor(
 /**
  * Cancel Command
  * Story 3.2 Task 2.4 & 8.3: Stop active operation
+ * Story 3.3 Task 3: Enhanced with operation-aware cancellation
  * 
- * Cancels any active operation (recognition or navigation).
- * Broadcasts intent to MainActivity to cancel recognition.
+ * Cancels any active operation (recognition or navigation) using OperationManager.
+ * Context-aware cancellation ensures the right operation is stopped.
  * 
  * Command variations:
  * - "cancel"
@@ -75,17 +77,20 @@ class RepeatCommand @Inject constructor(
  * - "abort"
  * - "never mind"
  * 
- * @param ttsManager TTS engine for announcements
- * @since Story 3.2
+ * AC: Cancel works mid-recognition and mid-navigation
+ * AC: Announce "Cancelled" after successful cancellation
+ * AC: Handle case where no operation is active: "Nothing to cancel"
+ * 
+ * @param operationManager Tracks and cancels active operations
+ * @since Story 3.2, enhanced in Story 3.3
  */
 @Singleton
 class CancelCommand @Inject constructor(
-    private val ttsManager: TTSManager
+    private val operationManager: OperationManager
 ) : VoiceCommand {
     
     companion object {
         private const val TAG = "CancelCommand"
-        const val ACTION_CANCEL = "com.visionfocus.ACTION_CANCEL"
     }
     
     override val displayName: String = "Cancel"
@@ -98,26 +103,17 @@ class CancelCommand @Inject constructor(
     )
     
     override suspend fun execute(context: Context): CommandResult {
-        return try {
-            Log.d(TAG, "Executing Cancel command")
-            
-            // Broadcast intent to MainActivity to cancel recognition
-            val intent = android.content.Intent(ACTION_CANCEL).apply {
-                setPackage(context.packageName)
-            }
-            context.sendBroadcast(intent)
-            
-            // Note: VoiceCommandProcessor already announced "Canceling operation"
-            // Brief "Cancelled" confirms completion
-            ttsManager.announce("Cancelled")
-            
-            Log.d(TAG, "Cancel command executed")
-            CommandResult.Success("Operation cancelled")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to cancel operation", e)
-            ttsManager.announce("Nothing to cancel")
-            CommandResult.Failure("Cancel error: ${e.message}")
-        }
+        Log.d(TAG, "Executing Cancel command")
+        
+        // Query OperationManager for active operation and cancel it
+        // OperationManager handles:
+        // - Invoking operation-specific cancellation callback
+        // - Announcing "Cancelled" or "Nothing to cancel"
+        // - Haptic feedback
+        val result = operationManager.cancelOperation()
+        
+        Log.d(TAG, "Cancel command executed: ${if (result is CommandResult.Success) "operation cancelled" else "nothing to cancel"}")
+        return result
     }
 }
 

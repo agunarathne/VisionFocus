@@ -38,6 +38,9 @@
     <!-- MEDIUM-1: Voice error messages (moved from VoiceRecognitionManager) -->
     <string name="voice_error_no_match">Didn\'t catch that. Please try again.</string>
     <string name="voice_error_timeout">Voice command timed out</string>
+    <string name="voice_nothing_to_cancel">Nothing to cancel</string>
+    <string name="voice_cancelled">Cancelled</string>
+    <string name="voice_cancellation_failed">Cancellation failed. Please try again.</string>
     <string name="voice_error_audio">Microphone error. Please check device settings.</string>
     <string name="voice_error_network">Network unavailable. Voice recognition requires internet.</string>
     <string name="voice_error_permission">Microphone permission required for voice commands</string>

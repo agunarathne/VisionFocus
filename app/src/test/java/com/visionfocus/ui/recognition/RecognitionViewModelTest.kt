@@ -66,6 +66,7 @@ class RecognitionViewModelTest {
         mockTtsManager = mock()
         mockTtsFormatter = mock()
         val mockHapticFeedbackManager = mock<com.visionfocus.accessibility.haptic.HapticFeedbackManager>()
+        val mockOperationManager = mock<com.visionfocus.voice.operation.OperationManager>()
         
         // Set test dispatcher for coroutines
         Dispatchers.setMain(testDispatcher)
@@ -76,8 +77,10 @@ class RecognitionViewModelTest {
             confidenceFilter = mockConfidenceFilter,
             ttsManager = mockTtsManager,
             ttsFormatter = mockTtsFormatter,
-            hapticFeedbackManager = mockHapticFeedbackManager
+            hapticFeedbackManager = mockHapticFeedbackManager,
+            operationManager = mockOperationManager
         )
+    }
     }
     
     @After

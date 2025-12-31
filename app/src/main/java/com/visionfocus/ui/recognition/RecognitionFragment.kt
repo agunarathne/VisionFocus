@@ -575,6 +575,18 @@ class RecognitionFragment : Fragment() {
                 binding.recognizeFab.setImageResource(R.drawable.ic_camera_error)
                 announceForAccessibility(getString(R.string.camera_error_message))
             }
+            
+            is RecognitionUiState.Cancelled -> {
+                // Story 3.3: Cancelled state - restore to idle immediately
+                binding.recognizeFab.isEnabled = true
+                binding.recognizeFab.setImageResource(R.drawable.ic_camera)
+                // Note: "Cancelled" announcement handled by OperationManager
+                // Restore focus to FAB for next command
+                if (shouldRestoreFocus) {
+                    restoreFocusToFab()
+                    shouldRestoreFocus = false
+                }
+            }
         }
     }
     

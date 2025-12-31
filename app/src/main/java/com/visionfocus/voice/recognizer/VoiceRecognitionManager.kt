@@ -53,6 +53,7 @@ class VoiceRecognitionManager @Inject constructor(
         private const val SILENCE_TIMEOUT_MS = 5000L
         private const val MAX_RESULTS = 1
         private const val WATCHDOG_TIMEOUT_MS = 15000L // HIGH-6: Reset if no callback after 15s
+        private const val LISTENING_TIMEOUT_MS = 10000L // Story 3.3 AC: 8 - 10-second timeout
     }
     
     // State management
@@ -68,6 +69,9 @@ class VoiceRecognitionManager @Inject constructor(
     // HIGH-6: Watchdog timer to reset stuck listening state
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
     private var watchdogJob: Job? = null
+    
+    // Story 3.3 Task 5: 10-second listening timeout
+    private var listeningTimeoutJob: Job? = null
     
     // Callback for recognized text (passed to command processor in Story 3.2)
     private var onRecognizedTextCallback: ((String) -> Unit)? = null
@@ -162,6 +166,9 @@ class VoiceRecognitionManager @Inject constructor(
             
             // HIGH-6: Start watchdog timer to reset if stuck
             startWatchdogTimer()
+            
+            // Story 3.3 Task 5: Start 10-second listening timeout
+            startListeningTimeout()
         } catch (e: Exception) {
             Log.e(TAG, "Error starting speech recognition", e)
             // MEDIUM-3: Analytics hook - recognition start failed
@@ -182,6 +189,7 @@ class VoiceRecognitionManager @Inject constructor(
     fun stopListening() {
         Log.d(TAG, "stopListening() called")
         cancelWatchdogTimer() // HIGH-6
+        cancelListeningTimeout() // Story 3.3
         speechRecognizer?.stopListening()
         isRecognizerActive = false // HIGH-1
         _state.value = VoiceRecognitionState.Idle
@@ -233,6 +241,35 @@ class VoiceRecognitionManager @Inject constructor(
     private fun cancelWatchdogTimer() {
         watchdogJob?.cancel()
         watchdogJob = null
+    }
+    
+    /**
+     * Story 3.3 Task 5.1: Start 10-second timeout timer for listening mode.
+     * AC: Timeout exits listening mode with announcement: "Voice command timed out"
+     */
+    private fun startListeningTimeout() {
+        cancelListeningTimeout()
+        listeningTimeoutJob = coroutineScope.launch {
+            delay(LISTENING_TIMEOUT_MS)
+            Log.d(TAG, "Listening timeout triggered after ${LISTENING_TIMEOUT_MS}ms")
+            
+            cancelWatchdogTimer()
+            isRecognizerActive = false
+            _state.value = VoiceRecognitionState.Error(
+                errorCode = SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
+                errorMessage = context.getString(com.visionfocus.R.string.voice_error_timeout)
+            )
+            onStateChangeCallback?.invoke(_state.value)
+            speechRecognizer?.stopListening()
+        }
+    }
+    
+    /**
+     * Story 3.3 Task 5.3: Cancel listening timeout when transcription received.
+     */
+    private fun cancelListeningTimeout() {
+        listeningTimeoutJob?.cancel()
+        listeningTimeoutJob = null
     }
     
     /**
@@ -299,6 +336,7 @@ class VoiceRecognitionManager @Inject constructor(
             override fun onError(error: Int) {
                 Log.w(TAG, "onError: error code = $error")
                 cancelWatchdogTimer() // HIGH-6
+                cancelListeningTimeout() // Story 3.3
                 isRecognizerActive = false // HIGH-1
                 // MEDIUM-3: Analytics hook - recognition error
                 
@@ -345,6 +383,7 @@ class VoiceRecognitionManager @Inject constructor(
              */
             override fun onResults(results: Bundle?) {
                 cancelWatchdogTimer() // HIGH-6
+                cancelListeningTimeout() // Story 3.3
                 isRecognizerActive = false // HIGH-1
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 
@@ -401,6 +440,7 @@ class VoiceRecognitionManager @Inject constructor(
     fun destroy() {
         Log.d(TAG, "destroy() called - cleaning up SpeechRecognizer")
         cancelWatchdogTimer() // HIGH-6
+        cancelListeningTimeout() // Story 3.3
         speechRecognizer?.destroy()
         speechRecognizer = null
         isRecognizerActive = false // HIGH-1

@@ -7,12 +7,14 @@ import com.visionfocus.recognition.processing.FilteredDetection
  * 
  * Story 2.3 Task 1.4: Define RecognitionUiState sealed class
  * Story 2.4 Task 9: Extended with camera lifecycle states
+ * Story 3.3 Task 4: Extended with Cancelled state for voice command cancellation
  * Architecture Decision 2: StateFlow pattern for state management
  * 
  * State transitions:
  * Idle → Capturing → Recognizing → Announcing → Success → Idle
  * Idle → Capturing → Recognizing → Error → Idle
  * Idle → Capturing → CameraError → Idle
+ * Any state → Cancelled → Idle (Story 3.3)
  */
 sealed class RecognitionUiState {
     
@@ -66,4 +68,11 @@ sealed class RecognitionUiState {
      * @param message User-friendly camera error message
      */
     data class CameraError(val message: String) : RecognitionUiState()
+    
+    /**
+     * Recognition cancelled by user (Story 3.3)
+     * Triggered by "Cancel" voice command mid-recognition
+     * Transitions immediately to Idle
+     */
+    object Cancelled : RecognitionUiState()
 }
