@@ -50,13 +50,13 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Accessible Object Recognition
-  epic-2: in-progress
+  epic-2: done  # Completed Dec 31, 2025 - All stories tested on device
   2-1-tflite-model-integration-on-device-inference: done
   2-2-high-confidence-detection-filtering-tts-announcement: done
   2-3-recognition-fab-with-talkback-semantic-annotations: done
   2-4-camera-capture-with-accessibility-focus-management: done
   2-5-high-contrast-mode-large-text-support: done
-  2-6-haptic-feedback-for-recognition-events: in-progress  # Code review fixes applied Dec 30, device testing required
+  2-6-haptic-feedback-for-recognition-events: done  # Samsung device fixes tested Dec 31
   2-7-complete-talkback-navigation-for-primary-flow: done
   epic-2-retrospective: optional
 
