@@ -407,5 +407,3 @@ class RecognitionViewModelTest {
         assertTrue("Should remain in Idle state", state is RecognitionUiState.Idle)
     }
 }
-
-
