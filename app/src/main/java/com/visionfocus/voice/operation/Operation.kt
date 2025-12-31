@@ -33,8 +33,12 @@ sealed class Operation {
      * - TTS result announcement
      * 
      * @param onCancel Callback to invoke cancellation (RecognitionViewModel.cancelRecognition)
+     * @param onComplete Callback after operation completes (Story 3.5 AC #3: context preservation)
      */
-    data class RecognitionOperation(val onCancel: suspend () -> Unit) : Operation()
+    data class RecognitionOperation(
+        val onCancel: suspend () -> Unit,
+        val onComplete: (() -> Unit)? = null
+    ) : Operation()
     
     /**
      * Navigation operation active (turn-by-turn GPS guidance)
@@ -48,8 +52,12 @@ sealed class Operation {
      * Note: Epic 6 not yet implemented - placeholder for forward compatibility
      * 
      * @param onCancel Callback to invoke cancellation (NavigationViewModel.cancelNavigation)
+     * @param onComplete Callback after operation completes (Story 3.5 AC #3: context preservation)
      */
-    data class NavigationOperation(val onCancel: suspend () -> Unit) : Operation()
+    data class NavigationOperation(
+        val onCancel: suspend () -> Unit,
+        val onComplete: (() -> Unit)? = null
+    ) : Operation()
     
     /**
      * No active cancellable operation

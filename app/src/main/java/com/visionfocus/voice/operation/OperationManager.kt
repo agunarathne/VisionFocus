@@ -100,9 +100,11 @@ class OperationManager @Inject constructor(
     /**
      * Complete the current operation.
      * Story 3.3 Task 2.3: Deregister operation after completion
+     * Story 3.5 AC #3: Trigger context preservation callback if provided
      * 
      * Call this AFTER operation completes successfully or on error.
      * Resets state to Operation.None.
+     * If the operation has an onComplete callback, it will be invoked for context preservation.
      * 
      * Example:
      * ```
@@ -115,6 +117,23 @@ class OperationManager @Inject constructor(
      * ```
      */
     fun completeOperation() {
+        val current = _activeOperation.value
+        
+        // Story 3.5 AC #3: Invoke completion callback for context preservation
+        when (current) {
+            is Operation.RecognitionOperation -> {
+                current.onComplete?.invoke()
+                Log.d(TAG, "Recognition operation completed with context preservation")
+            }
+            is Operation.NavigationOperation -> {
+                current.onComplete?.invoke()
+                Log.d(TAG, "Navigation operation completed with context preservation")
+            }
+            is Operation.None -> {
+                Log.d(TAG, "No active operation to complete")
+            }
+        }
+        
         _activeOperation.value = Operation.None
         Log.d(TAG, "Operation completed")
     }

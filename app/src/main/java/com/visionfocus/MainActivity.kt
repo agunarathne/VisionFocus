@@ -73,14 +73,28 @@ class MainActivity : AppCompatActivity() {
     // Story 3.1 Task 4.3: Pulsing animation for listening state
     private var pulsingAnimator: AnimatorSet? = null
     
+    // Story 3.5 AC #3: Track origin screen for context preservation
+    private var originScreenBeforeCommand: String? = null
+    
     // Story 3.2: Broadcast receiver for voice commands
     private val voiceCommandReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 ACTION_RECOGNIZE -> {
                     // RecognizeCommand: Trigger object recognition
-                    // TODO Epic 2: Start camera capture and recognition
-                    android.util.Log.d("VisionFocus", "RecognizeCommand received - camera recognition will be implemented in Epic 2")
+                    // Story 3.5 AC #3: Save current screen before navigating
+                    originScreenBeforeCommand = getCurrentScreen()
+                    android.util.Log.d("VisionFocus", "RecognizeCommand received from screen: $originScreenBeforeCommand")
+                    
+                    // If not on home screen, navigate to home for recognition
+                    if (originScreenBeforeCommand != "home") {
+                        android.util.Log.d("VisionFocus", "Navigating to home for recognition")
+                        navigateToHomeForRecognition()
+                    } else {
+                        android.util.Log.d("VisionFocus", "Already on home screen - starting recognition")
+                        // Trigger recognition on current screen
+                        // Note: Actual recognition trigger will be implemented when Epic 2 integration is ready
+                    }
                 }
                 ACTION_CANCEL -> {
                     // CancelCommand: Cancel voice recognition
@@ -573,6 +587,51 @@ class MainActivity : AppCompatActivity() {
             is com.visionfocus.ui.recognition.RecognitionFragment -> "home"
             is SettingsFragment -> "settings"
             else -> "unknown"
+        }
+    }
+    
+    /**
+     * Navigate to home screen for recognition without clearing back stack.
+     * Story 3.5 AC #3: Preserve origin screen for return navigation.
+     * Used when RecognizeCommand is issued from Settings/other screens.
+     */
+    private fun navigateToHomeForRecognition() {
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+        if (currentFragment !is com.visionfocus.ui.recognition.RecognitionFragment) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, com.visionfocus.ui.recognition.RecognitionFragment())
+                .addToBackStack("recognition_from_${originScreenBeforeCommand}")
+                .commit()
+            android.util.Log.d("VisionFocus", "Navigated to home for recognition (origin: $originScreenBeforeCommand)")
+        }
+    }
+    
+    /**
+     * Return to origin screen after command execution.
+     * Story 3.5 AC #3: Context preservation after command completes.
+     * Call this after recognition/operation finishes to return user to origin screen.
+     */
+    fun returnToOriginScreen() {
+        originScreenBeforeCommand?.let { origin ->
+            android.util.Log.d("VisionFocus", "Returning to origin screen: $origin")
+            when (origin) {
+                "settings" -> navigateToSettings()
+                "home" -> {
+                    // Already home or should be home - no action needed
+                    android.util.Log.d("VisionFocus", "Origin was home - staying on home")
+                }
+                else -> {
+                    // Unknown origin - try popping back stack
+                    if (supportFragmentManager.backStackEntryCount > 0) {
+                        supportFragmentManager.popBackStack()
+                        android.util.Log.d("VisionFocus", "Popped back stack to return to origin")
+                    }
+                }
+            }
+            // Clear origin after returning
+            originScreenBeforeCommand = null
+        } ?: run {
+            android.util.Log.d("VisionFocus", "No origin screen to return to")
         }
     }
     
