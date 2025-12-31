@@ -479,6 +479,92 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
     
+    /**
+     * Navigate to home screen (RecognitionFragment).
+     * Story 3.5 Task 8: HomeCommand implementation
+     * 
+     * Clears back stack and shows RecognitionFragment.
+     * If already on home screen, announces "Home screen".
+     * 
+     * @param ttsManager Optional TTSManager for announcement (injected from command)
+     */
+    fun navigateToHome(ttsManager: TTSManager? = null) {
+        // Check if already on home screen
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+        if (currentFragment is com.visionfocus.ui.recognition.RecognitionFragment && 
+            supportFragmentManager.backStackEntryCount == 0) {
+            // Already at home
+            android.util.Log.d("VisionFocus", "Already on home screen")
+            ttsManager?.let {
+                lifecycleScope.launch {
+                    it.announce(getString(R.string.home_screen_announcement))
+                }
+            }
+            return
+        }
+        
+        // Clear back stack
+        supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        
+        // Navigate to home if not already there
+        if (currentFragment !is com.visionfocus.ui.recognition.RecognitionFragment) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, com.visionfocus.ui.recognition.RecognitionFragment())
+                .commit()
+        }
+        
+        android.util.Log.d("VisionFocus", "Navigated to home screen")
+        ttsManager?.let {
+            lifecycleScope.launch {
+                it.announce(getString(R.string.home_screen_announcement))
+            }
+        }
+    }
+    
+    /**
+     * Navigate back in the fragment stack.
+     * Story 3.5 Task 9: BackCommand implementation
+     * 
+     * Pops the back stack. If already on home screen (back stack empty),
+     * announces "Already at home screen".
+     * 
+     * @param ttsManager Optional TTSManager for announcement (injected from command)
+     */
+    fun navigateBack(ttsManager: TTSManager? = null) {
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            // Back stack has entries - pop it
+            supportFragmentManager.popBackStack()
+            android.util.Log.d("VisionFocus", "Navigated back")
+            ttsManager?.let {
+                lifecycleScope.launch {
+                    it.announce(getString(R.string.going_back_announcement))
+                }
+            }
+        } else {
+            // Already at home screen - no back stack to pop
+            android.util.Log.d("VisionFocus", "Already at home screen - back stack empty")
+            ttsManager?.let {
+                lifecycleScope.launch {
+                    it.announce(getString(R.string.already_at_home_announcement))
+                }
+            }
+        }
+    }
+    
+    /**
+     * Get current screen identifier for context tracking.
+     * Story 3.5 Task 7: Screen context preservation
+     * 
+     * @return String identifier: "home", "settings", or "unknown"
+     */
+    fun getCurrentScreen(): String {
+        return when (supportFragmentManager.findFragmentById(R.id.fragmentContainer)) {
+            is com.visionfocus.ui.recognition.RecognitionFragment -> "home"
+            is SettingsFragment -> "settings"
+            else -> "unknown"
+        }
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
         // Story 3.1: Stop pulsing animation if active

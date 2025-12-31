@@ -125,4 +125,9 @@
     <string name="help_command_general_group">For general actions, say: History, to review past recognitions. Save location, to bookmark your current place. Back, to go back. Home, to return to the home screen.</string>
     <string name="help_command_conclusion">Say a command now, or tap the microphone button to exit voice mode.</string>
     <string name="help_command_error">Help system error. Please try again.</string>
+    
+    <!-- Story 3.5: Always-available voice activation - navigation announcements -->
+    <string name="home_screen_announcement">Home screen</string>
+    <string name="going_back_announcement">Going back</string>
+    <string name="already_at_home_announcement">Already at home screen</string>
 </resources>

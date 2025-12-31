@@ -111,8 +111,10 @@ class WhereAmICommand @Inject constructor(
 /**
  * Back Command
  * Story 3.2 Task 2.12 & 8.1: Navigate to previous screen
+ * Story 3.5 Task 9: Complete BackCommand implementation with back stack navigation
  * 
- * Navigates back in the navigation stack.
+ * Navigates back in the navigation stack. If already on home screen (back stack empty),
+ * announces "Already at home screen".
  * 
  * Command variations:
  * - "back"
@@ -120,7 +122,7 @@ class WhereAmICommand @Inject constructor(
  * - "previous"
  * 
  * @param ttsManager TTS engine for announcements
- * @since Story 3.2
+ * @since Story 3.2, completed in Story 3.5
  */
 @Singleton
 class BackCommand @Inject constructor(
@@ -143,16 +145,23 @@ class BackCommand @Inject constructor(
         return try {
             Log.d(TAG, "Executing Back command")
             
-            // Note: Navigation requires MainActivity reference
-            // For now, announce action
-            ttsManager.announce("Going back")
-            
-            // TODO: Implement navigation callback
-            
-            Log.d(TAG, "Back command executed")
-            CommandResult.Success("Back executed")
+            // Story 3.5: Cast context to MainActivity for navigation
+            if (context is com.visionfocus.MainActivity) {
+                // Navigate back using MainActivity helper
+                context.runOnUiThread {
+                    context.navigateBack(ttsManager)
+                }
+                
+                Log.d(TAG, "Back command executed - navigated back")
+                CommandResult.Success("Navigated back")
+            } else {
+                Log.e(TAG, "Context is not MainActivity - cannot navigate")
+                ttsManager.announce("Navigation error")
+                CommandResult.Failure("Context is not MainActivity")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to navigate back", e)
+            ttsManager.announce("Navigation error")
             CommandResult.Failure("Back error: ${e.message}")
         }
     }
@@ -161,8 +170,10 @@ class BackCommand @Inject constructor(
 /**
  * Home Command
  * Story 3.2 Task 2.13 & 8.2: Return to home screen
+ * Story 3.5 Task 8: Complete HomeCommand implementation with navigation
  * 
- * Navigates to MainActivity home fragment.
+ * Navigates to MainActivity home fragment (RecognitionFragment).
+ * Clears back stack and returns to home screen from any location.
  * 
  * Command variations:
  * - "home"
@@ -171,7 +182,7 @@ class BackCommand @Inject constructor(
  * - "main"
  * 
  * @param ttsManager TTS engine for announcements
- * @since Story 3.2
+ * @since Story 3.2, completed in Story 3.5
  */
 @Singleton
 class HomeCommand @Inject constructor(
@@ -198,16 +209,23 @@ class HomeCommand @Inject constructor(
         return try {
             Log.d(TAG, "Executing Home command")
             
-            // Note: Navigation requires MainActivity reference
-            // For now, announce action
-            ttsManager.announce("Going home")
-            
-            // TODO: Implement navigation callback
-            
-            Log.d(TAG, "Home command executed")
-            CommandResult.Success("Home executed")
+            // Story 3.5: Cast context to MainActivity for navigation
+            if (context is com.visionfocus.MainActivity) {
+                // Navigate to home screen using MainActivity helper
+                context.runOnUiThread {
+                    context.navigateToHome(ttsManager)
+                }
+                
+                Log.d(TAG, "Home command executed - navigated to home screen")
+                CommandResult.Success("Navigated to home screen")
+            } else {
+                Log.e(TAG, "Context is not MainActivity - cannot navigate")
+                ttsManager.announce("Navigation error")
+                CommandResult.Failure("Context is not MainActivity")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to navigate home", e)
+            ttsManager.announce("Navigation error")
             CommandResult.Failure("Home error: ${e.message}")
         }
     }
