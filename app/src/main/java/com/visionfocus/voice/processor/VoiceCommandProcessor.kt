@@ -133,12 +133,14 @@ class VoiceCommandProcessor @Inject constructor(
         // 4. Handle unrecognized command (AC: 5)
         if (command == null) {
             val errorMessage = "Command not recognized. Say 'Help' for available commands."
+            // Note: announce() now automatically stops ongoing TTS (Story 3.4 AC #3)
             ttsManager.announce(errorMessage)
             Log.w(TAG, "Unrecognized command: \"$transcription\"")
             return@withContext CommandResult.Failure("Unrecognized command: $transcription")
         }
         
         // 5. Announce confirmation (AC: 4, <300ms target - Story 3.3)
+        // Note: announce() automatically stops any ongoing TTS before speaking (Story 3.4 AC #3)
         val confirmationStartTime = System.currentTimeMillis()
         val confirmationMessage = getConfirmationMessage(command, matchDistance)
         ttsManager.announce(confirmationMessage)
@@ -179,7 +181,7 @@ class VoiceCommandProcessor @Inject constructor(
             CommandResult.Failure("Execution error: ${e.message}")
         }
         
-        // 8. Log execution time for NFR validation (AC: 3)
+        // 9. Log execution time for NFR validation (AC: 3)
         val executionTime = System.currentTimeMillis() - startTime
         Log.d(TAG, "Command \"${command.displayName}\" executed in ${executionTime}ms (target: <${MAX_EXECUTION_TIME_MS}ms)")
         
@@ -187,7 +189,7 @@ class VoiceCommandProcessor @Inject constructor(
             Log.w(TAG, "Command execution exceeded ${MAX_EXECUTION_TIME_MS}ms target: ${executionTime}ms")
         }
         
-        // 9. Analytics hook (Task 3.6 - opt-in analytics)
+        // 10. Analytics hook (Task 3.6 - opt-in analytics)
         // TODO: Emit analytics event when user opts in to analytics
         // AnalyticsManager.logVoiceCommand(
         //     commandName = command.displayName,

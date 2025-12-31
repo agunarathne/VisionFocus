@@ -171,27 +171,54 @@ class HelpCommand @Inject constructor(
     
     override suspend fun execute(context: Context): CommandResult {
         return try {
-            Log.d(TAG, "Executing Help command with comprehensive grouped announcements")
+            Log.d(TAG, "Executing Help command")
+            
+            // CRITICAL #3: Check TTS readiness before proceeding
+            if (!ttsManager.isReady()) {
+                Log.w(TAG, "TTS not initialized, cannot announce help")
+                return CommandResult.Failure("TTS not ready")
+            }
             
             // AC #2: Retrieve user's speech rate preference (0.5×-2.0×)
             val speechRate = settingsRepository.getSpeechRate().first()
-            Log.d(TAG, "Retrieved speech rate preference: $speechRate")
+            
+            // CRITICAL #4: Clamp speech rate defensively (prevent crashes from corrupted DataStore)
+            val clampedRate = speechRate.coerceIn(0.5f, 2.0f)
+            Log.d(TAG, "Speech rate: $clampedRate")
             
             // AC #1: Build comprehensive help announcement with logical command groups
             val helpMessage = buildHelpAnnouncement(context)
             
             // Set TTS speech rate to user's preference
-            ttsManager.setSpeechRate(speechRate)
+            // CRITICAL #1: Wrap in try-catch (setSpeechRate validates range)
+            try {
+                ttsManager.setSpeechRate(clampedRate)
+            } catch (e: IllegalArgumentException) {
+                Log.e(TAG, "Invalid speech rate: $clampedRate", e)
+                // Continue with default rate
+            }
             
             // AC #3: Announce help (interruptible via ttsManager.stop())
-            // AC #2: Uses user's speech rate preference set above
-            ttsManager.announce(helpMessage)
+            // CRITICAL #1: Handle Result<Long> return value
+            val result = ttsManager.announce(helpMessage)
             
-            Log.d(TAG, "Help command executed - announcement covers all 15 commands in 4 groups")
-            CommandResult.Success("Help announced with all command groups")
+            result.fold(
+                onSuccess = { latency ->
+                    Log.d(TAG, "Help announced (${latency}ms latency)")
+                    CommandResult.Success("Help announced with all command groups")
+                },
+                onFailure = { error ->
+                    Log.e(TAG, "TTS announce failed", error)
+                    CommandResult.Failure("Help announcement failed: ${error.message}")
+                }
+            )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // MEDIUM #2: Rethrow CancellationException for proper coroutine cancellation
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to announce help", e)
-            ttsManager.announce("Help system error. Please try again.")
+            // MEDIUM #1: Use externalized error string
+            ttsManager.announce(context.getString(R.string.help_command_error))
             CommandResult.Failure("Help error: ${e.message}")
         }
     }
@@ -205,14 +232,19 @@ class HelpCommand @Inject constructor(
      * @return Complete help announcement text (~300-400 words, ~30-45 seconds at 1.0× rate)
      */
     private fun buildHelpAnnouncement(context: Context): String {
-        val introduction = context.getString(R.string.help_command_introduction)
-        val recognitionGroup = context.getString(R.string.help_command_recognition_group)
-        val navigationGroup = context.getString(R.string.help_command_navigation_group)
-        val settingsGroup = context.getString(R.string.help_command_settings_group)
-        val generalGroup = context.getString(R.string.help_command_general_group)
-        val conclusion = context.getString(R.string.help_command_conclusion)
-        
-        // Concatenate with spaces between groups for natural speech flow
-        return "$introduction $recognitionGroup $navigationGroup $settingsGroup $generalGroup $conclusion"
+        // MEDIUM #3: Use buildString for efficient concatenation (6 strings + spaces)
+        return buildString {
+            append(context.getString(R.string.help_command_introduction))
+            append(" ")
+            append(context.getString(R.string.help_command_recognition_group))
+            append(" ")
+            append(context.getString(R.string.help_command_navigation_group))
+            append(" ")
+            append(context.getString(R.string.help_command_settings_group))
+            append(" ")
+            append(context.getString(R.string.help_command_general_group))
+            append(" ")
+            append(context.getString(R.string.help_command_conclusion))
+        }
     }
 }

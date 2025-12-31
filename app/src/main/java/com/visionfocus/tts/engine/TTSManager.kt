@@ -133,6 +133,7 @@ class TTSManager @Inject constructor(
      * Announce text via TTS with latency tracking
      * 
      * Story 2.2 AC6: Latency requirement ≤200ms
+     * Story 3.4 AC#3: Automatically stops any ongoing speech before new announcement
      * 
      * @param text Natural language announcement string
      * @return Result with latency in milliseconds, or failure exception
@@ -144,6 +145,15 @@ class TTSManager @Inject constructor(
                 IllegalStateException("TTS not initialized")
             )
         }
+        
+        // CRITICAL: ALWAYS stop before new announcement (Story 3.4 AC #3)
+        // Android TTS isSpeaking() is unreliable, so we call stop() unconditionally
+        // stop() is safe to call even if nothing is playing (no-op)
+        tts?.stop()
+        
+        // Brief delay to ensure TTS engine fully stops previous speech
+        // Only delay 50ms (reduced from 100ms for better responsiveness)
+        kotlinx.coroutines.delay(50)
         
         val startTime = System.currentTimeMillis()
         lastUtteranceQueueTime = startTime
@@ -187,7 +197,12 @@ class TTSManager @Inject constructor(
      * Useful for interrupting long announcements
      */
     fun stop() {
-        tts?.stop()
+        if (tts?.isSpeaking == true) {
+            Log.d(TAG, "Stopping ongoing TTS speech")
+            tts?.stop()
+        } else {
+            Log.d(TAG, "No TTS speech to stop (already idle)")
+        }
     }
     
     /**
