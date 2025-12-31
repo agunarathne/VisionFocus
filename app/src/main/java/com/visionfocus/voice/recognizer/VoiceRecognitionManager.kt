@@ -8,9 +8,14 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -47,13 +52,7 @@ class VoiceRecognitionManager @Inject constructor(
         // Recognition configuration constants
         private const val SILENCE_TIMEOUT_MS = 5000L
         private const val MAX_RESULTS = 1
-        
-        // Error messages for user announcement (AC: 10, 11)
-        private const val ERROR_MSG_NO_MATCH = "Didn't catch that. Please try again."
-        private const val ERROR_MSG_TIMEOUT = "Voice command timed out"
-        private const val ERROR_MSG_AUDIO = "Microphone error. Please check device settings."
-        private const val ERROR_MSG_NETWORK = "Network unavailable. Voice recognition requires internet."
-        private const val ERROR_MSG_GENERIC = "Voice recognition error. Please try again."
+        private const val WATCHDOG_TIMEOUT_MS = 15000L // HIGH-6: Reset if no callback after 15s
     }
     
     // State management
@@ -62,6 +61,9 @@ class VoiceRecognitionManager @Inject constructor(
     
     // SpeechRecognizer instance
     private var speechRecognizer: SpeechRecognizer? = null
+    
+    // HIGH-1: Prevent memory leak from multiple rapid initializations
+    private var isRecognizerActive = false
     
     // Callback for recognized text (passed to command processor in Story 3.2)
     private var onRecognizedTextCallback: ((String) -> Unit)? = null
@@ -72,8 +74,15 @@ class VoiceRecognitionManager @Inject constructor(
     /**
      * Initialize SpeechRecognizer and configure recognition parameters.
      * Story 3.1 Task 1.3: Create and configure SpeechRecognizer instance
+     * HIGH-1 FIX: Added synchronization to prevent memory leak
      */
     private fun initializeSpeechRecognizer() {
+        // HIGH-1: Prevent creating new instance if already active
+        if (isRecognizerActive) {
+            Log.w(TAG, "SpeechRecognizer already active - skipping initialization")
+            return
+        }
+        
         // Clean up existing recognizer
         speechRecognizer?.destroy()
         
@@ -81,6 +90,7 @@ class VoiceRecognitionManager @Inject constructor(
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
             setRecognitionListener(createRecognitionListener())
         }
+        isRecognizerActive = true
         
         Log.d(TAG, "SpeechRecognizer initialized successfully")
     }
@@ -145,11 +155,16 @@ class VoiceRecognitionManager @Inject constructor(
         try {
             speechRecognizer?.startListening(intent)
             Log.d(TAG, "SpeechRecognizer.startListening() invoked")
+            
+            // HIGH-6: Start watchdog timer to reset if stuck
+            startWatchdogTimer()
         } catch (e: Exception) {
             Log.e(TAG, "Error starting speech recognition", e)
+            // MEDIUM-3: Analytics hook - recognition start failed
+            // MEDIUM-1: Use string resource
             _state.value = VoiceRecognitionState.Error(
                 errorCode = -1,
-                errorMessage = ERROR_MSG_GENERIC
+                errorMessage = context.getString(com.visionfocus.R.string.voice_error_generic)
             )
             onStateChangeCallback?.invoke(_state.value)
         }
@@ -158,10 +173,13 @@ class VoiceRecognitionManager @Inject constructor(
     /**
      * Stop listening and cancel recognition.
      * Story 3.1 Task 7.5: Manual cancellation support
+     * HIGH-6 FIX: Cancel watchdog timer
      */
     fun stopListening() {
         Log.d(TAG, "stopListening() called")
+        cancelWatchdogTimer() // HIGH-6
         speechRecognizer?.stopListening()
+        isRecognizerActive = false // HIGH-1
         _state.value = VoiceRecognitionState.Idle
         onStateChangeCallback?.invoke(_state.value)
     }
@@ -184,6 +202,33 @@ class VoiceRecognitionManager @Inject constructor(
      */
     fun setOnStateChangeCallback(callback: (VoiceRecognitionState) -> Unit) {
         onStateChangeCallback = callback
+    }
+    
+    /**
+     * HIGH-6: Start watchdog timer to reset state if recognizer hangs.
+     * Cancels if onResults/onError received within timeout.
+     */
+    private fun startWatchdogTimer() {
+        cancelWatchdogTimer()
+        watchdogJob = coroutineScope.launch {
+            delay(WATCHDOG_TIMEOUT_MS)
+            Log.w(TAG, "Watchdog timeout - forcing reset to Idle")
+            isRecognizerActive = false
+            _state.value = VoiceRecognitionState.Error(
+                errorCode = SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
+                errorMessage = "Voice recognition timed out"
+            )
+            onStateChangeCallback?.invoke(_state.value)
+            // MEDIUM-3: Analytics hook - watchdog timeout triggered
+        }
+    }
+    
+    /**
+     * HIGH-6: Cancel watchdog timer.
+     */
+    private fun cancelWatchdogTimer() {
+        watchdogJob?.cancel()
+        watchdogJob = null
     }
     
     /**
@@ -249,31 +294,35 @@ class VoiceRecognitionManager @Inject constructor(
              */
             override fun onError(error: Int) {
                 Log.w(TAG, "onError: error code = $error")
+                cancelWatchdogTimer() // HIGH-6
+                isRecognizerActive = false // HIGH-1
+                // MEDIUM-3: Analytics hook - recognition error
                 
+                // MEDIUM-1: Use string resources for internationalization
                 val errorMessage = when (error) {
                     SpeechRecognizer.ERROR_NO_MATCH -> {
                         Log.d(TAG, "ERROR_NO_MATCH: No recognition results")
-                        ERROR_MSG_NO_MATCH
+                        context.getString(com.visionfocus.R.string.voice_error_no_match)
                     }
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
                         Log.d(TAG, "ERROR_SPEECH_TIMEOUT: No speech detected")
-                        ERROR_MSG_TIMEOUT
+                        context.getString(com.visionfocus.R.string.voice_error_timeout)
                     }
                     SpeechRecognizer.ERROR_AUDIO -> {
                         Log.e(TAG, "ERROR_AUDIO: Microphone error")
-                        ERROR_MSG_AUDIO
+                        context.getString(com.visionfocus.R.string.voice_error_audio)
                     }
                     SpeechRecognizer.ERROR_NETWORK -> {
                         Log.w(TAG, "ERROR_NETWORK: Network unavailable")
-                        ERROR_MSG_NETWORK
+                        context.getString(com.visionfocus.R.string.voice_error_network)
                     }
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
                         Log.e(TAG, "ERROR_INSUFFICIENT_PERMISSIONS: Microphone permission denied")
-                        "Microphone permission required for voice commands"
+                        context.getString(com.visionfocus.R.string.voice_error_permission)
                     }
                     else -> {
                         Log.e(TAG, "Unknown error code: $error")
-                        ERROR_MSG_GENERIC
+                        context.getString(com.visionfocus.R.string.voice_error_generic)
                     }
                 }
                 
@@ -291,13 +340,17 @@ class VoiceRecognitionManager @Inject constructor(
              * @param results Bundle containing recognition results
              */
             override fun onResults(results: Bundle?) {
+                cancelWatchdogTimer() // HIGH-6
+                isRecognizerActive = false // HIGH-1
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 
                 if (matches.isNullOrEmpty()) {
                     Log.w(TAG, "onResults: No matches found")
+                    // MEDIUM-3: Analytics hook - empty results
+                    // MEDIUM-1: Use string resource
                     _state.value = VoiceRecognitionState.Error(
                         SpeechRecognizer.ERROR_NO_MATCH,
-                        ERROR_MSG_NO_MATCH
+                        context.getString(com.visionfocus.R.string.voice_error_no_match)
                     )
                     onStateChangeCallback?.invoke(_state.value)
                     return
@@ -306,6 +359,7 @@ class VoiceRecognitionManager @Inject constructor(
                 // Get first result and convert to lowercase (AC: 9)
                 val transcription = matches[0].lowercase(Locale.US)
                 Log.d(TAG, "onResults: transcription = \"$transcription\"")
+                // MEDIUM-3: Analytics hook - recognition success
                 
                 // Update state to Processing
                 _state.value = VoiceRecognitionState.Processing(transcription)
@@ -338,11 +392,14 @@ class VoiceRecognitionManager @Inject constructor(
     /**
      * Clean up resources.
      * Called when manager is no longer needed.
+     * HIGH-6 FIX: Cancel watchdog timer on cleanup
      */
     fun destroy() {
         Log.d(TAG, "destroy() called - cleaning up SpeechRecognizer")
+        cancelWatchdogTimer() // HIGH-6
         speechRecognizer?.destroy()
         speechRecognizer = null
+        isRecognizerActive = false // HIGH-1
         _state.value = VoiceRecognitionState.Idle
     }
 }

@@ -139,8 +139,9 @@ class VoiceRecognitionViewModel @Inject constructor(
      * 
      * Performs pre-listening actions:
      * 1. Stop any active TTS (avoid self-recognition)
-     * 2. Provide haptic feedback (medium intensity)
-     * 3. Start speech recognition
+     * 2. Wait 250ms for TTS to fully stop (HIGH-2 fix)
+     * 3. Provide haptic feedback (medium intensity)
+     * 4. Start speech recognition
      * 
      * @throws IllegalStateException if microphone permission not granted
      */
@@ -151,9 +152,11 @@ class VoiceRecognitionViewModel @Inject constructor(
         if (!_isPermissionGranted.value) {
             Log.w(TAG, "Cannot start listening - microphone permission not granted")
             _state.value = VoiceRecognitionState.Error(
-                errorCode = -1,
+                errorCode = android.speech.SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS,
                 errorMessage = "Microphone permission required for voice commands"
             )
+            // HIGH-5: Ensure state change triggers animation stop
+            handleStateChange(_state.value)
             return
         }
         
@@ -161,13 +164,16 @@ class VoiceRecognitionViewModel @Inject constructor(
         ttsManager.stop()
         Log.d(TAG, "Stopped TTS before listening")
         
-        // Provide haptic feedback on button press (Task 4.6, Story 2.6 integration)
+        // HIGH-2: Wait for TTS to fully stop (250ms delay to prevent self-recognition)
         viewModelScope.launch {
+            kotlinx.coroutines.delay(250)
+            
+            // Provide haptic feedback on button press (Task 4.6, Story 2.6 integration)
             hapticManager.trigger(HapticPattern.RecognitionStart)
+            
+            // Start voice recognition after TTS has fully stopped
+            voiceRecognitionManager.startListening()
         }
-        
-        // Start voice recognition
-        voiceRecognitionManager.startListening()
     }
     
     /**

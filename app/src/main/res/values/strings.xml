@@ -31,8 +31,17 @@
     <string name="voice_commands_button">Voice commands, button</string>
     <string name="voice_commands_listening">Listening for command, button</string>
     <string name="voice_commands_unavailable">Voice commands unavailable. Microphone permission required, button</string>
+    <string name="voice_commands_error">Voice command failed, try again, button</string>
     <string name="listening_for_command">Listening for command</string>
     <string name="voice_command_processing">Processing command</string>
+    
+    <!-- MEDIUM-1: Voice error messages (moved from VoiceRecognitionManager) -->
+    <string name="voice_error_no_match">Didn\'t catch that. Please try again.</string>
+    <string name="voice_error_timeout">Voice command timed out</string>
+    <string name="voice_error_audio">Microphone error. Please check device settings.</string>
+    <string name="voice_error_network">Network unavailable. Voice recognition requires internet.</string>
+    <string name="voice_error_permission">Microphone permission required for voice commands</string>
+    <string name="voice_error_generic">Voice recognition error. Please try again.</string>
     
     <!-- Story 2.3 Task 5.8: State announcements for TalkBack -->
     <string name="state_idle">Ready to recognize objects</string>

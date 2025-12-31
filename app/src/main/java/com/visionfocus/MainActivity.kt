@@ -189,23 +189,17 @@ class MainActivity : AppCompatActivity() {
     /**
      * Check microphone permission for voice commands.
      * Story 3.1 Task 2: Microphone permission flow
+     * HIGH-4 FIX: Only check permission state, don't auto-request or show rationale
      */
     private fun checkMicrophonePermission() {
-        when {
-            permissionManager.isMicrophonePermissionGranted() -> {
-                // Permission already granted
-                voiceViewModel.updatePermissionState(true)
-                android.util.Log.d("VisionFocus", "Microphone permission already granted")
-            }
-            permissionManager.shouldShowMicrophoneRationale(this) -> {
-                showMicrophoneRationale()
-            }
-            else -> {
-                // First request or user hasn't permanently denied
-                // Don't auto-request - wait for user to tap voice button
-                voiceViewModel.updatePermissionState(false)
-                android.util.Log.d("VisionFocus", "Microphone permission not granted - button will be disabled")
-            }
+        // HIGH-4: Just check state and update ViewModel - don't show dialogs
+        val isGranted = permissionManager.isMicrophonePermissionGranted()
+        voiceViewModel.updatePermissionState(isGranted)
+        
+        if (isGranted) {
+            android.util.Log.d("VisionFocus", "Microphone permission already granted")
+        } else {
+            android.util.Log.d("VisionFocus", "Microphone permission not granted - button will be disabled")
         }
     }
     
@@ -263,9 +257,22 @@ class MainActivity : AppCompatActivity() {
     /**
      * Setup voice button click listener and permission handling.
      * Story 3.1 Task 4: Voice button activation and permission check
+     * HIGH-8 FIX: Added debouncing to prevent rapid clicks
      */
     private fun setupVoiceButton() {
+        // HIGH-8: Track last click time for debouncing
+        var lastClickTime = 0L
+        val debounceDelayMs = 500L
+        
         binding.voiceFab.setOnClickListener {
+            // HIGH-8: Debounce - ignore clicks within 500ms
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - lastClickTime < debounceDelayMs) {
+                android.util.Log.d("VisionFocus", "Voice button click debounced")
+                return@setOnClickListener
+            }
+            lastClickTime = currentTime
+            
             if (permissionManager.isMicrophonePermissionGranted()) {
                 // Permission granted - start listening (Task 4.1)
                 voiceViewModel.startListening()
@@ -328,7 +335,16 @@ class MainActivity : AppCompatActivity() {
                     }
                     is VoiceRecognitionState.Error -> {
                         stopPulsingAnimation()
-                        binding.voiceFab.contentDescription = getString(R.string.voice_commands_button)
+                        
+                        // MEDIUM-2: Check if error is permission-related
+                        if (state.errorCode == android.speech.SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                            // Permission was revoked - update state and prompt re-request
+                            voiceViewModel.updatePermissionState(false)
+                            android.util.Log.w("VisionFocus", "Microphone permission revoked during recognition")
+                        }
+                        
+                        // MEDIUM-4: Error-specific content description
+                        binding.voiceFab.contentDescription = getString(R.string.voice_commands_error)
                     }
                 }
             }
