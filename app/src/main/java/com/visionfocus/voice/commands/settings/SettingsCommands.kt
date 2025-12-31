@@ -96,7 +96,11 @@ class HighContrastOnCommand @Inject constructor(
     override val keywords: List<String> = listOf(
         "high contrast on",
         "enable high contrast",
-        "turn on high contrast"
+        "turn on high contrast",
+        "contrast on",
+        "dark mode on",
+        "enable dark mode",
+        "hi contrast on"
     )
     
     override suspend fun execute(context: Context): CommandResult {
@@ -149,7 +153,11 @@ class HighContrastOffCommand @Inject constructor(
     override val keywords: List<String> = listOf(
         "high contrast off",
         "disable high contrast",
-        "turn off high contrast"
+        "turn off high contrast",
+        "contrast off",
+        "dark mode off",
+        "disable dark mode",
+        "hi contrast off"
     )
     
     override suspend fun execute(context: Context): CommandResult {

@@ -188,7 +188,10 @@ class HomeCommand @Inject constructor(
         "home",
         "home screen",
         "go home",
-        "main"
+        "main",
+        "main screen",
+        "go to home",
+        "go to main"
     )
     
     override suspend fun execute(context: Context): CommandResult {
