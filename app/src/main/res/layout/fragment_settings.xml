@@ -90,6 +90,86 @@
                 android:importantForAccessibility="no" />
         </LinearLayout>
 
+        <!-- Haptic Feedback Section (Story 2.6) -->
+        <TextView
+            android:id="@+id/hapticFeedbackSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/haptic_feedback_section"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:paddingTop="@dimen/spacing_large"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:id="@+id/hapticIntensityLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/haptic_intensity_label"
+            android:textAppearance="?attr/textAppearanceBody1"
+            android:paddingBottom="@dimen/spacing_small"
+            android:accessibilityHeading="true"
+            android:contentDescription="@string/haptic_intensity_section_description"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:id="@+id/hapticIntensityExplanation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/haptic_intensity_explanation"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="no" />
+
+        <RadioGroup
+            android:id="@+id/hapticIntensityRadioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:contentDescription="@string/haptic_intensity_radio_group_description">
+
+            <RadioButton
+                android:id="@+id/hapticOff"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/haptic_intensity_off"
+                android:contentDescription="@string/haptic_off_description"
+                android:minHeight="48dp"
+                android:paddingStart="@dimen/spacing_small"
+                android:paddingEnd="@dimen/spacing_small" />
+
+            <RadioButton
+                android:id="@+id/hapticLight"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/haptic_intensity_light"
+                android:contentDescription="@string/haptic_light_description"
+                android:minHeight="48dp"
+                android:paddingStart="@dimen/spacing_small"
+                android:paddingEnd="@dimen/spacing_small" />
+
+            <RadioButton
+                android:id="@+id/hapticMedium"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/haptic_intensity_medium"
+                android:contentDescription="@string/haptic_medium_description"
+                android:minHeight="48dp"
+                android:checked="true"
+                android:paddingStart="@dimen/spacing_small"
+                android:paddingEnd="@dimen/spacing_small" />
+
+            <RadioButton
+                android:id="@+id/hapticStrong"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/haptic_intensity_strong"
+                android:contentDescription="@string/haptic_strong_description"
+                android:minHeight="48dp"
+                android:paddingStart="@dimen/spacing_small"
+                android:paddingEnd="@dimen/spacing_small" />
+        </RadioGroup>
+
     </LinearLayout>
 
 </ScrollView>

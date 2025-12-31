@@ -2,6 +2,7 @@ package com.visionfocus.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -11,7 +12,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel for Settings screen managing theme preferences.
+ * ViewModel for Settings screen managing theme preferences and haptic feedback.
  * 
  * Orchestrates user interactions with SettingsRepository,
  * exposing reactive StateFlows for UI observation.
@@ -19,6 +20,9 @@ import javax.inject.Inject
  * Theme Preferences:
  * - High-Contrast Mode: 7:1 contrast ratio (pure black/white)
  * - Large Text Mode: 150% text scaling (20sp → 30sp)
+ * 
+ * Haptic Preferences (Story 2.6):
+ * - Haptic Intensity: OFF, LIGHT, MEDIUM, STRONG
  * 
  * StateFlow Usage:
  * StateFlow conversion with stateIn() provides:
@@ -77,6 +81,25 @@ class SettingsViewModel @Inject constructor(
         )
     
     /**
+     * Haptic intensity preference (Story 2.6).
+     * 
+     * Controls vibration strength for recognition events:
+     * - OFF: No vibration
+     * - LIGHT: 50% amplitude
+     * - MEDIUM: 75% amplitude (default)
+     * - STRONG: 100% amplitude
+     * 
+     * Default: MEDIUM
+     */
+    val hapticIntensity: StateFlow<HapticIntensity> = settingsRepository
+        .getHapticIntensity()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(FLOW_SUBSCRIPTION_TIMEOUT_MS),
+            initialValue = HapticIntensity.MEDIUM
+        )
+    
+    /**
      * Sets high-contrast mode preference.
      * 
      * Persists to DataStore.
@@ -114,5 +137,19 @@ class SettingsViewModel @Inject constructor(
         android.util.Log.d("VisionFocus", "[ViewModel] setLargeTextMode called with: $enabled")
         settingsRepository.setLargeTextMode(enabled)
         android.util.Log.d("VisionFocus", "[ViewModel] setLargeTextMode DataStore write completed")
+    }
+    
+    /**
+     * Sets haptic intensity preference (Story 2.6).
+     * 
+     * Persists to DataStore.
+     * UI automatically updates via StateFlow observation.
+     * 
+     * @param intensity The desired haptic intensity level
+     */
+    suspend fun setHapticIntensity(intensity: HapticIntensity) {
+        android.util.Log.d("VisionFocus", "[ViewModel] setHapticIntensity called with: $intensity")
+        settingsRepository.setHapticIntensity(intensity)
+        android.util.Log.d("VisionFocus", "[ViewModel] setHapticIntensity DataStore write completed")
     }
 }

@@ -56,7 +56,7 @@ development_status:
   2-3-recognition-fab-with-talkback-semantic-annotations: done
   2-4-camera-capture-with-accessibility-focus-management: done
   2-5-high-contrast-mode-large-text-support: done
-  2-6-haptic-feedback-for-recognition-events: ready-for-dev
+  2-6-haptic-feedback-for-recognition-events: in-progress  # Code review fixes applied Dec 30, device testing required
   2-7-complete-talkback-navigation-for-primary-flow: done
   epic-2-retrospective: optional
 

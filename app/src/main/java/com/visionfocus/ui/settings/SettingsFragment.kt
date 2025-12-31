@@ -10,16 +10,24 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.visionfocus.R
+import com.visionfocus.accessibility.haptic.HapticFeedbackManager
+import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.databinding.FragmentSettingsBinding
 import com.visionfocus.theme.ThemeManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
- * Settings screen for theme preferences.
+ * Settings screen for theme preferences and haptic feedback.
  * 
- * Manages high-contrast mode and large text mode toggles,
+ * Manages high-contrast mode, large text mode, and haptic intensity controls,
  * applying theme changes via ThemeManager with activity recreation.
+ * 
+ * Story 2.6 Extensions:
+ * - Haptic intensity RadioGroup (OFF, LIGHT, MEDIUM, STRONG)
+ * - Sample vibration trigger on intensity selection
+ * - Dynamic content descriptions for TalkBack
  * 
  * StateFlow Observation Pattern:
  * Uses repeatOnLifecycle(STARTED) to:
@@ -38,7 +46,8 @@ import kotlinx.coroutines.launch
  * 
  * Accessibility:
  * - Switch content descriptions update dynamically ("currently on/off")
- * - TalkBack announcements for theme changes
+ * - RadioButton content descriptions for each haptic intensity
+ * - TalkBack announcements for theme changes and haptic intensity changes
  * - Explanation text marked importantForAccessibility="no" (redundant)
  * - Minimum 48×48 dp touch targets enforced
  */
@@ -50,8 +59,15 @@ class SettingsFragment : Fragment() {
     
     private val viewModel: SettingsViewModel by viewModels()
     
+    // Story 2.6: Inject HapticFeedbackManager for sample vibrations
+    @Inject
+    lateinit var hapticFeedbackManager: HapticFeedbackManager
+    
     // Guard flag to prevent double theme application (HIGH-2 fix)
     private var isUpdatingFromObserver = false
+    
+    // Guard: Track last intensity to prevent duplicate sample vibrations (Samsung device fix)
+    private var lastHapticIntensity: HapticIntensity? = null
     
     // Job tracking for memory leak prevention (MEDIUM-2 fix)
     private val observerJobs = mutableListOf<kotlinx.coroutines.Job>()
@@ -120,17 +136,41 @@ class SettingsFragment : Fragment() {
                 }
             }
         )
+        
+        // Observe haptic intensity preference (Story 2.6)
+        observerJobs.add(
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.hapticIntensity.collect { intensity ->
+                        // Set guard flag to prevent listener from triggering during update
+                        isUpdatingFromObserver = true
+                        
+                        // Update radio button selection based on intensity
+                        when (intensity) {
+                            HapticIntensity.OFF -> binding.hapticOff.isChecked = true
+                            HapticIntensity.LIGHT -> binding.hapticLight.isChecked = true
+                            HapticIntensity.MEDIUM -> binding.hapticMedium.isChecked = true
+                            HapticIntensity.STRONG -> binding.hapticStrong.isChecked = true
+                        }
+                        
+                        isUpdatingFromObserver = false
+                    }
+                }
+            }
+        )
     }
     
     /**
-     * Sets up switch listeners for theme toggle actions.
+     * Sets up switch listeners for theme toggle actions and haptic intensity selection.
      * 
      * Listener Pattern:
      * - setOnCheckedChangeListener triggers on user interaction
      * - Does NOT trigger when isChecked is set programmatically
-     * - Calls ViewModel.toggle*() to update preference
-     * - Announces theme change via TalkBack
-     * - Applies theme immediately via ThemeManager.applyTheme()
+     * - Calls ViewModel methods to update preferences
+     * - Announces changes via TalkBack
+     * - Applies theme changes immediately via activity recreation
+     * 
+     * Story 2.6: Added haptic intensity RadioGroup listener with sample vibration
      * 
      * KNOWN ISSUE (Dec 30, 2024):
      * Toggles only work ONCE per app launch. After first toggle (e.g., HC ON),
@@ -186,6 +226,51 @@ class SettingsFragment : Fragment() {
                 android.util.Log.d("VisionFocus", "[Fragment] Calling requireActivity().recreate()")
                 requireActivity().recreate()
                 android.util.Log.d("VisionFocus", "[Fragment] recreate() returned (should not see this)")
+            }
+        }
+        
+        // Story 2.6: Haptic intensity RadioGroup listener
+        binding.hapticIntensityRadioGroup.setOnCheckedChangeListener { _, checkedId ->
+            // Guard: Ignore programmatic updates from observer
+            if (isUpdatingFromObserver) return@setOnCheckedChangeListener
+            
+            val intensity = when (checkedId) {
+                R.id.hapticOff -> HapticIntensity.OFF
+                R.id.hapticLight -> HapticIntensity.LIGHT
+                R.id.hapticMedium -> HapticIntensity.MEDIUM
+                R.id.hapticStrong -> HapticIntensity.STRONG
+                else -> HapticIntensity.MEDIUM // fallback
+            }
+            
+            // CRITICAL FIX: Samsung devices retrigger listener on every touch - deduplicate
+            if (intensity == lastHapticIntensity) {
+                android.util.Log.d("VisionFocus", "[Fragment] Duplicate haptic trigger ignored: $intensity")
+                return@setOnCheckedChangeListener
+            }
+            lastHapticIntensity = intensity
+            
+            android.util.Log.d("VisionFocus", "[Fragment] Haptic intensity changed: $intensity")
+            
+            // Announce haptic intensity change via TalkBack
+            val intensityLabel = when (intensity) {
+                HapticIntensity.OFF -> getString(R.string.haptic_intensity_off)
+                HapticIntensity.LIGHT -> getString(R.string.haptic_intensity_light)
+                HapticIntensity.MEDIUM -> getString(R.string.haptic_intensity_medium)
+                HapticIntensity.STRONG -> getString(R.string.haptic_intensity_strong)
+            }
+            binding.root.announceForAccessibility(
+                getString(R.string.haptic_sample_triggered, intensityLabel)
+            )
+            
+            // HIGH-8 FIX: Save preference BEFORE triggering sample to prevent race condition
+            // This ensures rapid intensity changes don't cause state desync
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.setHapticIntensity(intensity)  // Await DataStore write
+                
+                // CRITICAL FIX: Don't trigger sample for OFF intensity (amplitude=0 crashes on Android API 26+)
+                if (intensity != HapticIntensity.OFF) {
+                    hapticFeedbackManager.triggerSample(intensity)  // Then trigger sample
+                }
             }
         }
     }

@@ -54,5 +54,21 @@
     <string name="theme_enabled">enabled</string>
     <string name="theme_disabled">disabled</string>
     <string name="settings_menu_description">Settings, opens app settings screen</string>
+    
+    <!-- Story 2.6: Haptic feedback intensity settings -->
+    <string name="haptic_feedback_section">Haptic Feedback</string>
+    <string name="haptic_intensity_label">Vibration Intensity</string>
+    <string name="haptic_intensity_explanation">Adjust vibration strength for recognition events (start, success, error)</string>
+    <string name="haptic_intensity_section_description">Haptic feedback intensity settings. Adjust vibration strength for recognition events.</string>
+    <string name="haptic_intensity_radio_group_description">Haptic intensity options. Select vibration strength.</string>
+    <string name="haptic_intensity_off">Off</string>
+    <string name="haptic_off_description">Haptic feedback off, radio button</string>
+    <string name="haptic_intensity_light">Light</string>
+    <string name="haptic_light_description">Light haptic feedback, gentle vibrations, radio button</string>
+    <string name="haptic_intensity_medium">Medium (Default)</string>
+    <string name="haptic_medium_description">Medium haptic feedback, moderate vibrations, radio button</string>
+    <string name="haptic_intensity_strong">Strong</string>
+    <string name="haptic_strong_description">Strong haptic feedback, powerful vibrations, radio button</string>
+    <string name="haptic_unavailable">Haptic feedback unavailable. This device has no vibrator.</string>
+    <string name="haptic_sample_triggered">Sample vibration at %1$s intensity</string>
 </resources>
-

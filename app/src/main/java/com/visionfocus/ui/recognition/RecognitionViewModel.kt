@@ -3,6 +3,8 @@ package com.visionfocus.ui.recognition
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.visionfocus.accessibility.haptic.HapticFeedbackManager
+import com.visionfocus.accessibility.haptic.HapticPattern
 import com.visionfocus.recognition.processing.ConfidenceFilter
 import com.visionfocus.recognition.repository.RecognitionRepository
 import com.visionfocus.tts.engine.TTSManager
@@ -17,13 +19,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel for recognition UI (Story 2.3, 2.4)
+ * ViewModel for recognition UI (Story 2.3, 2.4, 2.6)
  * 
  * Orchestrates:
  * - Story 2.1: RecognitionRepository.performRecognition() (TFLite inference)
  * - Story 2.2: TTSPhraseFormatter + TTSManager (formatting + announcement)
  * - Story 2.3: UI state management with StateFlow
  * - Story 2.4: Camera lifecycle integration with capture state
+ * - Story 2.6: Haptic feedback patterns for recognition events
  * 
  * State transitions:
  * Idle → Capturing → Recognizing → Announcing → Success → Idle (2s delay)
@@ -34,13 +37,15 @@ import javax.inject.Inject
  * @param confidenceFilter Story 2.2 - Convert DetectionResult to FilteredDetection
  * @param ttsManager Story 2.2 - Text-to-speech engine
  * @param ttsFormatter Story 2.2 - Confidence-aware phrase formatting
+ * @param hapticFeedbackManager Story 2.6 - Haptic feedback for deaf-blind users
  */
 @HiltViewModel
 class RecognitionViewModel @Inject constructor(
     private val recognitionRepository: RecognitionRepository,
     private val confidenceFilter: ConfidenceFilter,
     private val ttsManager: TTSManager,
-    private val ttsFormatter: TTSPhraseFormatter
+    private val ttsFormatter: TTSPhraseFormatter,
+    private val hapticFeedbackManager: HapticFeedbackManager
 ) : ViewModel() {
     
     companion object {
@@ -49,12 +54,17 @@ class RecognitionViewModel @Inject constructor(
         /**
          * Delay before returning to Idle state after Success
          * Allows user to see/hear success state briefly
+         * 
+         * TODO (MEDIUM-5): Make configurable in settings for users who need longer processing time
+         * (e.g., deaf-blind users with slower comprehension)
          */
         private const val SUCCESS_DELAY_MS = 2000L
         
         /**
          * Delay before returning to Idle state after Error
          * Allows user to hear error announcement
+         * 
+         * TODO (MEDIUM-5): Make configurable in settings
          */
         private const val ERROR_DELAY_MS = 3000L
     }
@@ -72,11 +82,13 @@ class RecognitionViewModel @Inject constructor(
      * 
      * Story 2.3 Task 1.6: Implement recognizeObject() function
      * Story 2.4: EXTENDED to transition to Capturing state
+     * Story 2.6: EXTENDED to trigger RecognitionStart haptic
      * 
      * Flow:
      * 1. Transition to Capturing state (camera frame capture initiated)
-     * 2. Fragment captures frame and calls performRecognition(bitmap)
-     * 3. Continue with TFLite inference and TTS announcement
+     * 2. Trigger RecognitionStart haptic (single 100ms vibration)
+     * 3. Fragment captures frame and calls performRecognition(bitmap)
+     * 4. Continue with TFLite inference and TTS announcement
      */
     fun recognizeObject() {
         // Story 2.4: Debounce - ignore if already in progress
@@ -84,8 +96,18 @@ class RecognitionViewModel @Inject constructor(
             return
         }
         
-        // Story 2.4 Task 9.2: State transition - Idle → Capturing
-        _uiState.value = RecognitionUiState.Capturing
+        viewModelScope.launch {
+            // Story 2.4 Task 9.2: State transition - Idle → Capturing
+            _uiState.value = RecognitionUiState.Capturing
+            
+            // Story 2.6: Trigger recognition start haptic (non-blocking)
+            try {
+                hapticFeedbackManager.trigger(HapticPattern.RecognitionStart)
+            } catch (e: Exception) {
+                // Non-blocking error - log but don't fail recognition flow
+                android.util.Log.w(TAG, "Haptic feedback failed during recognition start", e)
+            }
+        }
     }
     
     /**
@@ -129,6 +151,14 @@ class RecognitionViewModel @Inject constructor(
                     _uiState.value = RecognitionUiState.Error(
                         "No objects detected. Try pointing camera at a different area."
                     )
+                    
+                    // Story 2.6: Trigger error haptic (long 300ms vibration)
+                    try {
+                        hapticFeedbackManager.trigger(HapticPattern.RecognitionError)
+                    } catch (e: Exception) {
+                        android.util.Log.w(TAG, "Haptic feedback failed during error state", e)
+                    }
+                    
                     delay(ERROR_DELAY_MS)
                     _uiState.value = RecognitionUiState.Idle
                     return@launch
@@ -154,6 +184,13 @@ class RecognitionViewModel @Inject constructor(
                     announcement = announcement,
                     latency = result.latencyMs
                 )
+                
+                // Story 2.6: Trigger success haptic (double vibration pattern)
+                try {
+                    hapticFeedbackManager.trigger(HapticPattern.RecognitionSuccess)
+                } catch (e: Exception) {
+                    android.util.Log.w(TAG, "Haptic feedback failed during success state", e)
+                }
                 
                 // Auto-return to Idle after brief delay (allows user to see success)
                 delay(SUCCESS_DELAY_MS)
@@ -186,9 +223,7 @@ class RecognitionViewModel @Inject constructor(
     }
     
     /**
-     * Handle camera errors
-     * 
-     * Story 2.4 Task 8: Camera initialization or capture errors
+     * Story 2.6: EXTENDED to trigger error haptic
      * 
      * @param message User-friendly error message
      */
@@ -196,6 +231,13 @@ class RecognitionViewModel @Inject constructor(
         viewModelScope.launch {
             // Story 2.4 Task 9.6: Transition to CameraError state
             _uiState.value = RecognitionUiState.CameraError(message)
+            
+            // Story 2.6: Trigger error haptic (long 300ms vibration)
+            try {
+                hapticFeedbackManager.trigger(HapticPattern.RecognitionError)
+            } catch (e: Exception) {
+                android.util.Log.w(TAG, "Haptic feedback failed during camera error", e)
+            }
             
             // Auto-return to Idle after error announcement delay
             delay(ERROR_DELAY_MS)
@@ -215,13 +257,20 @@ class RecognitionViewModel @Inject constructor(
     }
     
     /**
-     * Handle error state and auto-recovery
+     * Story 2.6: EXTENDED to trigger error haptic
      * 
      * @param message User-friendly error message
      */
     private suspend fun handleError(message: String) {
         // Transition to Error state
         _uiState.value = RecognitionUiState.Error(message = message)
+        
+        // Story 2.6: Trigger error haptic (long 300ms vibration)
+        try {
+            hapticFeedbackManager.trigger(HapticPattern.RecognitionError)
+        } catch (e: Exception) {
+            android.util.Log.w(TAG, "Haptic feedback failed during error handling", e)
+        }
         
         // Auto-return to Idle after error announcement delay
         delay(ERROR_DELAY_MS)

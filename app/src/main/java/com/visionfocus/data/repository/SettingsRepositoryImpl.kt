@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.data.preferences.PreferenceKeys
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +34,7 @@ class SettingsRepositoryImpl @Inject constructor(
         private val DEFAULT_VERBOSITY_MODE = VerbosityMode.STANDARD
         private const val DEFAULT_HIGH_CONTRAST = false
         private const val DEFAULT_LARGE_TEXT = false
+        private val DEFAULT_HAPTIC_INTENSITY = HapticIntensity.MEDIUM
         
         // Speech rate constraints (FR30, FR46)
         private const val MIN_SPEECH_RATE = 0.5f
@@ -121,6 +123,27 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setLargeTextMode(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferenceKeys.LARGE_TEXT_MODE] = enabled
+        }
+    }
+    
+    override fun getHapticIntensity(): Flow<HapticIntensity> {
+        return dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }
+            .map { preferences ->
+                val intensityString = preferences[PreferenceKeys.HAPTIC_INTENSITY]
+                intensityString?.let { HapticIntensity.fromString(it) } ?: DEFAULT_HAPTIC_INTENSITY
+            }
+    }
+    
+    override suspend fun setHapticIntensity(intensity: HapticIntensity) {
+        dataStore.edit { preferences ->
+            preferences[PreferenceKeys.HAPTIC_INTENSITY] = intensity.name
         }
     }
 }

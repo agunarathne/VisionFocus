@@ -75,62 +75,48 @@ class SettingsViewModelTest {
     }
     
     @Test
-    fun `toggleHighContrastMode calls repository with negated value when false`() = runTest(testDispatcher) {
-        // Arrange: Repository returns false
-        highContrastFlow.value = false
-        
+    fun `setHighContrastMode calls repository with provided value`() = runTest(testDispatcher) {
         // Act
-        viewModel.toggleHighContrastMode()
+        viewModel.setHighContrastMode(true)
         advanceUntilIdle()
         
-        // Assert: Should call repository with true (negated value)
+        // Assert
         verify(mockRepository).setHighContrastMode(true)
     }
     
     @Test
-    fun `toggleLargeTextMode calls repository with negated value when false`() = runTest(testDispatcher) {
-        // Arrange: Repository returns false
-        largeTextFlow.value = false
-        
+    fun `setLargeTextMode calls repository with provided value`() = runTest(testDispatcher) {
         // Act
-        viewModel.toggleLargeTextMode()
+        viewModel.setLargeTextMode(true)
         advanceUntilIdle()
         
-        // Assert: Should call repository with true (negated value)
+        // Assert
         verify(mockRepository).setLargeTextMode(true)
     }
     
     @Test
-    fun `toggleHighContrastMode calls repository with false when current value is true`() = runTest(testDispatcher) {
-        // Arrange: Repository returns true, wait for ViewModel to initialize StateFlow
-        highContrastFlow.value = true
-        testDispatcher.scheduler.advanceUntilIdle()
-        
-        // Verify StateFlow initialized with true
-        assertEquals(true, viewModel.highContrastMode.value)
-        
+    fun `setHighContrastMode can disable high contrast mode`() = runTest(testDispatcher) {
         // Act
-        viewModel.toggleHighContrastMode()
+        viewModel.setHighContrastMode(false)
         advanceUntilIdle()
         
-        // Assert: Should call repository with false (negated value)
+        // Assert
         verify(mockRepository).setHighContrastMode(false)
     }
     
     @Test
-    fun `toggleLargeTextMode calls repository with false when current value is true`() = runTest(testDispatcher) {
-        // Arrange: Repository returns true, wait for ViewModel to initialize StateFlow
-        largeTextFlow.value = true
-        testDispatcher.scheduler.advanceUntilIdle()
-        
-        // Verify StateFlow initialized with true
-        assertEquals(true, viewModel.largeTextMode.value)
-        
+    fun `setLargeTextMode can disable large text mode when currently enabled`() = runTest(testDispatcher) {
         // Act
-        viewModel.toggleLargeTextMode()
+        viewModel.setLargeTextMode(false)
         advanceUntilIdle()
         
-        // Assert: Should call repository , wait for initialization
+        // Assert: Should call repository with false
+        verify(mockRepository).setLargeTextMode(false)
+    }
+    
+    @Test
+    fun `highContrastMode StateFlow updates when repository emits new value`() = runTest(testDispatcher) {
+        // Arrange: Initial value is false, wait for initialization
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(false, viewModel.highContrastMode.value)
         
@@ -157,14 +143,11 @@ class SettingsViewModelTest {
     }
     
     @Test
-    fun `multiple rapid toggles handled correctly without race conditions`() = runTest(testDispatcher) {
-        // Arrange: Start with false
-        highContrastFlow.value = false
-        
-        // Act: Toggle multiple times rapidly
-        viewModel.toggleHighContrastMode()
-        viewModel.toggleHighContrastMode()
-        viewModel.toggleHighContrastMode()
+    fun `multiple rapid setHighContrastMode calls handled correctly without race conditions`() = runTest(testDispatcher) {
+        // Act: Set multiple times rapidly
+        viewModel.setHighContrastMode(true)
+        viewModel.setHighContrastMode(false)
+        viewModel.setHighContrastMode(true)
         advanceUntilIdle()
         
         // Assert: All three calls made (no race condition blocking)

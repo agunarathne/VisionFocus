@@ -74,4 +74,19 @@ interface SettingsRepository {
      * @param enabled True to enable large text (150% scaling).
      */
     suspend fun setLargeTextMode(enabled: Boolean)
+    
+    /**
+     * Observes haptic feedback intensity preference (Story 2.6).
+     * 
+     * @return Flow emitting current HapticIntensity.
+     *         Default: HapticIntensity.MEDIUM if not set.
+     */
+    fun getHapticIntensity(): Flow<com.visionfocus.data.model.HapticIntensity>
+    
+    /**
+     * Updates haptic feedback intensity preference (Story 2.6).
+     * 
+     * @param intensity New haptic intensity for recognition events.
+     */
+    suspend fun setHapticIntensity(intensity: com.visionfocus.data.model.HapticIntensity)
 }

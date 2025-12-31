@@ -35,4 +35,11 @@ object PreferenceKeys {
      * Default: false
      */
     val LARGE_TEXT_MODE = booleanPreferencesKey("large_text_mode")
+    
+    /**
+     * Haptic feedback intensity level (Story 2.6).
+     * Values: "OFF", "LIGHT", "MEDIUM", "STRONG"
+     * Default: "MEDIUM"
+     */
+    val HAPTIC_INTENSITY = stringPreferencesKey("haptic_intensity")
 }
