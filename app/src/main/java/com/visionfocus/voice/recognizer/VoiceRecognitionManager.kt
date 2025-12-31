@@ -132,8 +132,8 @@ class VoiceRecognitionManager @Inject constructor(
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
             
-            // Prefer on-device recognition (API 33+) for privacy and offline support
-            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            // Use online recognition (requires network, no language pack needed)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
             
             // English (US) for command recognition
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.US.toString())
