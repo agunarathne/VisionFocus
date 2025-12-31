@@ -74,19 +74,38 @@ class AlwaysAvailableVoiceActivationTest {
     /**
      * Task 14.1: Test home command navigates to home screen
      * AC #5: Home command returns to home screen from any location
+     * 
+     * CODE REVIEW FIX: Navigate away first to ensure test actually validates navigation
      */
     @Test
     fun homeCommand_navigatesToHomeScreen() = runTest {
-        // Execute home command directly
+        // Navigate to Settings first to test "from any location"
+        mainActivity.navigateToSettings()
+        
+        // Small delay for fragment transaction
+        kotlinx.coroutines.delay(150)
+        
+        // Verify we're on Settings (not home)
+        var currentScreen = mainActivity.getCurrentScreen()
+        assertTrue("Should be on settings before test", currentScreen == "settings" || currentScreen == "unknown")
+        
+        // Execute home command
         val result = homeCommand.execute(mainActivity)
+        
+        // Small delay for navigation
+        kotlinx.coroutines.delay(150)
         
         // Verify success
         assertTrue("Home command should succeed", result is CommandResult.Success)
         assertEquals("Navigated to home screen", (result as CommandResult.Success).message)
         
         // Verify we're on home screen
-        val currentScreen = mainActivity.getCurrentScreen()
+        currentScreen = mainActivity.getCurrentScreen()
         assertEquals("home", currentScreen)
+        
+        // Verify back stack cleared
+        val backStackCount = mainActivity.supportFragmentManager.backStackEntryCount
+        assertEquals("Back stack should be cleared", 0, backStackCount)
     }
     
     /**
@@ -172,6 +191,8 @@ class AlwaysAvailableVoiceActivationTest {
     /**
      * Task 14.7: Test commands execute with TTS announcements
      * Verify TTS integration works correctly
+     * 
+     * CODE REVIEW FIX: Use coroutine delay instead of Thread.sleep()
      */
     @Test
     fun navigationCommands_triggerTTSAnnouncements() = runTest {
@@ -181,14 +202,14 @@ class AlwaysAvailableVoiceActivationTest {
         // Execute home command (should announce "Home screen")
         homeCommand.execute(mainActivity)
         
-        // Small delay for TTS
-        Thread.sleep(100)
+        // Small delay for TTS (non-blocking)
+        kotlinx.coroutines.delay(100)
         
         // Execute back command (should announce "Already at home screen")
         backCommand.execute(mainActivity)
         
         // Small delay for TTS
-        Thread.sleep(100)
+        kotlinx.coroutines.delay(100)
         
         // If no exceptions thrown, TTS integration is working
         assertTrue("TTS integration test passed", true)

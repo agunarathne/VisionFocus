@@ -168,6 +168,68 @@ class BackCommand @Inject constructor(
 }
 
 /**
+ * Settings Command
+ * Story 3.5 Task 4.5: Navigate to Settings screen
+ * 
+ * Opens Settings screen from any location.
+ * Integrates with MainActivity.navigateToSettings().
+ * 
+ * Command variations:
+ * - "settings"
+ * - "preferences"
+ * - "options"
+ * 
+ * @param ttsManager TTS engine for announcements
+ * @since Story 3.5
+ */
+@Singleton
+class SettingsCommand @Inject constructor(
+    private val ttsManager: TTSManager
+) : VoiceCommand {
+    
+    companion object {
+        private const val TAG = "SettingsCommand"
+    }
+    
+    override val displayName: String = "Settings"
+    
+    override val keywords: List<String> = listOf(
+        "settings",
+        "preferences",
+        "options",
+        "open settings"
+    )
+    
+    override suspend fun execute(context: Context): CommandResult {
+        return try {
+            Log.d(TAG, "Executing Settings command")
+            
+            // Story 3.5: Cast context to MainActivity for navigation
+            if (context is com.visionfocus.MainActivity) {
+                // Navigate to settings using MainActivity helper
+                context.runOnUiThread {
+                    context.navigateToSettings()
+                }
+                
+                // Announce navigation
+                ttsManager.announce("Settings")
+                
+                Log.d(TAG, "Settings command executed - navigated to settings")
+                CommandResult.Success("Navigated to settings")
+            } else {
+                Log.e(TAG, "Context is not MainActivity - cannot navigate")
+                ttsManager.announce("Navigation error")
+                CommandResult.Failure("Context is not MainActivity")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to navigate to settings", e)
+            ttsManager.announce("Navigation error")
+            CommandResult.Failure("Settings error: ${e.message}")
+        }
+    }
+}
+
+/**
  * Home Command
  * Story 3.2 Task 2.13 & 8.2: Return to home screen
  * Story 3.5 Task 8: Complete HomeCommand implementation with navigation

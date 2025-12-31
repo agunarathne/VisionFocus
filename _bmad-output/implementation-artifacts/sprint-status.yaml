@@ -66,7 +66,7 @@ development_status:
   3-2-core-voice-command-processing-engine: done  # Device tested Jan 1, 2026 - 11/15 commands validated (53-61ms latency!), 4 placeholders documented, speech recognition improvements (dark mode synonyms), fuzzy matching working
   3-3-voice-command-confirmation-cancellation: done  # Device tested Jan 1, 2026 - All 5 tests PASSED, 8 ACs validated, confirmation latency 54-62ms
   3-4-voice-command-help-system: done  # Code review PASSED Dec 31, 2025 - All CRITICAL/MEDIUM issues fixed (4+3), MockK tests, defensive checks, i18n complete
-  3-5-always-available-voice-activation: review  # Implementation complete Jan 1, 2026 - HomeCommand/BackCommand navigation, 26 tests (18 unit + 8 integration), APK installed, pending device testing
+  3-5-always-available-voice-activation: in-progress  # Code review found AC #3 (context preservation) needs implementation, SettingsCommand upgraded Jan 1 2026
   epic-3-retrospective: optional
 
   # Epic 4: Advanced Recognition Features

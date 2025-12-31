@@ -39,10 +39,14 @@ import javax.inject.Singleton
  */
 @Singleton
 class VoiceCommandProcessor @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @ApplicationContext private val applicationContext: Context,
     private val ttsManager: TTSManager,
     private val hapticFeedbackManager: HapticFeedbackManager
 ) {
+    
+    // Activity context for navigation commands (Story 3.5)
+    // Must be set by MainActivity on creation
+    var activityContext: Context? = null
     
     companion object {
         private const val TAG = "VoiceCommandProcessor"
@@ -172,9 +176,12 @@ class VoiceCommandProcessor @Inject constructor(
             else -> null // Most commands complete immediately, no cancellation needed
         }
         
-        // 8. Execute command
+        // 8. Execute command with appropriate context
+        // Story 3.5: Use activityContext (MainActivity) if available for navigation commands
+        // Fall back to applicationContext for non-navigation commands
+        val contextToUse = activityContext ?: applicationContext
         val result = try {
-            command.execute(context)
+            command.execute(contextToUse)
         } catch (e: Exception) {
             Log.e(TAG, "Command execution failed: ${command.displayName}", e)
             ttsManager.announce("Command failed. Please try again.")

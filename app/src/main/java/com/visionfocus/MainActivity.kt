@@ -28,6 +28,7 @@ import com.visionfocus.ui.settings.SettingsFragment
 import com.visionfocus.ui.viewmodels.SampleViewModel
 import com.visionfocus.voice.recognizer.VoiceRecognitionState
 import com.visionfocus.voice.ui.VoiceRecognitionViewModel
+import com.visionfocus.voice.processor.VoiceCommandProcessor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -59,6 +60,10 @@ class MainActivity : AppCompatActivity() {
     
     @Inject
     lateinit var settingsRepository: SettingsRepository
+    
+    // Story 3.5: Voice command processor for navigation context
+    @Inject
+    lateinit var voiceCommandProcessor: VoiceCommandProcessor
     
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
     
@@ -129,6 +134,9 @@ class MainActivity : AppCompatActivity() {
         setupPermissionLaunchers()
         checkCameraPermission()
         checkMicrophonePermission()
+        
+        // Story 3.5: Set MainActivity context for navigation commands
+        voiceCommandProcessor.activityContext = this
         
         // Story 3.1: Setup voice button and observe voice recognition state
         setupVoiceButton()
@@ -468,11 +476,12 @@ class MainActivity : AppCompatActivity() {
     
     /**
      * Navigates to SettingsFragment.
+     * Story 3.5: Made public for SettingsCommand voice navigation access
      * 
      * Replaces current fragment with SettingsFragment and adds to back stack
      * for proper back navigation.
      */
-    private fun navigateToSettings() {
+    fun navigateToSettings() {
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainer, SettingsFragment())
             .addToBackStack(null)
@@ -491,9 +500,11 @@ class MainActivity : AppCompatActivity() {
     fun navigateToHome(ttsManager: TTSManager? = null) {
         // Check if already on home screen
         val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-        if (currentFragment is com.visionfocus.ui.recognition.RecognitionFragment && 
-            supportFragmentManager.backStackEntryCount == 0) {
-            // Already at home
+        val alreadyAtHome = currentFragment is com.visionfocus.ui.recognition.RecognitionFragment && 
+                           supportFragmentManager.backStackEntryCount == 0
+        
+        if (alreadyAtHome) {
+            // Already at home - announce once and return
             android.util.Log.d("VisionFocus", "Already on home screen")
             ttsManager?.let {
                 lifecycleScope.launch {
@@ -513,11 +524,11 @@ class MainActivity : AppCompatActivity() {
                 .commit()
         }
         
+        // Announce AFTER navigation complete
         android.util.Log.d("VisionFocus", "Navigated to home screen")
-        ttsManager?.let {
-            lifecycleScope.launch {
-                it.announce(getString(R.string.home_screen_announcement))
-            }
+        lifecycleScope.launch {
+            kotlinx.coroutines.delay(100)  // Wait for fragment transaction
+            ttsManager?.announce(getString(R.string.home_screen_announcement))
         }
     }
     

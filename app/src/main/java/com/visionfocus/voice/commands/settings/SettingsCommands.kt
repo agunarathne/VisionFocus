@@ -48,19 +48,24 @@ class SettingsCommand @Inject constructor(
         return try {
             Log.d(TAG, "Executing Settings command")
             
-            // Note: Settings screen access via MainActivity menu
-            // For now, announce placeholder
-            ttsManager.announce("Opening settings")
-            
-            // TODO: Navigate to settings screen
-            // Option 1: Broadcast intent to MainActivity
-            // Option 2: Navigation callback pattern
-            
-            Log.d(TAG, "Settings command executed")
-            CommandResult.Success("Settings opened")
+            // Story 3.5: Navigate to settings using MainActivity
+            if (context is com.visionfocus.MainActivity) {
+                context.runOnUiThread {
+                    context.navigateToSettings()
+                }
+                
+                ttsManager.announce("Settings")
+                
+                Log.d(TAG, "Settings command executed - navigated to settings")
+                CommandResult.Success("Navigated to settings")
+            } else {
+                Log.e(TAG, "Context is not MainActivity - cannot navigate")
+                ttsManager.announce("Navigation error")
+                CommandResult.Failure("Context is not MainActivity")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open settings", e)
-            ttsManager.announce("Unable to open settings")
+            ttsManager.announce("Navigation error")
             CommandResult.Failure("Settings error: ${e.message}")
         }
     }
