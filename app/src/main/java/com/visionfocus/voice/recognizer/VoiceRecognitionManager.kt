@@ -65,6 +65,10 @@ class VoiceRecognitionManager @Inject constructor(
     // HIGH-1: Prevent memory leak from multiple rapid initializations
     private var isRecognizerActive = false
     
+    // HIGH-6: Watchdog timer to reset stuck listening state
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private var watchdogJob: Job? = null
+    
     // Callback for recognized text (passed to command processor in Story 3.2)
     private var onRecognizedTextCallback: ((String) -> Unit)? = null
     
