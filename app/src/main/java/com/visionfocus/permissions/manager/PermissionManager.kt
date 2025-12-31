@@ -41,6 +41,17 @@ class PermissionManager @Inject constructor(
     }
     
     /**
+     * Check if microphone permission is currently granted.
+     * Story 3.1 Task 2.1: Required for voice command functionality (FR55)
+     */
+    fun isMicrophonePermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.RECORD_AUDIO
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+    
+    /**
      * Determine if rationale should be shown for camera permission.
      * Returns true if user previously denied permission.
      */
@@ -48,6 +59,18 @@ class PermissionManager @Inject constructor(
         return ActivityCompat.shouldShowRequestPermissionRationale(
             activity,
             android.Manifest.permission.CAMERA
+        )
+    }
+    
+    /**
+     * Determine if rationale should be shown for microphone permission.
+     * Returns true if user previously denied permission.
+     * Story 3.1 Task 2.4: Rationale dialog support
+     */
+    fun shouldShowMicrophoneRationale(activity: Activity): Boolean {
+        return ActivityCompat.shouldShowRequestPermissionRationale(
+            activity,
+            android.Manifest.permission.RECORD_AUDIO
         )
     }
     
@@ -61,10 +84,36 @@ class PermissionManager @Inject constructor(
     }
     
     /**
+     * Request microphone permission for voice commands.
+     * Story 3.1 Task 2.2: Microphone permission request
+     * 
+     * @param launcher ActivityResultLauncher from Activity
+     */
+    fun requestMicrophonePermission(launcher: ActivityResultLauncher<String>) {
+        launcher.launch(android.Manifest.permission.RECORD_AUDIO)
+    }
+    
+    /**
      * Register permission result launcher in Activity.
      * Must be called during Activity initialization (before onCreate completes).
      */
     fun registerCameraPermissionLauncher(
+        activity: Activity,
+        onResult: (Boolean) -> Unit
+    ): ActivityResultLauncher<String> {
+        return (activity as androidx.activity.ComponentActivity).registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            onResult(isGranted)
+        }
+    }
+    
+    /**
+     * Register microphone permission result launcher in Activity.
+     * Must be called during Activity initialization (before onCreate completes).
+     * Story 3.1 Task 2.2: Microphone permission launcher registration
+     */
+    fun registerMicrophonePermissionLauncher(
         activity: Activity,
         onResult: (Boolean) -> Unit
     ): ActivityResultLauncher<String> {

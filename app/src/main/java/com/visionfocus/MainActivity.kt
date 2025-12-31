@@ -1,9 +1,12 @@
 package com.visionfocus
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -19,6 +22,8 @@ import com.visionfocus.theme.ThemeManager
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.ui.settings.SettingsFragment
 import com.visionfocus.ui.viewmodels.SampleViewModel
+import com.visionfocus.voice.recognizer.VoiceRecognitionState
+import com.visionfocus.voice.ui.VoiceRecognitionViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -29,6 +34,7 @@ import javax.inject.Inject
  * 
  * Story 2.3 Task 7: MainActivity integration with RecognitionFragment
  * Story 2.5: Theme preferences applied on startup before setContentView
+ * Story 3.1: Voice command button integration with microphone permission
  * 
  * @AndroidEntryPoint enables Hilt dependency injection in this Activity.
  * Required for injecting ViewModels and other dependencies.
@@ -37,6 +43,9 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityMainBinding
+    
+    // Story 3.1: Voice recognition ViewModel
+    private val voiceViewModel: VoiceRecognitionViewModel by viewModels()
     
     @Inject
     lateinit var permissionManager: PermissionManager
@@ -48,6 +57,12 @@ class MainActivity : AppCompatActivity() {
     lateinit var settingsRepository: SettingsRepository
     
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
+    
+    // Story 3.1: Microphone permission launcher
+    private lateinit var microphonePermissionLauncher: ActivityResultLauncher<String>
+    
+    // Story 3.1 Task 4.3: Pulsing animation for listening state
+    private var pulsingAnimator: AnimatorSet? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         // Story 2.5: Apply theme preferences BEFORE setContentView() to prevent flicker
@@ -88,16 +103,29 @@ class MainActivity : AppCompatActivity() {
         // Story 2.3 Task 7.3: RecognitionFragment auto-loaded via FragmentContainerView
         // No manual fragment transaction needed - android:name attribute handles it
         
-        // Setup permission launcher and check camera permission (Story 1.5)
-        setupPermissionLauncher()
+        // Setup permission launchers and check permissions (Story 1.5, Story 3.1)
+        setupPermissionLaunchers()
         checkCameraPermission()
+        checkMicrophonePermission()
+        
+        // Story 3.1: Setup voice button and observe voice recognition state
+        setupVoiceButton()
+        observeVoiceRecognitionState()
     }
     
-    private fun setupPermissionLauncher() {
+    private fun setupPermissionLaunchers() {
+        // Camera permission launcher (Story 1.5)
         cameraPermissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
             handleCameraPermissionResult(isGranted)
+        }
+        
+        // Microphone permission launcher (Story 3.1 Task 2.2)
+        microphonePermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            handleMicrophonePermissionResult(isGranted)
         }
     }
     
@@ -159,6 +187,207 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * Check microphone permission for voice commands.
+     * Story 3.1 Task 2: Microphone permission flow
+     */
+    private fun checkMicrophonePermission() {
+        when {
+            permissionManager.isMicrophonePermissionGranted() -> {
+                // Permission already granted
+                voiceViewModel.updatePermissionState(true)
+                android.util.Log.d("VisionFocus", "Microphone permission already granted")
+            }
+            permissionManager.shouldShowMicrophoneRationale(this) -> {
+                showMicrophoneRationale()
+            }
+            else -> {
+                // First request or user hasn't permanently denied
+                // Don't auto-request - wait for user to tap voice button
+                voiceViewModel.updatePermissionState(false)
+                android.util.Log.d("VisionFocus", "Microphone permission not granted - button will be disabled")
+            }
+        }
+    }
+    
+    /**
+     * Show rationale dialog for microphone permission.
+     * Story 3.1 Task 2.4: Rationale dialog for previously denied permission
+     */
+    private fun showMicrophoneRationale() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.microphone_permission_rationale_title)
+            .setMessage(R.string.microphone_permission_rationale_message)
+            .setPositiveButton(R.string.permission_allow) { dialog, _ ->
+                dialog.dismiss()
+                requestMicrophonePermission()
+            }
+            .setNegativeButton(R.string.permission_deny) { dialog, _ ->
+                dialog.dismiss()
+                handleMicrophonePermissionResult(false)
+            }
+            .setCancelable(false)
+            .show()
+    }
+    
+    /**
+     * Request microphone permission.
+     * Story 3.1 Task 2.2: Request microphone permission via launcher
+     */
+    private fun requestMicrophonePermission() {
+        microphonePermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+    }
+    
+    /**
+     * Handle microphone permission result.
+     * Story 3.1 Task 2.5: TalkBack announcements for grant/deny events
+     */
+    private fun handleMicrophonePermissionResult(isGranted: Boolean) {
+        val announcement = if (isGranted) {
+            getString(R.string.microphone_permission_granted)
+        } else {
+            getString(R.string.microphone_permission_denied)
+        }
+        
+        accessibilityHelper.announce(binding.root, announcement)
+        voiceViewModel.updatePermissionState(isGranted)
+        
+        if (isGranted) {
+            // Permission granted - can now start listening
+            android.util.Log.d("VisionFocus", "Microphone permission granted")
+        } else {
+            // Permission denied - voice button will remain disabled
+            android.util.Log.w("VisionFocus", "Microphone permission denied")
+        }
+    }
+    
+    /**
+     * Setup voice button click listener and permission handling.
+     * Story 3.1 Task 4: Voice button activation and permission check
+     */
+    private fun setupVoiceButton() {
+        binding.voiceFab.setOnClickListener {
+            if (permissionManager.isMicrophonePermissionGranted()) {
+                // Permission granted - start listening (Task 4.1)
+                voiceViewModel.startListening()
+            } else {
+                // Permission not granted - request it (Task 2.2)
+                if (permissionManager.shouldShowMicrophoneRationale(this)) {
+                    showMicrophoneRationale()
+                } else {
+                    requestMicrophonePermission()
+                }
+            }
+        }
+        
+        // Update button state based on permission (Task 7.6)
+        lifecycleScope.launch {
+            voiceViewModel.isPermissionGranted.collect { granted ->
+                updateVoiceButtonState(granted)
+            }
+        }
+    }
+    
+    /**
+     * Update voice button appearance based on permission state.
+     * Story 3.1 Task 7.6: Button state based on permission
+     */
+    private fun updateVoiceButtonState(granted: Boolean) {
+        binding.voiceFab.isEnabled = granted
+        
+        if (granted) {
+            // Enable button with normal appearance
+            binding.voiceFab.contentDescription = getString(R.string.voice_commands_button)
+            binding.voiceFab.alpha = 1.0f
+        } else {
+            // Disable button with visual indication
+            binding.voiceFab.contentDescription = getString(R.string.voice_commands_unavailable)
+            binding.voiceFab.alpha = 0.5f
+        }
+    }
+    
+    /**
+     * Observe voice recognition state changes for visual feedback.
+     * Story 3.1 Task 4.3, 4.4: Pulsing animation for listening state
+     */
+    private fun observeVoiceRecognitionState() {
+        lifecycleScope.launch {
+            voiceViewModel.state.collect { state ->
+                when (state) {
+                    is VoiceRecognitionState.Idle -> {
+                        stopPulsingAnimation()
+                        binding.voiceFab.contentDescription = getString(R.string.voice_commands_button)
+                    }
+                    is VoiceRecognitionState.Listening -> {
+                        if (state.isReady) {
+                            startPulsingAnimation()
+                            binding.voiceFab.contentDescription = getString(R.string.voice_commands_listening)
+                        }
+                    }
+                    is VoiceRecognitionState.Processing -> {
+                        // Brief processing state - keep animation
+                    }
+                    is VoiceRecognitionState.Error -> {
+                        stopPulsingAnimation()
+                        binding.voiceFab.contentDescription = getString(R.string.voice_commands_button)
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Start pulsing animation for listening state.
+     * Story 3.1 Task 4.3: Pulsing microphone icon animation
+     * 
+     * Animation: Scale 1.0 → 1.1 → 1.0 (600ms loop), Alpha 1.0 → 0.7 → 1.0
+     */
+    private fun startPulsingAnimation() {
+        // Stop any existing animation
+        stopPulsingAnimation()
+        
+        val scaleX = ObjectAnimator.ofFloat(binding.voiceFab, "scaleX", 1.0f, 1.1f, 1.0f).apply {
+            duration = 600
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+        
+        val scaleY = ObjectAnimator.ofFloat(binding.voiceFab, "scaleY", 1.0f, 1.1f, 1.0f).apply {
+            duration = 600
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+        
+        val alpha = ObjectAnimator.ofFloat(binding.voiceFab, "alpha", 1.0f, 0.7f, 1.0f).apply {
+            duration = 600
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+        
+        pulsingAnimator = AnimatorSet().apply {
+            playTogether(scaleX, scaleY, alpha)
+            start()
+        }
+        
+        android.util.Log.d("VisionFocus", "Started pulsing animation")
+    }
+    
+    /**
+     * Stop pulsing animation.
+     * Story 3.1 Task 6.6: Stop animation on error or completion
+     */
+    private fun stopPulsingAnimation() {
+        pulsingAnimator?.cancel()
+        pulsingAnimator = null
+        
+        // Reset button to normal state
+        binding.voiceFab.scaleX = 1.0f
+        binding.voiceFab.scaleY = 1.0f
+        binding.voiceFab.alpha = if (voiceViewModel.isVoiceButtonEnabled()) 1.0f else 0.5f
+        
+        android.util.Log.d("VisionFocus", "Stopped pulsing animation")
+    }
+    
+    /**
      * Creates options menu with Settings item.
      * 
      * Story 2.5 Task 10: Settings menu for navigation to SettingsFragment
@@ -198,8 +427,12 @@ class MainActivity : AppCompatActivity() {
     
     override fun onDestroy() {
         super.onDestroy()
+        // Story 3.1: Stop pulsing animation if active
+        stopPulsingAnimation()
+        
         // Note: ObjectRecognitionService and TTSManager are Application-scoped singletons
         // They are NOT cleaned up when Activity is destroyed - they live for app lifetime
         // Cleanup happens when Android OS kills the app process
+        // VoiceRecognitionManager is cleaned up by VoiceRecognitionViewModel.onCleared()
     }
 }

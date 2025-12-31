@@ -37,4 +37,21 @@
         app:layout_constraintEnd_toEndOf="parent"
         tools:layout="@layout/fragment_recognition" />
 
+    <!-- Story 3.1 Task 3: Voice command button (FAB 56x56 dp) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/voice_fab"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:contentDescription="@string/voice_commands_button"
+        app:fabSize="normal"
+        app:srcCompat="@drawable/ic_mic"
+        app:tint="?attr/colorOnPrimary"
+        app:backgroundTint="?attr/colorPrimary"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:elevation="6dp"
+        app:hoveredFocusedTranslationZ="12dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

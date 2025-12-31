@@ -61,8 +61,8 @@ development_status:
   epic-2-retrospective: optional
 
   # Epic 3: Voice Command System
-  epic-3: backlog
-  3-1-android-speech-recognizer-integration: backlog
+  epic-3: in-progress  # Started Dec 31, 2025
+  3-1-android-speech-recognizer-integration: review  # Completed Dec 31, 2025
   3-2-core-voice-command-processing-engine: backlog
   3-3-voice-command-confirmation-cancellation: backlog
   3-4-voice-command-help-system: backlog

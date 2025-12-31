@@ -6,6 +6,10 @@
     <string name="camera_permission_rationale_title">Camera Access Needed</string>
     <string name="camera_permission_rationale_message">VisionFocus needs camera access to identify objects in your environment. Your images stay private on your device and are never uploaded.</string>
     
+    <!-- Microphone permission strings (Story 3.1) -->
+    <string name="microphone_permission_rationale_title">Microphone Access Needed</string>
+    <string name="microphone_permission_rationale_message">VisionFocus needs microphone access for voice commands. Your voice is processed on your device only and never recorded or uploaded.</string>
+    
     <string name="permission_allow">Allow</string>
     <string name="permission_allow_description">Grant camera permission</string>
     <string name="permission_deny">Deny</string>
@@ -14,12 +18,21 @@
     <!-- TalkBack announcements -->
     <string name="camera_permission_granted">Camera permission granted. You can now recognize objects.</string>
     <string name="camera_permission_denied">Camera permission denied. Object recognition will not work without camera access.</string>
+    <string name="microphone_permission_granted">Microphone permission granted. You can now use voice commands.</string>
+    <string name="microphone_permission_denied">Microphone permission denied. Voice commands will not work without microphone access.</string>
     
     <!-- Story 2.3: Recognition UI strings -->
     <string name="recognition_instructions_short">Tap the button to recognize objects</string>
     
     <!-- Story 2.3 AC2: FAB content description (minimum 56x56 dp) -->
     <string name="recognize_fab_description">Recognize objects</string>
+    
+    <!-- Story 3.1: Voice command button strings -->
+    <string name="voice_commands_button">Voice commands, button</string>
+    <string name="voice_commands_listening">Listening for command, button</string>
+    <string name="voice_commands_unavailable">Voice commands unavailable. Microphone permission required, button</string>
+    <string name="listening_for_command">Listening for command</string>
+    <string name="voice_command_processing">Processing command</string>
     
     <!-- Story 2.3 Task 5.8: State announcements for TalkBack -->
     <string name="state_idle">Ready to recognize objects</string>
