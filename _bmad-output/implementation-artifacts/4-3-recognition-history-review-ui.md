@@ -843,3 +843,31 @@ Fixed 8 issues identified in adversarial code review:
 **Files Created:** 1 file (HistoryCommandTest.kt)  
 **String Resources Added:** 6 new strings  
 **Build Status:** ✅ Passing
+**Bug Fixes Post-Review - January 1, 2026**
+
+Fixed 2 runtime issues discovered during device testing:
+
+**BUG FIX 1 - Duplicate HistoryCommand Class Conflict:**
+- **Issue**: Voice command "History" was executing wrong implementation, announcing "History feature coming soon" instead of navigating to HistoryFragment
+- **Root Cause**: Duplicate HistoryCommand classes existed in both `voice.commands.recognition` (old placeholder) and `voice.commands.navigation` (new implementation) packages
+- **Impact**: VoiceCommandModule imported correct navigation.HistoryCommand but Hilt dependency injection resolved to wrong instance
+- **Solution**: Removed old placeholder HistoryCommand from AdditionalRecognitionCommands.kt, added migration note
+- **Validation**: Voice command now properly navigates to HistoryFragment in 114-258ms (under 300ms target), confirmation latency 55-56ms
+- **File Modified**: AdditionalRecognitionCommands.kt (47 lines removed)
+
+**BUG FIX 2 - Loading Spinner Persists on Empty State:**
+- **Issue**: After clearing all history and reloading History screen, empty state message displayed correctly but loading ProgressBar continued spinning indefinitely
+- **Root Cause**: HistoryFragment.showEmptyState() method missing `binding.loadingProgressBar.visibility = View.GONE` line
+- **Impact**: Confusing UI state showing both "No recognition history" message and active loading indicator
+- **Solution**: Added loadingProgressBar visibility = GONE to showEmptyState() to match showHistory() and showError() patterns
+- **Validation**: Empty state now displays cleanly without loading indicator after history cleared
+- **File Modified**: HistoryFragment.kt (1 line added)
+
+**Device Testing Results:**
+- ✅ Voice command "History" executes successfully in 114-258ms
+- ✅ Voice command confirmation latency: 55-56ms (under 100ms target)
+- ✅ Navigation to HistoryFragment works correctly
+- ✅ Empty state displays properly without loading spinner
+- ✅ All 10 Acceptance Criteria validated and working
+
+**Total Bug Fix Commit**: 2 files modified, 5 insertions, 47 deletions (commit: 0eb7031)
