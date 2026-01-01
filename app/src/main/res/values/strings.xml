@@ -130,4 +130,25 @@
     <string name="home_screen_announcement">Home screen</string>
     <string name="going_back_announcement">Going back</string>
     <string name="already_at_home_announcement">Already at home screen</string>
+    
+    <!-- Story 4.1: Verbosity Mode Selection Strings -->
+    <string name="verbosity_mode_section">Announcement Detail Level</string>
+    <string name="verbosity_label">Announcement Detail Level</string>
+    <string name="verbosity_label_description">Announcement detail level setting</string>
+    <string name="verbosity_mode_explanation">Choose how much detail you hear about recognized objects.</string>
+    <string name="verbosity_radio_group_description">Verbosity mode, radio button group</string>
+    
+    <string name="verbosity_brief">Brief</string>
+    <string name="verbosity_brief_description">Brief mode, radio button. Object name only.</string>
+    
+    <string name="verbosity_standard">Standard</string>
+    <string name="verbosity_standard_description">Standard mode, radio button. Object name with confidence level.</string>
+    
+    <string name="verbosity_detailed">Detailed</string>
+    <string name="verbosity_detailed_description">Detailed mode, radio button. Object name, confidence, position, and count.</string>
+    
+    <!-- Verbosity confirmation messages -->
+    <string name="verbosity_set_to_brief">Verbosity set to brief</string>
+    <string name="verbosity_set_to_standard">Verbosity set to standard</string>
+    <string name="verbosity_set_to_detailed">Verbosity set to detailed</string>
 </resources>

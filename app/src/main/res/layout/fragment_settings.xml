@@ -170,6 +170,66 @@
                 android:paddingEnd="@dimen/spacing_small" />
         </RadioGroup>
 
+        <!-- Verbosity Mode Section (Story 4.1) -->
+        <TextView
+            android:id="@+id/verbosityModeSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/verbosity_mode_section"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:paddingTop="@dimen/spacing_large"
+            android:paddingBottom="@dimen/spacing_small"
+            android:accessibilityHeading="true"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:id="@+id/verbosityModeExplanation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/verbosity_mode_explanation"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="no" />
+
+        <RadioGroup
+            android:id="@+id/verbosityModeGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:contentDescription="@string/verbosity_radio_group_description">
+
+            <RadioButton
+                android:id="@+id/verbosityBriefRadio"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/verbosity_brief"
+                android:contentDescription="@string/verbosity_brief_description"
+                android:minHeight="48dp"
+                android:paddingStart="@dimen/spacing_small"
+                android:paddingEnd="@dimen/spacing_small" />
+
+            <RadioButton
+                android:id="@+id/verbosityStandardRadio"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/verbosity_standard"
+                android:contentDescription="@string/verbosity_standard_description"
+                android:minHeight="48dp"
+                android:checked="true"
+                android:paddingStart="@dimen/spacing_small"
+                android:paddingEnd="@dimen/spacing_small" />
+
+            <RadioButton
+                android:id="@+id/verbosityDetailedRadio"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="@string/verbosity_detailed"
+                android:contentDescription="@string/verbosity_detailed_description"
+                android:minHeight="48dp"
+                android:paddingStart="@dimen/spacing_small"
+                android:paddingEnd="@dimen/spacing_small" />
+        </RadioGroup>
+
     </LinearLayout>
 
 </ScrollView>

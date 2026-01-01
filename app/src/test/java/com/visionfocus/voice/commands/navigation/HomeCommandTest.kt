@@ -45,7 +45,7 @@ class HomeCommandTest {
         
         // Mock runOnUiThread to execute immediately in tests
         every { mockMainActivity.runOnUiThread(any()) } answers {
-            val block = firstArg<Runnable>()
+            val block = arg<Runnable>(0)
             block.run()
         }
         
@@ -128,7 +128,7 @@ class HomeCommandTest {
         var executedOnUiThread = false
         every { mockMainActivity.runOnUiThread(any()) } answers {
             executedOnUiThread = true
-            val block = firstArg<Runnable>()
+            val block = arg<Runnable>(0)
             block.run()
         }
         

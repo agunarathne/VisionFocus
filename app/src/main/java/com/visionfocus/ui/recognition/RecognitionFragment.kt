@@ -234,6 +234,7 @@ class RecognitionFragment : Fragment() {
     
     /**
      * Story 2.4 Task 1.5: Bind CameraX Preview + ImageCapture use cases
+     * Fixed: Added delay after unbindAll() to prevent buffer errors
      */
     private fun bindCameraUseCases() {
         val cameraProvider = cameraProvider ?: return
@@ -261,15 +262,22 @@ class RecognitionFragment : Fragment() {
             // Unbind all use cases before rebinding
             cameraProvider.unbindAll()
             
-            // Story 2.4 Task 1.5: Bind use cases to lifecycle
-            cameraProvider.bindToLifecycle(
-                viewLifecycleOwner,
-                cameraSelector,
-                preview,
-                imageCapture
-            )
-            
-            viewModel.onCameraReady()
+            // FIX: Add 300ms delay to allow CameraX to fully release resources
+            // Without this, rapid FAB taps cause buffer errors (errorCode=3,4,5)
+            // 100ms was insufficient - camera still crashed intermittently
+            viewLifecycleOwner.lifecycleScope.launch {
+                delay(300)
+                
+                // Story 2.4 Task 1.5: Bind use cases to lifecycle
+                cameraProvider.bindToLifecycle(
+                    viewLifecycleOwner,
+                    cameraSelector,
+                    preview,
+                    imageCapture
+                )
+                
+                viewModel.onCameraReady()
+            }
         } catch (e: Exception) {
             handleCameraError("Camera binding failed: ${e.message}")
         }

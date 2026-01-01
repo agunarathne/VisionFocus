@@ -16,6 +16,9 @@ import com.visionfocus.voice.commands.settings.HighContrastOffCommand
 import com.visionfocus.voice.commands.settings.HighContrastOnCommand
 import com.visionfocus.voice.commands.settings.IncreaseSpeedCommand
 import com.visionfocus.voice.commands.settings.SettingsCommand
+import com.visionfocus.voice.commands.settings.VerbosityBriefCommand
+import com.visionfocus.voice.commands.settings.VerbosityDetailedCommand
+import com.visionfocus.voice.commands.settings.VerbosityStandardCommand
 import com.visionfocus.voice.commands.utility.CancelCommand
 import com.visionfocus.voice.commands.utility.HelpCommand
 import com.visionfocus.voice.commands.utility.RepeatCommand
@@ -70,6 +73,9 @@ object VoiceCommandModule {
      * @param homeCommand Navigation commands (Story 3.2 Task 2.13)
      * @param whereAmICommand Navigation commands (Story 3.2 Task 2.14)
      * @param whatDoISeeCommand Recognition commands (Story 3.2 Task 2.15)
+     * @param verbosityBriefCommand Settings commands (Story 4.1 Task 7)
+     * @param verbosityStandardCommand Settings commands (Story 4.1 Task 7)
+     * @param verbosityDetailedCommand Settings commands (Story 4.1 Task 7)
      * @return Fully configured VoiceCommandProcessor
      */
     @Provides
@@ -93,6 +99,9 @@ object VoiceCommandModule {
         highContrastOffCommand: HighContrastOffCommand,
         increaseSpeedCommand: IncreaseSpeedCommand,
         decreaseSpeedCommand: DecreaseSpeedCommand,
+        verbosityBriefCommand: VerbosityBriefCommand,
+        verbosityStandardCommand: VerbosityStandardCommand,
+        verbosityDetailedCommand: VerbosityDetailedCommand,
         // Utility commands
         repeatCommand: RepeatCommand,
         cancelCommand: CancelCommand,
@@ -120,6 +129,9 @@ object VoiceCommandModule {
         processor.registerCommand(homeCommand)
         processor.registerCommand(whereAmICommand)
         processor.registerCommand(whatDoISeeCommand)
+        processor.registerCommand(verbosityBriefCommand)
+        processor.registerCommand(verbosityStandardCommand)
+        processor.registerCommand(verbosityDetailedCommand)
         
         return processor
     }

@@ -3,6 +3,7 @@ package com.visionfocus.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.visionfocus.data.model.HapticIntensity
+import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +24,9 @@ import javax.inject.Inject
  * 
  * Haptic Preferences (Story 2.6):
  * - Haptic Intensity: OFF, LIGHT, MEDIUM, STRONG
+ * 
+ * Verbosity Preferences (Story 4.1):
+ * - Verbosity Mode: BRIEF, STANDARD, DETAILED
  * 
  * StateFlow Usage:
  * StateFlow conversion with stateIn() provides:
@@ -100,6 +104,25 @@ class SettingsViewModel @Inject constructor(
         )
     
     /**
+     * Verbosity mode preference (Story 4.1).
+     * 
+     * Controls announcement detail level for recognized objects:
+     * - BRIEF: Category only ("Chair")
+     * - STANDARD: Category + confidence ("Chair with high confidence")
+     * - DETAILED: Category + confidence + position + count 
+     *   ("High confidence: chair in center of view. Two chairs detected.")
+     * 
+     * Default: STANDARD
+     */
+    val verbosityMode: StateFlow<VerbosityMode> = settingsRepository
+        .getVerbosity()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(FLOW_SUBSCRIPTION_TIMEOUT_MS),
+            initialValue = VerbosityMode.STANDARD
+        )
+    
+    /**
      * Sets high-contrast mode preference.
      * 
      * Persists to DataStore.
@@ -151,5 +174,19 @@ class SettingsViewModel @Inject constructor(
         android.util.Log.d("VisionFocus", "[ViewModel] setHapticIntensity called with: $intensity")
         settingsRepository.setHapticIntensity(intensity)
         android.util.Log.d("VisionFocus", "[ViewModel] setHapticIntensity DataStore write completed")
+    }
+    
+    /**
+     * Sets verbosity mode preference (Story 4.1).
+     * 
+     * Persists to DataStore.
+     * UI automatically updates via StateFlow observation.
+     * 
+     * @param mode The desired verbosity mode level
+     */
+    suspend fun setVerbosityMode(mode: VerbosityMode) {
+        android.util.Log.d("VisionFocus", "[ViewModel] setVerbosityMode called with: $mode")
+        settingsRepository.setVerbosity(mode)
+        android.util.Log.d("VisionFocus", "[ViewModel] setVerbosityMode DataStore write completed")
     }
 }

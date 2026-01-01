@@ -12,6 +12,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.visionfocus.R
 import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.data.model.HapticIntensity
+import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.databinding.FragmentSettingsBinding
 import com.visionfocus.theme.ThemeManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -68,6 +69,9 @@ class SettingsFragment : Fragment() {
     
     // Guard: Track last intensity to prevent duplicate sample vibrations (Samsung device fix)
     private var lastHapticIntensity: HapticIntensity? = null
+    
+    // Guard: Track last verbosity mode to prevent duplicate announcements (Story 4.1)
+    private var lastVerbosityMode: VerbosityMode? = null
     
     // Job tracking for memory leak prevention (MEDIUM-2 fix)
     private val observerJobs = mutableListOf<kotlinx.coroutines.Job>()
@@ -151,6 +155,27 @@ class SettingsFragment : Fragment() {
                             HapticIntensity.LIGHT -> binding.hapticLight.isChecked = true
                             HapticIntensity.MEDIUM -> binding.hapticMedium.isChecked = true
                             HapticIntensity.STRONG -> binding.hapticStrong.isChecked = true
+                        }
+                        
+                        isUpdatingFromObserver = false
+                    }
+                }
+            }
+        )
+        
+        // Observe verbosity mode preference (Story 4.1)
+        observerJobs.add(
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.verbosityMode.collect { mode ->
+                        // Set guard flag to prevent listener from triggering during update
+                        isUpdatingFromObserver = true
+                        
+                        // Update radio button selection based on verbosity mode
+                        when (mode) {
+                            VerbosityMode.BRIEF -> binding.verbosityBriefRadio.isChecked = true
+                            VerbosityMode.STANDARD -> binding.verbosityStandardRadio.isChecked = true
+                            VerbosityMode.DETAILED -> binding.verbosityDetailedRadio.isChecked = true
                         }
                         
                         isUpdatingFromObserver = false
@@ -271,6 +296,41 @@ class SettingsFragment : Fragment() {
                 if (intensity != HapticIntensity.OFF) {
                     hapticFeedbackManager.triggerSample(intensity)  // Then trigger sample
                 }
+            }
+        }
+        
+        // Story 4.1: Verbosity mode RadioGroup listener
+        binding.verbosityModeGroup.setOnCheckedChangeListener { _, checkedId ->
+            // Guard: Ignore programmatic updates from observer
+            if (isUpdatingFromObserver) return@setOnCheckedChangeListener
+            
+            val mode = when (checkedId) {
+                R.id.verbosityBriefRadio -> VerbosityMode.BRIEF
+                R.id.verbosityStandardRadio -> VerbosityMode.STANDARD
+                R.id.verbosityDetailedRadio -> VerbosityMode.DETAILED
+                else -> VerbosityMode.STANDARD // fallback
+            }
+            
+            // Deduplicate to prevent multiple announcements
+            if (mode == lastVerbosityMode) {
+                android.util.Log.d("VisionFocus", "[Fragment] Duplicate verbosity trigger ignored: $mode")
+                return@setOnCheckedChangeListener
+            }
+            lastVerbosityMode = mode
+            
+            android.util.Log.d("VisionFocus", "[Fragment] Verbosity mode changed: $mode")
+            
+            // Announce verbosity mode change via TalkBack
+            val modeLabel = when (mode) {
+                VerbosityMode.BRIEF -> getString(R.string.verbosity_set_to_brief)
+                VerbosityMode.STANDARD -> getString(R.string.verbosity_set_to_standard)
+                VerbosityMode.DETAILED -> getString(R.string.verbosity_set_to_detailed)
+            }
+            binding.root.announceForAccessibility(modeLabel)
+            
+            // Save preference
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.setVerbosityMode(mode)
             }
         }
     }

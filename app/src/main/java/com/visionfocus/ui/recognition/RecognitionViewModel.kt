@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.accessibility.haptic.HapticPattern
+import com.visionfocus.data.repository.SettingsRepository
 import com.visionfocus.recognition.processing.ConfidenceFilter
+import com.visionfocus.recognition.processing.VerbosityFormatter
 import com.visionfocus.recognition.repository.RecognitionRepository
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.tts.formatter.TTSPhraseFormatter
@@ -17,11 +19,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel for recognition UI (Story 2.3, 2.4, 2.6, 3.3)
+ * ViewModel for recognition UI (Story 2.3, 2.4, 2.6, 3.3, 4.1)
  * 
  * Orchestrates:
  * - Story 2.1: RecognitionRepository.performRecognition() (TFLite inference)
@@ -30,6 +33,7 @@ import javax.inject.Inject
  * - Story 2.4: Camera lifecycle integration with capture state
  * - Story 2.6: Haptic feedback patterns for recognition events
  * - Story 3.3: Operation cancellation support via OperationManager
+ * - Story 4.1: Verbosity mode selection (Brief/Standard/Detailed)
  * 
  * State transitions:
  * Idle → Capturing → Recognizing → Announcing → Success → Idle (2s delay)
@@ -43,6 +47,8 @@ import javax.inject.Inject
  * @param ttsFormatter Story 2.2 - Confidence-aware phrase formatting
  * @param hapticFeedbackManager Story 2.6 - Haptic feedback for deaf-blind users
  * @param operationManager Story 3.3 - Operation cancellation tracking
+ * @param settingsRepository Story 4.1 - User preferences (verbosity mode)
+ * @param verbosityFormatter Story 4.1 - Verbosity-aware announcement formatting
  */
 @HiltViewModel
 class RecognitionViewModel @Inject constructor(
@@ -51,7 +57,9 @@ class RecognitionViewModel @Inject constructor(
     private val ttsManager: TTSManager,
     private val ttsFormatter: TTSPhraseFormatter,
     private val hapticFeedbackManager: HapticFeedbackManager,
-    private val operationManager: OperationManager
+    private val operationManager: OperationManager,
+    private val settingsRepository: SettingsRepository,
+    private val verbosityFormatter: VerbosityFormatter
 ) : ViewModel() {
     
     companion object {
@@ -185,8 +193,27 @@ class RecognitionViewModel @Inject constructor(
                     confidenceFilter.toFilteredDetection(detection)
                 }
                 
-                // Story 2.2: Format announcement with confidence-aware phrasing
-                val announcement = ttsFormatter.formatMultipleDetections(filteredDetections)
+                // Story 4.1: Get current verbosity mode from preferences
+                val verbosityMode = settingsRepository.getVerbosity().first()
+                
+                // Story 4.1: Format announcement based on verbosity mode
+                // Brief/Standard/Detailed use VerbosityFormatter with raw DetectionResult
+                // This replaces TTSPhraseFormatter for verbosity-aware announcements
+                val topDetection = result.detections.firstOrNull()
+                val announcement = if (topDetection != null) {
+                    // DEBUG: Log detected object for testing
+                    android.util.Log.d(TAG, "Story 4.1: Top detection = ${topDetection.label} (conf=${topDetection.confidence}, mode=$verbosityMode)")
+                    
+                    verbosityFormatter.format(
+                        topDetection = topDetection,
+                        mode = verbosityMode,
+                        allDetections = result.detections
+                    ).also { formatted ->
+                        android.util.Log.d(TAG, "Story 4.1: Formatted announcement = \"$formatted\"")
+                    }
+                } else {
+                    "No objects detected"
+                }
                 
                 // Story 2.4 Task 9.2: State transition - Recognizing → Announcing
                 _uiState.value = RecognitionUiState.Announcing

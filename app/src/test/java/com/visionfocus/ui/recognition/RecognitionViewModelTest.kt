@@ -81,7 +81,6 @@ class RecognitionViewModelTest {
             operationManager = mockOperationManager
         )
     }
-    }
     
     @After
     fun tearDown() {
