@@ -4,10 +4,10 @@ import android.content.Context
 import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.voice.commands.navigation.BackCommand
+import com.visionfocus.voice.commands.navigation.HistoryCommand
 import com.visionfocus.voice.commands.navigation.HomeCommand
 import com.visionfocus.voice.commands.navigation.NavigateCommand
 import com.visionfocus.voice.commands.navigation.WhereAmICommand
-import com.visionfocus.voice.commands.recognition.HistoryCommand
 import com.visionfocus.voice.commands.recognition.RecognizeCommand
 import com.visionfocus.voice.commands.recognition.SaveLocationCommand
 import com.visionfocus.voice.commands.recognition.WhatDoISeeCommand

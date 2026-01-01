@@ -503,6 +503,20 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * Navigates to HistoryFragment.
+     * Story 4.3 Task 10.2 & 10.3: Voice command "History" navigation
+     * 
+     * Replaces current fragment with HistoryFragment and adds to back stack
+     * for proper back navigation.
+     */
+    fun navigateToHistory() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, com.visionfocus.ui.history.HistoryFragment())
+            .addToBackStack(null)
+            .commit()
+    }
+    
+    /**
      * Navigate to home screen (RecognitionFragment).
      * Story 3.5 Task 8: HomeCommand implementation
      * 

@@ -292,3 +292,67 @@ class HomeCommand @Inject constructor(
         }
     }
 }
+
+/**
+ * History Command
+ * Story 4.3 Task 10.3: Voice command "History" navigates to HistoryFragment
+ * 
+ * Opens History screen showing last 50 recognition results.
+ * Integrates with MainActivity.navigateToHistory().
+ * 
+ * Command variations:
+ * - "history"
+ * - "recognition history"
+ * - "past recognitions"
+ * - "show history"
+ * 
+ * @param ttsManager TTS engine for announcements
+ * @since Story 4.3
+ */
+@Singleton
+class HistoryCommand @Inject constructor(
+    private val ttsManager: TTSManager
+) : VoiceCommand {
+    
+    companion object {
+        private const val TAG = "HistoryCommand"
+    }
+    
+    override val displayName: String = "History"
+    
+    override val keywords: List<String> = listOf(
+        "history",
+        "recognition history",
+        "past recognitions",
+        "show history"
+    )
+    
+    override suspend fun execute(context: Context): CommandResult {
+        return try {
+            Log.d(TAG, "Executing History command")
+            
+            // Cast context to MainActivity for navigation
+            if (context is com.visionfocus.MainActivity) {
+                // Navigate to history using MainActivity helper
+                context.runOnUiThread {
+                    context.navigateToHistory()
+                }
+                
+                // Announce navigation
+                ttsManager.announce("History")
+                
+                Log.d(TAG, "History command executed - navigated to history")
+                CommandResult.Success("Navigated to history")
+            } else {
+                Log.e(TAG, "Context is not MainActivity - cannot navigate")
+                ttsManager.announce("Navigation error")
+                CommandResult.Failure("Context is not MainActivity")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to navigate to history", e)
+            ttsManager.announce("Navigation error")
+            CommandResult.Failure("History error: ${e.message}")
+        }
+    }
+}
+

@@ -151,4 +151,24 @@
     <string name="verbosity_set_to_brief">Verbosity set to brief</string>
     <string name="verbosity_set_to_standard">Verbosity set to standard</string>
     <string name="verbosity_set_to_detailed">Verbosity set to detailed</string>
+    
+    <!-- Story 4.3: Recognition History UI Strings -->
+    <string name="history_empty_state">No recognition history yet. Recognize an object to see results here.</string>
+    <string name="history_clear_all">Clear all recognition history</string>
+    <string name="history_clear_confirmation_title">Clear History?</string>
+    <string name="history_clear_confirmation_message">Are you sure you want to delete all recognition history? This cannot be undone.</string>
+    <string name="history_clear_confirmation_cancel">Cancel</string>
+    <string name="history_clear_confirmation_delete">Delete</string>
+    <string name="history_cleared_announcement">Recognition history cleared</string>
+    <string name="confidence_high">high confidence</string>
+    <string name="confidence_medium">medium confidence</string>
+    <string name="confidence_low">low confidence</string>
+    
+    <!-- Code Review Fix: Extracted hardcoded strings and added missing states -->
+    <string name="history_loading_announcement">Loading history</string>
+    <string name="history_error_loading">Failed to load history</string>
+    <string name="history_error_announcement">Error loading recognition history</string>
+    <string name="history_error_retry">Retry</string>
+    <string name="history_announcement_recorded_detail">%1$s. Recorded %2$s</string>
+    <string name="history_announcement_recorded_basic">%1$s, %2$s. Recorded %3$s</string>
 </resources>
