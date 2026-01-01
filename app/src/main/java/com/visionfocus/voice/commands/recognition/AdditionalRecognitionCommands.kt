@@ -59,54 +59,10 @@ class WhatDoISeeCommand @Inject constructor(
 }
 
 /**
- * History Command
- * Story 3.2 Task 2.10: Open recognition history screen
- * 
- * Opens recognition history UI (Story 4.3).
- * Placeholder implementation for Story 3.2.
- * 
- * Command variations:
- * - "history"
- * - "show history"
- * - "past recognitions"
- * - "what did i see"
- * 
- * @param ttsManager TTS engine for announcements
- * @since Story 3.2
+ * NOTE: HistoryCommand has been MOVED to navigation/NavigationCommands.kt (Story 4.3)
+ * with full navigation implementation that opens HistoryFragment.
+ * Old placeholder removed to avoid duplicate class conflict.
  */
-@Singleton
-class HistoryCommand @Inject constructor(
-    private val ttsManager: TTSManager
-) : VoiceCommand {
-    
-    companion object {
-        private const val TAG = "HistoryCommand"
-    }
-    
-    override val displayName: String = "History"
-    
-    override val keywords: List<String> = listOf(
-        "history",
-        "show history",
-        "past recognitions",
-        "what did i see"
-    )
-    
-    override suspend fun execute(context: Context): CommandResult {
-        return try {
-            Log.d(TAG, "Executing History command")
-            
-            // Placeholder: Recognition history in Story 4.3
-            ttsManager.announce("History feature coming soon")
-            
-            Log.d(TAG, "History command executed")
-            CommandResult.Success("History placeholder")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to open history", e)
-            CommandResult.Failure("History error: ${e.message}")
-        }
-    }
-}
 
 /**
  * Save Location Command

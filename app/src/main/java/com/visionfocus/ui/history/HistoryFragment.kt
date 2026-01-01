@@ -137,8 +137,10 @@ class HistoryFragment : Fragment() {
     /**
      * Show empty state when no history exists.
      * Story 4.3 Task 1.4 & 6.4: Implement empty state visibility logic
+     * Bug fix: Hide loading progress when showing empty state
      */
     private fun showEmptyState() {
+        binding.loadingProgressBar.visibility = View.GONE
         binding.emptyStateTextView.visibility = View.VISIBLE
         binding.historyRecyclerView.visibility = View.GONE
     }
