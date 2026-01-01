@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
 /**
  * Application class for VisionFocus.
@@ -53,6 +54,12 @@ class VisionFocusApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
+        
+        // Code Review Fix (Story 4.2): Initialize Timber for proper logging
+        if (BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+            Timber.d("VisionFocus application started (DEBUG mode)")
+        }
         
         Log.d(TAG, "VisionFocus application starting...")
         

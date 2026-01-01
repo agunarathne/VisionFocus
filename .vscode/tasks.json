@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Monitor Database (Live)",
+            "type": "shell",
+            "command": "adb logcat -c; adb logcat | Select-String 'Saved recognition:'",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "focus": true,
+                "clear": true
+            },
+            "isBackground": true,
+            "runOptions": {
+                "instanceLimit": 1
+            }
+        },
+        {
+            "label": "Database Stats",
+            "type": "shell",
+            "command": "$logs = adb logcat -d | Select-String 'Saved recognition:'; Write-Host '=== DATABASE STATUS ===' -ForegroundColor Cyan; Write-Host \"Total: $($logs.Count) recognitions\" -ForegroundColor Green; adb shell 'run-as com.visionfocus ls -lh databases/' | Select-String visionfocus; Write-Host '\\nRecent:' -ForegroundColor Yellow; $logs | Select-Object -Last 5",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "focus": true
+            }
+        },
+        {
+            "label": "Pull Database File",
+            "type": "shell",
+            "command": ".\\fix-database-pull.ps1",
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}

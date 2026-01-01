@@ -1,24 +1,44 @@
 package com.visionfocus.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 /**
  * Room entity for recognition history storage.
  * 
- * Foundation schema for Story 1.4. Full columns will be added in Story 4.2
- * when recognition history feature is implemented (Epic 4).
+ * Stores the last 50 object recognitions for review and verification.
+ * Automatically pruned to maintain storage limit.
  * 
- * Future columns (Story 4.2):
- * - objectLabel: String (recognized object category)
- * - confidence: Float (recognition confidence score)
- * - timestamp: Long (recognition time in milliseconds)
- * - verbosityMode: String (brief/standard/detailed)
+ * Code Review Fix: Added index on timestamp for ORDER BY query performance.
+ * 
+ * @property id Unique identifier for the recognition entry (auto-generated)
+ * @property category Recognized object category (e.g., "person", "car", "chair")
+ * @property confidence Recognition confidence score (0.0 to 1.0)
+ * @property timestamp Unix epoch time in milliseconds when recognition occurred
+ * @property verbosityMode Active verbosity mode during recognition (brief/standard/detailed)
+ * @property detailText Full text announcement provided to user via TTS
  */
-@Entity(tableName = "recognition_history")
+@Entity(
+    tableName = "recognition_history",
+    indices = [androidx.room.Index(value = ["timestamp"], name = "idx_recognition_timestamp")]
+)
 data class RecognitionHistoryEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0
+    val id: Long = 0,
     
-    // Columns will be added in Story 4.2 (Epic 4: Recognition History)
+    @ColumnInfo(name = "category")
+    val category: String,
+    
+    @ColumnInfo(name = "confidence")
+    val confidence: Float,
+    
+    @ColumnInfo(name = "timestamp")
+    val timestamp: Long,
+    
+    @ColumnInfo(name = "verbosityMode")
+    val verbosityMode: String,
+    
+    @ColumnInfo(name = "detailText")
+    val detailText: String
 )

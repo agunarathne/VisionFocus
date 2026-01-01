@@ -2,7 +2,7 @@
 # Connects to Samsung SM-A127F via wireless debugging and launches the app
 
 param(
-    [string]$DeviceIP = "192.168.8.100:34297",
+    [string]$DeviceIP = "192.168.8.104:36787",
     [string]$PackageName = "com.visionfocus",
     [string]$ActivityName = ".MainActivity"
 )

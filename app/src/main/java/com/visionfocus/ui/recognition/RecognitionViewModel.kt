@@ -21,10 +21,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import javax.inject.Inject
 
 /**
- * ViewModel for recognition UI (Story 2.3, 2.4, 2.6, 3.3, 4.1)
+ * ViewModel for recognition UI (Story 2.3, 2.4, 2.6, 3.3, 4.1, 4.2)
  * 
  * Orchestrates:
  * - Story 2.1: RecognitionRepository.performRecognition() (TFLite inference)
@@ -34,6 +35,7 @@ import javax.inject.Inject
  * - Story 2.6: Haptic feedback patterns for recognition events
  * - Story 3.3: Operation cancellation support via OperationManager
  * - Story 4.1: Verbosity mode selection (Brief/Standard/Detailed)
+ * - Story 4.2: Recognition history storage (last 50 results)
  * 
  * State transitions:
  * Idle → Capturing → Recognizing → Announcing → Success → Idle (2s delay)
@@ -49,6 +51,7 @@ import javax.inject.Inject
  * @param operationManager Story 3.3 - Operation cancellation tracking
  * @param settingsRepository Story 4.1 - User preferences (verbosity mode)
  * @param verbosityFormatter Story 4.1 - Verbosity-aware announcement formatting
+ * @param recognitionHistoryRepository Story 4.2 - Recognition history storage
  */
 @HiltViewModel
 class RecognitionViewModel @Inject constructor(
@@ -59,7 +62,8 @@ class RecognitionViewModel @Inject constructor(
     private val hapticFeedbackManager: HapticFeedbackManager,
     private val operationManager: OperationManager,
     private val settingsRepository: SettingsRepository,
-    private val verbosityFormatter: VerbosityFormatter
+    private val verbosityFormatter: VerbosityFormatter,
+    private val recognitionHistoryRepository: com.visionfocus.data.repository.RecognitionHistoryRepository
 ) : ViewModel() {
     
     companion object {
@@ -202,14 +206,14 @@ class RecognitionViewModel @Inject constructor(
                 val topDetection = result.detections.firstOrNull()
                 val announcement = if (topDetection != null) {
                     // DEBUG: Log detected object for testing
-                    android.util.Log.d(TAG, "Story 4.1: Top detection = ${topDetection.label} (conf=${topDetection.confidence}, mode=$verbosityMode)")
+                    Timber.d("Story 4.1: Top detection = ${topDetection.label} (conf=${topDetection.confidence}, mode=$verbosityMode)")
                     
                     verbosityFormatter.format(
                         topDetection = topDetection,
                         mode = verbosityMode,
                         allDetections = result.detections
                     ).also { formatted ->
-                        android.util.Log.d(TAG, "Story 4.1: Formatted announcement = \"$formatted\"")
+                        Timber.d("Story 4.1: Formatted announcement = \"$formatted\"")
                     }
                 } else {
                     "No objects detected"
@@ -220,6 +224,23 @@ class RecognitionViewModel @Inject constructor(
                 
                 // Story 2.2: TTS announcement (≤200ms initiation)
                 ttsManager.announce(announcement)
+                
+                // Story 4.2: Save recognition to history (non-blocking)
+                // Critical: History save failures MUST NOT block recognition flow
+                viewModelScope.launch {
+                    try {
+                        recognitionHistoryRepository.saveRecognition(
+                            category = topDetection?.label ?: "unknown",
+                            confidence = topDetection?.confidence ?: 0f,
+                            verbosityMode = verbosityMode.name.lowercase(),  // Convert enum to string
+                            detailText = announcement
+                        )
+                        Timber.d("Story 4.2: Recognition saved to history")
+                    } catch (e: Exception) {
+                        // Non-blocking: Log error but don't surface to user
+                        Timber.e(e, "Story 4.2: Failed to save recognition history")
+                    }
+                }
                 
                 // Story 2.4 Task 9.2: State transition - Announcing → Success
                 _uiState.value = RecognitionUiState.Success(
