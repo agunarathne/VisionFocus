@@ -1,6 +1,6 @@
 # Story 4.5: Distance and Position Information in Detailed Mode
 
-Status: review
+Status: in-progress
 
 ## Story
 
