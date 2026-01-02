@@ -3,6 +3,7 @@ package com.visionfocus.ui.settings
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.visionfocus.data.repository.SettingsRepository
 import com.visionfocus.tts.engine.TTSManager
+import com.visionfocus.tts.engine.VoiceOption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,7 @@ import kotlin.test.assertTrue
  * - StateFlow emissions from repository
  * - Toggle methods call repository correctly
  * - Initial state handling
+ * - Story 5.2: Voice selection functionality
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -39,27 +41,32 @@ class SettingsViewModelTest {
     
     private val testDispatcher = StandardTestDispatcher()
     
+    private lateinit var mockRepository: SettingsRepository
     private lateinit var mockTtsManager: TTSManager
     private lateinit var viewModel: SettingsViewModel
     
     private val highContrastFlow = MutableStateFlow(false)
     private val largeTextFlow = MutableStateFlow(false)
-    private val speechRateFlow = MutableStateFlow(1.0flse)
-    private val largeTextFlow = MutableStateFlow(false)
+    private val speechRateFlow = MutableStateFlow(1.0f)
+    private val voiceLocaleFlow = MutableStateFlow<String?>(null)  // Story 5.2
     
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        mockRepository = mock()
         mockTtsManager = mock()
         
         // Setup mock repository flows
         whenever(mockRepository.getHighContrastMode()).thenReturn(highContrastFlow)
         whenever(mockRepository.getLargeTextMode()).thenReturn(largeTextFlow)
         whenever(mockRepository.getSpeechRate()).thenReturn(speechRateFlow)
+        whenever(mockRepository.getVoiceLocale()).thenReturn(voiceLocaleFlow)  // Story 5.2
         
-        viewModel = SettingsViewModel(mockRepository, mockTtsManagerthenReturn(largeTextFlow)
+        // Story 5.2: Mock TTSManager.isReady() to return true
+        whenever(mockTtsManager.isReady()).thenReturn(true)
+        whenever(mockTtsManager.getAvailableVoices()).thenReturn(emptyList())
         
-        viewModel = SettingsViewModel(mockRepository)
+        viewModel = SettingsViewModel(mockRepository, mockTtsManager)
     }
     
     @After
@@ -154,6 +161,10 @@ class SettingsViewModelTest {
         viewModel.setHighContrastMode(false)
         viewModel.setHighContrastMode(true)
         advanceUntilIdle()
+        
+        // Assert: All three calls made (no race condition blocking)
+        verify(mockRepository, org.mockito.kotlin.times(3)).setHighContrastMode(org.mockito.kotlin.any())
+    }
     
     // Story 5.1: Speech Rate Tests
     
@@ -274,9 +285,95 @@ class SettingsViewModelTest {
         // Assert: StateFlow updated
         assertEquals(1.5f, viewModel.speechRate.value)
     }
+    
+    // Story 5.2: Voice Selection Tests
+    
+    @Test
+    fun `voiceLocale initial value is null (system default)`() = runTest(testDispatcher) {
+        val value = viewModel.voiceLocale.first()
+        assertEquals(null, value)
+    }
+    
+    @Test
+    fun `setVoiceLocale persists to repository`() = runTest(testDispatcher) {
+        // Arrange: Mock successful voice setting
+        whenever(mockTtsManager.setVoice("en-GB")).thenReturn(true)
         
-        // Assert: All three calls made (no race condition blocking)
-        verify(mockRepository, org.mockito.kotlin.times(3)).setHighContrastMode(org.mockito.kotlin.any())
+        // Act
+        viewModel.setVoiceLocale("en-GB")
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockRepository).setVoiceLocale("en-GB")
+    }
+    
+    @Test
+    fun `setVoiceLocale triggers TTSManager setVoice`() = runTest(testDispatcher) {
+        // Arrange: Mock successful voice setting
+        whenever(mockTtsManager.setVoice("en-US")).thenReturn(true)
+        
+        // Act
+        viewModel.setVoiceLocale("en-US")
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockTtsManager).setVoice("en-US")
+    }
+    
+    @Test
+    fun `setVoiceLocale handles voice unavailability`() = runTest(testDispatcher) {
+        // Arrange: Mock voice not found (returns false)
+        whenever(mockTtsManager.setVoice("en-IN")).thenReturn(false)
+        
+        // Act
+        viewModel.setVoiceLocale("en-IN")
+        advanceUntilIdle()
+        
+        // Assert: Still persisted to repository (user preference saved)
+        verify(mockRepository).setVoiceLocale("en-IN")
+        verify(mockTtsManager).setVoice("en-IN")
+    }
+    
+    @Test
+    fun `setVoiceLocale can reset to system default with null`() = runTest(testDispatcher) {
+        // Arrange: Mock successful voice reset
+        whenever(mockTtsManager.setVoice(null)).thenReturn(true)
+        
+        // Act
+        viewModel.setVoiceLocale(null)
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockRepository).setVoiceLocale(null)
+        verify(mockTtsManager).setVoice(null)
+    }
+    
+    @Test
+    fun `playSampleWithVoice calls TTSManager with correct voice and text`() = runTest(testDispatcher) {
+        // Arrange: Mock successful voice setting
+        whenever(mockTtsManager.setVoice("en-GB")).thenReturn(true)
+        
+        // Act
+        viewModel.playSampleWithVoice("en-GB", "This is a preview.")
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockTtsManager).setVoice("en-GB")
+        verify(mockTtsManager).announce("This is a preview.")
+    }
+    
+    @Test
+    fun `voiceLocale StateFlow updates when repository emits new value`() = runTest(testDispatcher) {
+        // Arrange: Initial value is null, wait for initialization
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(null, viewModel.voiceLocale.value)
+        
+        // Act: Repository emits new value
+        voiceLocaleFlow.value = "en-US"
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Assert: StateFlow updated
+        assertEquals("en-US", viewModel.voiceLocale.value)
     }
 }
 

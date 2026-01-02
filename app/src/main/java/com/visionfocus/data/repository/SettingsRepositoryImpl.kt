@@ -66,6 +66,37 @@ class SettingsRepositoryImpl @Inject constructor(
         }
     }
     
+    override fun getVoiceLocale(): Flow<String?> {
+        return dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }
+            .map { preferences ->
+                preferences[PreferenceKeys.VOICE_LOCALE]  // null = system default
+            }
+    }
+    
+    override suspend fun setVoiceLocale(locale: String?) {
+        dataStore.edit { preferences ->
+            if (locale == null) {
+                preferences.remove(PreferenceKeys.VOICE_LOCALE)  // Reset to default
+            } else {
+                // MEDIUM-2 FIX: Validate locale format (e.g., "en-US", "en-GB")
+                // Prevents garbage data from being persisted if UI bug passes invalid string
+                if (locale.matches(Regex("^[a-z]{2}-[A-Z]{2}$"))) {
+                    preferences[PreferenceKeys.VOICE_LOCALE] = locale
+                } else {
+                    android.util.Log.w("SettingsRepository", "Invalid voice locale format: $locale, ignoring")
+                    // Don't persist invalid format - leave existing preference unchanged
+                }
+            }
+        }
+    }
+    
     override fun getVerbosity(): Flow<VerbosityMode> {
         return dataStore.data
             .catch { exception ->

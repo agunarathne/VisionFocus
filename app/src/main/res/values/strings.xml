@@ -87,6 +87,16 @@
     <string name="speech_rate_increased">Speech rate increased to %1$.1f times</string>
     <string name="speech_rate_decreased">Speech rate decreased to %1$.1f times</string>
     
+    <!-- Story 5.2: Voice Selection Section -->
+    <string name="voice_selection_section">TTS Voice</string>
+    <string name="voice_selection_label">Voice Selection</string>
+    <string name="voice_selection_explanation">Choose which voice the app uses for announcements.</string>
+    <string name="voice_radio_group_description">Voice selection, radio button group</string>
+    <string name="voice_preview_text">This is a preview of this voice.</string>
+    <string name="no_voices_available">Only system default voice available. Install additional TTS engines from Play Store for more options.</string>
+    <string name="voice_unavailable_fallback">Your preferred voice is unavailable. Using default voice.</string>
+    <string name="voice_changed">Voice changed to %1$s</string>
+    
     <string name="theme_settings_section">Theme Settings</string>
     <string name="high_contrast_mode_label">High Contrast Mode</string>
     <string name="high_contrast_mode_explanation">Pure black and white theme with 7:1 contrast ratio for improved visibility</string>

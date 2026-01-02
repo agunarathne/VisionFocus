@@ -6,12 +6,15 @@ import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.data.repository.SettingsRepository
 import com.visionfocus.tts.engine.TTSManager
+import com.visionfocus.tts.engine.VoiceOption
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -77,6 +80,33 @@ class SettingsViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(FLOW_SUBSCRIPTION_TIMEOUT_MS),
             initialValue = 1.0f
         )
+    
+    /**
+     * Story 5.2: Current voice locale from DataStore
+     * null = system default voice
+     */
+    val voiceLocale: StateFlow<String?> = settingsRepository.getVoiceLocale()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(FLOW_SUBSCRIPTION_TIMEOUT_MS),
+            initialValue = null
+        )
+    
+    /**
+     * Story 5.2: Available TTS voices from Android engine
+     * Loaded once on ViewModel creation
+     */
+    val availableVoices: StateFlow<List<VoiceOption>> = flow {
+        // Wait for TTSManager to initialize
+        while (!ttsManager.isReady()) {
+            delay(100)
+        }
+        emit(ttsManager.getAvailableVoices())
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,  // Load immediately
+        initialValue = emptyList()
+    )
     
     /**
      * Story 5.1: One-time announcement events for TalkBack.
@@ -320,5 +350,52 @@ class SettingsViewModel @Inject constructor(
         // Use hardcoded text since ViewModel doesn't have context
         // Fragment will pass correct string or we use this simplified version
         ttsManager.announce("This is a sample announcement at the current speech rate.")
+    }
+    
+    /**
+     * Story 5.2 Task 6.3: Set voice locale preference
+     * 
+     * @param locale Voice locale string: "en-US", "en-GB", null for system default
+     */
+    fun setVoiceLocale(locale: String?) {
+        viewModelScope.launch {
+            // Persist to DataStore
+            settingsRepository.setVoiceLocale(locale)
+            
+            // Apply to TTSManager immediately
+            val success = ttsManager.setVoice(locale)
+            
+            if (!success) {
+                // Voice unavailable - TTSManager already announced fallback
+                android.util.Log.w("VisionFocus", "Voice $locale unavailable, fell back to default")
+            }
+        }
+    }
+    
+    /**
+     * Story 5.2 Task 6.4: Play sample announcement in specific voice
+     * 
+     * Used for voice preview when user selects different voice option.
+     * Temporarily sets voice, plays sample, then restores saved voice.
+     * 
+     * @param locale Voice locale to preview
+     * @param text Sample text to announce
+     */
+    fun playSampleWithVoice(locale: String, text: String) {
+        viewModelScope.launch {
+            // MEDIUM-5 FIX: Save original voice to restore after preview
+            val originalLocale = voiceLocale.value
+            
+            // Temporarily set voice for preview
+            ttsManager.setVoice(locale)
+            
+            // Play sample
+            ttsManager.announce(text)
+            
+            // Restore original voice after sample completes
+            // Wait for TTS announcement to start (typical latency ~200ms + sample duration ~2s)
+            delay(2500)
+            ttsManager.setVoice(originalLocale)
+        }
     }
 }

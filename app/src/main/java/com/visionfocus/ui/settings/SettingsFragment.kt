@@ -16,10 +16,12 @@ import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.databinding.FragmentSettingsBinding
 import com.visionfocus.theme.ThemeManager
 import com.visionfocus.tts.engine.TTSManager
+import com.visionfocus.tts.engine.VoiceOption
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.widget.SeekBar
+import android.widget.RadioButton
 
 /**
  * Settings screen for theme preferences and haptic feedback.
@@ -78,6 +80,9 @@ class SettingsFragment : Fragment() {
     
     // Guard: Track last verbosity mode to prevent duplicate announcements (Story 4.1)
     private var lastVerbosityMode: VerbosityMode? = null
+    
+    // Story 5.2: Track last voice locale to prevent duplicate samples
+    private var lastVoiceLocale: String? = null
     
     // Job tracking for memory leak prevention (MEDIUM-2 fix)
     private val observerJobs = mutableListOf<kotlinx.coroutines.Job>()
@@ -233,6 +238,23 @@ class SettingsFragment : Fragment() {
                             if (enabled) R.string.camera_preview_description_on
                             else R.string.camera_preview_description_off
                         )
+                    }
+                }
+            }
+        )
+        
+        // Story 5.2: Observe available voices and voice locale
+        // MEDIUM-6 FIX: Combine flows to prevent double population on startup
+        observerJobs.add(
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    kotlinx.coroutines.flow.combine(
+                        viewModel.availableVoices,
+                        viewModel.voiceLocale
+                    ) { voices, locale ->
+                        Pair(voices, locale)
+                    }.collect { (voices, locale) ->
+                        populateVoiceSelector(voices, locale)
                     }
                 }
             }
@@ -482,6 +504,111 @@ class SettingsFragment : Fragment() {
      */
     private fun speechRateToProgress(rate: Float): Int {
         return ((rate - 0.5f) / 0.1f).toInt().coerceIn(0, 15)
+    }
+    
+    /**
+     * Story 5.2 Task 5.2: Populate voice RadioGroup with available voices
+     * 
+     * Dynamically generates RadioButton items from available voices.
+     * 
+     * @param voices List of available voice options
+     * @param currentVoiceLocale Currently selected voice locale (or null for default)
+     */
+    private fun populateVoiceSelector(voices: List<VoiceOption>, currentVoiceLocale: String?) {
+        binding.voiceRadioGroup.removeAllViews()
+        
+        if (voices.isEmpty()) {
+            // No additional voices - show system default only
+            binding.noVoicesMessage.visibility = View.VISIBLE
+            binding.voiceRadioGroup.visibility = View.GONE
+            return
+        }
+        
+        binding.noVoicesMessage.visibility = View.GONE
+        binding.voiceRadioGroup.visibility = View.VISIBLE
+        
+        voices.forEach { voiceOption ->
+            val radioButton = RadioButton(requireContext()).apply {
+                id = View.generateViewId()
+                text = voiceOption.displayName
+                contentDescription = "${voiceOption.displayName} voice, radio button"
+                minHeight = resources.getDimensionPixelSize(R.dimen.min_touch_target_size)  // 48dp
+                setPadding(16.dpToPx(), 16.dpToPx(), 16.dpToPx(), 16.dpToPx())
+                
+                // Mark selected if matches current voice locale
+                isChecked = (voiceOption.locale == currentVoiceLocale)
+                
+                // Set click listener for sample preview
+                setOnClickListener {
+                    onVoiceSelected(voiceOption)
+                }
+            }
+            
+            binding.voiceRadioGroup.addView(radioButton)
+        }
+    }
+    
+    /**
+     * Story 5.2 Task 5.5: Update voice RadioGroup selection
+     * 
+     * Called when voiceLocale Flow emits new value.
+     * 
+     * @param locale Currently selected voice locale (or null for default)
+     */
+    private fun updateVoiceSelection(locale: String?) {
+        isUpdatingFromObserver = true
+        
+        // Find RadioButton matching the locale and check it
+        for (i in 0 until binding.voiceRadioGroup.childCount) {
+            val radioButton = binding.voiceRadioGroup.getChildAt(i) as? RadioButton ?: continue
+            val voiceOption = viewModel.availableVoices.value.getOrNull(i) ?: continue
+            
+            radioButton.isChecked = (voiceOption.locale == locale)
+        }
+        
+        isUpdatingFromObserver = false
+    }
+    
+    /**
+     * Story 5.2 Task 5.5: Handle voice selection from RadioGroup
+     * 
+     * Persists selection and plays sample preview.
+     * 
+     * @param voiceOption Selected voice option
+     */
+    private fun onVoiceSelected(voiceOption: VoiceOption) {
+        // Guard: Ignore programmatic updates
+        if (isUpdatingFromObserver) return
+        
+        // Deduplicate to prevent multiple samples
+        if (voiceOption.locale == lastVoiceLocale) {
+            android.util.Log.d("VisionFocus", "[Fragment] Duplicate voice trigger ignored: ${voiceOption.locale}")
+            return
+        }
+        lastVoiceLocale = voiceOption.locale
+        
+        android.util.Log.d("VisionFocus", "[Fragment] Voice selected: ${voiceOption.displayName}")
+        
+        // Persist selection
+        viewModel.setVoiceLocale(voiceOption.locale)
+        
+        // Play sample announcement in selected voice
+        viewModel.playSampleWithVoice(
+            locale = voiceOption.locale,
+            text = getString(R.string.voice_preview_text)
+        )
+        
+        // Update TalkBack announcement
+        binding.root.announceForAccessibility(
+            getString(R.string.voice_changed, voiceOption.displayName)
+        )
+    }
+    
+    /**
+     * Extension function to convert dp to pixels
+     */
+    private fun Int.dpToPx(): Int {
+        return (this * resources.displayMetrics.density).toInt()
     }
     
     override fun onDestroyView() {

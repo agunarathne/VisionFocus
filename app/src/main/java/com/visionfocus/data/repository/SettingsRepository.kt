@@ -31,6 +31,22 @@ interface SettingsRepository {
     suspend fun setSpeechRate(rate: Float)
     
     /**
+     * Story 5.2: Observes TTS voice locale preference.
+     * 
+     * @return Flow emitting voice locale string ("en-US", "en-GB", etc.).
+     *         Default: null (system default voice) if not set.
+     */
+    fun getVoiceLocale(): Flow<String?>
+    
+    /**
+     * Story 5.2: Updates TTS voice locale preference.
+     * 
+     * @param locale Voice locale identifier ("en-US", "en-GB", etc.).
+     *               null to reset to system default voice.
+     */
+    suspend fun setVoiceLocale(locale: String?)
+    
+    /**
      * Observes verbosity mode preference.
      * 
      * @return Flow emitting current VerbosityMode.

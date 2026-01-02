@@ -106,6 +106,60 @@
             android:contentDescription="@string/test_speed_button_description"
             android:layout_marginBottom="@dimen/spacing_large" />
 
+        <!-- Voice Selection Section (Story 5.2) -->
+        <TextView
+            android:id="@+id/voiceSelectionSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/voice_selection_section"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:paddingTop="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_small"
+            android:accessibilityHeading="true"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:id="@+id/voiceSelectionLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/voice_selection_label"
+            android:textAppearance="?attr/textAppearanceBody1"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:id="@+id/voiceSelectionExplanation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/voice_selection_explanation"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="no" />
+
+        <!-- Voice RadioGroup (Dynamically Populated) -->
+        <RadioGroup
+            android:id="@+id/voiceRadioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:contentDescription="@string/voice_radio_group_description">
+            
+            <!-- RadioButtons will be added programmatically based on available voices -->
+            
+        </RadioGroup>
+
+        <!-- Empty State Message (if no voices available) -->
+        <TextView
+            android:id="@+id/noVoicesMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/no_voices_available"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone"
+            android:paddingBottom="@dimen/spacing_large"
+            android:importantForAccessibility="yes" />
+
         <!-- Theme Settings Section -->
         <TextView
             android:id="@+id/themeSectionTitle"

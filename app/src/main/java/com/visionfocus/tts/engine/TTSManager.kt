@@ -3,6 +3,7 @@ package com.visionfocus.tts.engine
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import android.util.Log
 import com.visionfocus.data.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -12,10 +13,28 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * Story 5.2: TTS voice option for UI selection
+ * 
+ * @property id Unique identifier (locale + gender): "en-US-female"
+ * @property displayName User-facing name: "English US (Female)"
+ * @property locale Locale string: "en-US"
+ * @property gender Voice gender (if available): MALE, FEMALE, NEUTRAL
+ * @property voice Android Voice object (internal use)
+ */
+data class VoiceOption(
+    val id: String,
+    val displayName: String,
+    val locale: String,
+    val gender: Int?,
+    val voice: Voice
+)
 
 /**
  * Android TextToSpeech service manager
@@ -63,6 +82,9 @@ class TTSManager @Inject constructor(
     // Story 5.1: Track current speech rate
     private var currentSpeechRate: Float = DEFAULT_SPEECH_RATE
     
+    // Story 5.2: Track current voice locale
+    private var currentVoiceLocale: String? = null
+    
     // Story 5.1: Coroutine scope for observing settings changes
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
@@ -77,6 +99,8 @@ class TTSManager @Inject constructor(
      * Story 5.1 FIX: Start observing speech rate changes BEFORE TTS initializes
      * This ensures we cache the user's saved rate and apply it immediately when TTS is ready
      * 
+     * Story 5.2: Start observing voice locale changes BEFORE TTS initializes
+     * 
      * Thread-safe: Can be called multiple times safely
      * Asynchronous: onInit() callback will be invoked when ready
      */
@@ -86,6 +110,10 @@ class TTSManager @Inject constructor(
             // FIX ISSUE #1: Start observing speech rate BEFORE TTS initializes
             // This caches the saved rate so it's ready when onInit() is called
             observeSpeechRateChanges()
+            
+            // Story 5.2: Start observing voice locale BEFORE TTS initializes
+            observeVoiceLocaleChanges()
+            
             tts = TextToSpeech(context, this)
         }
     }
@@ -112,8 +140,16 @@ class TTSManager @Inject constructor(
                 else -> {
                     isInitialized = true
                     tts?.setSpeechRate(currentSpeechRate)
+                    
+                    // Story 5.2: Apply cached voice locale if available
+                    if (currentVoiceLocale != null) {
+                        scope.launch {
+                            setVoice(currentVoiceLocale)
+                        }
+                    }
+                    
                     setupUtteranceListener()
-                    Log.d(TAG, "TTS initialized successfully with rate: $currentSpeechRate")
+                    Log.d(TAG, "TTS initialized successfully with rate: $currentSpeechRate, voice: $currentVoiceLocale")
                 }
             }
         } else {
@@ -272,6 +308,166 @@ class TTSManager @Inject constructor(
             tts?.setSpeechRate(rate)
             Log.d(TAG, "Speech rate set to ${rate}x")
         }
+    }
+    
+    /**
+     * Story 5.2 Task 1: Query available TTS voices from Android engine
+     * 
+     * @return List of English voices available on device
+     */
+    fun getAvailableVoices(): List<VoiceOption> {
+        if (!isInitialized || tts == null) {
+            Log.w(TAG, "TTS not initialized, cannot query voices")
+            return emptyList()
+        }
+        
+        try {
+            val voices = tts?.voices ?: return emptyList()
+            
+            // Filter to English voices only
+            return voices
+                .filter { voice ->
+                    voice.locale.language == "en"  // English only
+                }
+                .map { voice ->
+                    val locale = voice.locale
+                    val gender = determineGenderFromVoiceName(voice.name)
+                    
+                    VoiceOption(
+                        id = "${locale.language}-${locale.country}-${gender ?: "default"}",
+                        displayName = formatVoiceDisplayName(locale, gender),
+                        locale = "${locale.language}-${locale.country}",
+                        gender = gender,
+                        voice = voice
+                    )
+                }
+                .distinctBy { it.locale }  // MEDIUM-4 FIX: Deduplicate by locale, not id (prevents multiple entries for same locale)
+                .sortedBy { it.displayName }  // Alphabetical order
+        } catch (e: Exception) {
+            Log.e(TAG, "Error querying TTS voices", e)
+            return emptyList()
+        }
+    }
+    
+    /**
+     * Story 5.2 Task 1.4: Format voice display name for UI
+     * 
+     * @param locale Voice locale (e.g., Locale.US)
+     * @param gender Voice gender constant or null
+     * @return Formatted name: "English US (Female)"
+     */
+    private fun formatVoiceDisplayName(locale: Locale, gender: Int?): String {
+        val languageName = locale.displayLanguage  // "English"
+        val countryName = locale.displayCountry    // "United States"
+        val genderName = when (gender) {
+            300 -> "Male"      // Voice.GENDER_MALE
+            200 -> "Female"    // Voice.GENDER_FEMALE
+            400 -> "Neutral"   // Voice.GENDER_NEUTRAL
+            else -> null
+        }
+        
+        val countryShort = when (locale.country) {
+            "US" -> "US"
+            "GB" -> "GB"
+            "AU" -> "Australia"
+            "IN" -> "India"
+            else -> countryName
+        }
+        
+        return if (genderName != null) {
+            "$languageName $countryShort ($genderName)"
+        } else {
+            "$languageName $countryShort"
+        }
+    }
+    
+    /**
+     * Story 5.2 Task 1.4: Heuristic to determine gender from voice name
+     * Android doesn't always provide gender metadata
+     * 
+     * @param voiceName Voice.name string from Android TTS engine
+     * @return Best guess gender constant or null
+     */
+    private fun determineGenderFromVoiceName(voiceName: String): Int? {
+        val nameLower = voiceName.lowercase()
+        return when {
+            nameLower.contains("female") || nameLower.contains("woman") -> 200  // Voice.GENDER_FEMALE
+            nameLower.contains("male") || nameLower.contains("man") -> 300      // Voice.GENDER_MALE
+            else -> null
+        }
+    }
+    
+    /**
+     * Story 5.2 Task 3: Set TTS voice by locale string
+     * 
+     * @param localeString Locale identifier: "en-US", "en-GB", null for system default
+     * @return true if voice set successfully, false if fallback to default
+     */
+    suspend fun setVoice(localeString: String?): Boolean = withContext(Dispatchers.Main) {
+        if (!isInitialized || tts == null) {
+            Log.w(TAG, "TTS not initialized, cannot set voice")
+            return@withContext false
+        }
+        
+        try {
+            if (localeString == null) {
+                // Reset to system default voice
+                tts?.voice = null  // Android uses default
+                currentVoiceLocale = null
+                Log.d(TAG, "Voice reset to system default")
+                return@withContext true
+            }
+            
+            val voices = tts?.voices ?: return@withContext false
+            
+            // Find matching voice by locale
+            val matchedVoice = voices.firstOrNull { voice ->
+                val voiceLocale = "${voice.locale.language}-${voice.locale.country}"
+                voiceLocale.equals(localeString, ignoreCase = true)
+            }
+            
+            if (matchedVoice != null) {
+                tts?.voice = matchedVoice
+                currentVoiceLocale = localeString
+                Log.d(TAG, "Voice set to: ${matchedVoice.name}")
+                return@withContext true
+            } else {
+                // Voice not found - fallback to system default
+                Log.w(TAG, "Voice $localeString not found, falling back to system default")
+                tts?.voice = null
+                currentVoiceLocale = null
+                
+                // Announce fallback to user (Story 5.2 AC requirement)
+                // Error handling: Don't crash if TTS engine not ready
+                announce("Your preferred voice is unavailable. Using default voice.")
+                    .onFailure { e ->
+                        Log.e(TAG, "Failed to announce voice unavailability", e)
+                    }
+                
+                return@withContext false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting TTS voice", e)
+            return@withContext false
+        }
+    }
+    
+    /**
+     * Story 5.2 Task 3.6: Observe voice locale changes from SettingsRepository
+     * 
+     * Similar pattern to observeSpeechRateChanges() from Story 5.1
+     */
+    private fun observeVoiceLocaleChanges() {
+        settingsRepository.getVoiceLocale()
+            .onEach { locale ->
+                currentVoiceLocale = locale
+                if (isInitialized && tts != null) {
+                    setVoice(locale)
+                } else {
+                    Log.d(TAG, "Voice locale cached ($locale) - TTS not ready yet")
+                }
+            }
+            .launchIn(scope)
     }
     
     /**

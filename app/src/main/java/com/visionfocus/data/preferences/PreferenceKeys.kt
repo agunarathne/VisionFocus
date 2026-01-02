@@ -18,6 +18,13 @@ object PreferenceKeys {
     val SPEECH_RATE = floatPreferencesKey("speech_rate")
     
     /**
+     * Story 5.2: TTS voice locale preference.
+     * Values: "en-US", "en-GB", "en-AU", etc.
+     * Default: null (system default voice)
+     */
+    val VOICE_LOCALE = stringPreferencesKey("voice_locale")
+    
+    /**
      * Verbosity mode for recognition announcements.
      * Values: "BRIEF", "STANDARD", "DETAILED"
      * Default: "STANDARD"
