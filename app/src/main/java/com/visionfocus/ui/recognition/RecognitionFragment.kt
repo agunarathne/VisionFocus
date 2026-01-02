@@ -35,6 +35,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.ExecutionException
+import javax.inject.Inject
 
 /**
  * Recognition screen fragment with CameraX lifecycle and TalkBack accessibility
@@ -104,6 +105,10 @@ class RecognitionFragment : Fragment() {
     // ViewModel with Hilt injection
     private val viewModel: RecognitionViewModel by viewModels()
     
+    // Inject SettingsRepository for camera preview setting
+    @Inject
+    lateinit var settingsRepository: com.visionfocus.data.repository.SettingsRepository
+    
     // Haptic feedback vibrator
     private val vibrator: Vibrator? by lazy {
         context?.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
@@ -120,6 +125,9 @@ class RecognitionFragment : Fragment() {
     // Story 2.7 Task 3: Focus restoration after interruptions (phone call, notification)
     private var lastFocusedViewId: Int? = null
     private var accessibilityManager: AccessibilityManager? = null
+    
+    // CRITICAL FIX: Prevent multiple simultaneous camera bindings
+    private var isBindingCamera = false
     
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -141,9 +149,38 @@ class RecognitionFragment : Fragment() {
         setupBackButtonHandler()
         observeUiState()
         observeScanningState()  // Story 4.4: Observe continuous scanning state
+        observeCameraPreviewSetting()  // Observe camera preview toggle from settings
         
         // Story 2.4 Task 1.2: Initialize CameraX if permission granted
         checkPermissionAndStartCamera()
+    }
+    
+    /**
+     * Observe camera preview enabled setting and apply dynamically
+     */
+    private fun observeCameraPreviewSetting() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                settingsRepository.getCameraPreviewEnabled().collect { enabled ->
+                    if (enabled) {
+                        // Show full-screen camera preview (manual testing mode)
+                        binding.previewView.layoutParams = binding.previewView.layoutParams.apply {
+                            width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+                            height = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+                        }
+                        binding.previewView.visibility = View.VISIBLE
+                    } else {
+                        // Hide camera preview (production mode for blind users)
+                        binding.previewView.layoutParams = binding.previewView.layoutParams.apply {
+                            width = 1
+                            height = 1
+                        }
+                        binding.previewView.visibility = View.INVISIBLE
+                    }
+                    binding.previewView.requestLayout()
+                }
+            }
+        }
     }
     
     /**
@@ -221,9 +258,13 @@ class RecognitionFragment : Fragment() {
                         // Long-press detected - start continuous scanning
                         // CRITICAL FIX: Check if camera is ready before starting scanning
                         if (imageCapture != null) {
-                            android.util.Log.e("RECOGNITION_FRAGMENT", "Camera ready - starting continuous scanning")
+                            android.util.Log.e("RECOGNITION_FRAGMENT", "Camera ready - initializing recognition camera for continuous scanning")
                             performHapticFeedback()
+                            
+                            // Initialize recognition camera on demand (avoids conflict with preview)
+                            viewModel.initializeRecognitionCamera(viewLifecycleOwner)
                             viewModel.startContinuousScanning()
+                            
                             view.announceForAccessibility(getString(R.string.scanning_started))
                         } else {
                             // Camera not ready - announce error
@@ -312,9 +353,18 @@ class RecognitionFragment : Fragment() {
     /**
      * Story 2.4 Task 1.5: Bind CameraX Preview + ImageCapture use cases
      * Fixed: Added delay after unbindAll() to prevent buffer errors
+     * CRITICAL FIX: Added guard to prevent multiple simultaneous bindings
      */
     private fun bindCameraUseCases() {
+        // CRITICAL FIX: Guard against multiple simultaneous calls
+        if (isBindingCamera) {
+            Timber.d("Camera binding already in progress, skipping duplicate call")
+            return
+        }
+        
         val cameraProvider = cameraProvider ?: return
+        
+        isBindingCamera = true
         
         // Story 2.4 Task 1.6: Camera selector (back camera)
         val cameraSelector = CameraSelector.Builder()
@@ -355,13 +405,17 @@ class RecognitionFragment : Fragment() {
                 
                 viewModel.onCameraReady()
                 
-                // Story 4.4 FIX: Initialize recognition camera for continuous scanning
-                // This starts the CameraManager instance used by ObjectRecognitionService
-                // Must be called after preview camera is bound to avoid conflicts
-                Timber.d("Fragment: Initializing recognition camera for continuous scanning")
-                viewModel.initializeRecognitionCamera(viewLifecycleOwner)
+                // Story 4.4: Initialize recognition camera for continuous scanning
+                // CRITICAL FIX: Don't initialize yet - wait until user starts scanning
+                // The recognition camera calls unbindAll() which would destroy our preview
+                // Initialize it only when user long-presses FAB to start continuous scanning
+                Timber.d("Fragment: Preview camera ready, recognition camera will init on demand")
+                
+                // CRITICAL FIX: Reset binding flag after completion
+                isBindingCamera = false
             }
         } catch (e: Exception) {
+            isBindingCamera = false // Reset on error
             handleCameraError("Camera binding failed: ${e.message}")
         }
     }

@@ -80,6 +80,12 @@
     <string name="theme_disabled">disabled</string>
     <string name="settings_menu_description">Settings, opens app settings screen</string>
     
+    <!-- Camera Preview Setting (Testing/Development) -->
+    <string name="camera_preview_label">Camera Preview (Testing)</string>
+    <string name="camera_preview_explanation">Show live camera preview on screen. For blind users: Off. For manual testing: On.</string>
+    <string name="camera_preview_description_off">Camera preview, switch, currently off</string>
+    <string name="camera_preview_description_on">Camera preview, switch, currently on</string>
+    
     <!-- Story 2.6: Haptic feedback intensity settings -->
     <string name="haptic_feedback_section">Haptic Feedback</string>
     <string name="haptic_intensity_label">Vibration Intensity</string>

@@ -42,4 +42,10 @@ object PreferenceKeys {
      * Default: "MEDIUM"
      */
     val HAPTIC_INTENSITY = stringPreferencesKey("haptic_intensity")
+    
+    /**
+     * Camera preview visibility enabled state (Testing/Development).
+     * Default: false (invisible 1x1px for blind users)
+     */
+    val CAMERA_PREVIEW_ENABLED = booleanPreferencesKey("camera_preview_enabled")
 }

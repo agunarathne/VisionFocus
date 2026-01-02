@@ -35,6 +35,7 @@ class SettingsRepositoryImpl @Inject constructor(
         private const val DEFAULT_HIGH_CONTRAST = false
         private const val DEFAULT_LARGE_TEXT = false
         private val DEFAULT_HAPTIC_INTENSITY = HapticIntensity.MEDIUM
+        private const val DEFAULT_CAMERA_PREVIEW = false // Production default: invisible for blind users
         
         // Speech rate constraints (FR30, FR46)
         private const val MIN_SPEECH_RATE = 0.5f
@@ -144,6 +145,26 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setHapticIntensity(intensity: HapticIntensity) {
         dataStore.edit { preferences ->
             preferences[PreferenceKeys.HAPTIC_INTENSITY] = intensity.name
+        }
+    }
+    
+    override fun getCameraPreviewEnabled(): Flow<Boolean> {
+        return dataStore.data
+            .catch { exception ->
+                if (exception is IOException) {
+                    emit(emptyPreferences())
+                } else {
+                    throw exception
+                }
+            }
+            .map { preferences ->
+                preferences[PreferenceKeys.CAMERA_PREVIEW_ENABLED] ?: DEFAULT_CAMERA_PREVIEW
+            }
+    }
+    
+    override suspend fun setCameraPreviewEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferenceKeys.CAMERA_PREVIEW_ENABLED] = enabled
         }
     }
 }

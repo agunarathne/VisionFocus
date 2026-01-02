@@ -123,6 +123,23 @@ class SettingsViewModel @Inject constructor(
         )
     
     /**
+     * Camera preview enabled state (Testing/Development).
+     * 
+     * Controls whether camera preview is visible on recognition screen:
+     * - false: 1x1px invisible preview (production - for blind users)
+     * - true: Full-screen preview (testing/development - for manual testing)
+     * 
+     * Default: false
+     */
+    val cameraPreviewEnabled: StateFlow<Boolean> = settingsRepository
+        .getCameraPreviewEnabled()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(FLOW_SUBSCRIPTION_TIMEOUT_MS),
+            initialValue = false
+        )
+    
+    /**
      * Sets high-contrast mode preference.
      * 
      * Persists to DataStore.
@@ -188,5 +205,19 @@ class SettingsViewModel @Inject constructor(
         android.util.Log.d("VisionFocus", "[ViewModel] setVerbosityMode called with: $mode")
         settingsRepository.setVerbosity(mode)
         android.util.Log.d("VisionFocus", "[ViewModel] setVerbosityMode DataStore write completed")
+    }
+    
+    /**
+     * Sets camera preview enabled preference (Testing/Development).
+     * 
+     * Persists to DataStore.
+     * UI automatically updates via StateFlow observation.
+     * 
+     * @param enabled The desired camera preview state
+     */
+    suspend fun setCameraPreviewEnabled(enabled: Boolean) {
+        android.util.Log.d("VisionFocus", "[ViewModel] setCameraPreviewEnabled called with: $enabled")
+        settingsRepository.setCameraPreviewEnabled(enabled)
+        android.util.Log.d("VisionFocus", "[ViewModel] setCameraPreviewEnabled DataStore write completed")
     }
 }

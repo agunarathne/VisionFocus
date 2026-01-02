@@ -183,6 +183,26 @@ class SettingsFragment : Fragment() {
                 }
             }
         )
+        
+        // Observe camera preview enabled preference (Testing/Development)
+        observerJobs.add(
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.cameraPreviewEnabled.collect { enabled ->
+                        // Set guard flag to prevent listener from triggering during update
+                        isUpdatingFromObserver = true
+                        binding.cameraPreviewSwitch.isChecked = enabled
+                        isUpdatingFromObserver = false
+                        
+                        // Update content description for TalkBack
+                        binding.cameraPreviewSwitch.contentDescription = getString(
+                            if (enabled) R.string.camera_preview_description_on
+                            else R.string.camera_preview_description_off
+                        )
+                    }
+                }
+            }
+        )
     }
     
     /**
@@ -226,6 +246,20 @@ class SettingsFragment : Fragment() {
                 android.util.Log.d("VisionFocus", "[Fragment] Calling requireActivity().recreate()")
                 requireActivity().recreate()
                 android.util.Log.d("VisionFocus", "[Fragment] recreate() returned (should not see this)")
+            }
+        }
+        
+        binding.cameraPreviewSwitch.setOnCheckedChangeListener { _, isChecked ->
+            // Guard: Ignore programmatic updates from observer
+            if (isUpdatingFromObserver) return@setOnCheckedChangeListener
+            
+            // Save preference immediately (no recreation needed)
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.setCameraPreviewEnabled(isChecked)
+                // Announce change
+                binding.root.announceForAccessibility(
+                    "Camera preview ${if (isChecked) "enabled" else "disabled"}"
+                )
             }
         }
         

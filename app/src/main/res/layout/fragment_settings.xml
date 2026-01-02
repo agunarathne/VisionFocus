@@ -89,6 +89,34 @@
                 android:paddingTop="4dp"
                 android:importantForAccessibility="no" />
         </LinearLayout>
+        
+        <!-- Camera Preview Switch (Testing/Development) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingVertical="@dimen/spacing_small">
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/cameraPreviewSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/min_touch_target_size"
+                android:text="@string/camera_preview_label"
+                android:textAppearance="?attr/textAppearanceBody1"
+                android:contentDescription="@string/camera_preview_description_off" />
+
+            <TextView
+                android:id="@+id/cameraPreviewDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/camera_preview_explanation"
+                android:textAppearance="?attr/textAppearanceCaption"
+                android:paddingStart="16dp"
+                android:paddingEnd="0dp"
+                android:paddingTop="4dp"
+                android:importantForAccessibility="no" />
+        </LinearLayout>
 
         <!-- Haptic Feedback Section (Story 2.6) -->
         <TextView

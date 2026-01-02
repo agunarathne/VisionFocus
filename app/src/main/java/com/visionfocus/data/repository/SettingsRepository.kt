@@ -89,4 +89,20 @@ interface SettingsRepository {
      * @param intensity New haptic intensity for recognition events.
      */
     suspend fun setHapticIntensity(intensity: com.visionfocus.data.model.HapticIntensity)
+    
+    /**
+     * Observes camera preview enabled preference (Testing/Development).
+     * 
+     * @return Flow emitting boolean state.
+     *         Default: false if not set (invisible 1x1px preview for blind users).
+     */
+    fun getCameraPreviewEnabled(): Flow<Boolean>
+    
+    /**
+     * Updates camera preview enabled preference (Testing/Development).
+     * 
+     * @param enabled True to show full-screen preview (manual testing).
+     *                False for 1x1px invisible preview (production - blind users).
+     */
+    suspend fun setCameraPreviewEnabled(enabled: Boolean)
 }
