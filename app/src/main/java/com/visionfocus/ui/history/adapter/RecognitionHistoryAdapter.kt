@@ -53,6 +53,15 @@ class RecognitionHistoryAdapter(
             binding.confidenceTextView.text = formatConfidence(item.confidence)
             binding.timestampTextView.text = formatTimestamp(item.timestamp)
             
+            // Story 4.5: Display spatial information if available
+            val spatialInfo = formatSpatialInfo(item.distanceText, item.positionText)
+            if (spatialInfo != null) {
+                binding.spatialInfoTextView.text = spatialInfo
+                binding.spatialInfoTextView.visibility = android.view.View.VISIBLE
+            } else {
+                binding.spatialInfoTextView.visibility = android.view.View.GONE
+            }
+            
             // CRITICAL: TalkBack content description for entire item (Task 3.1 & 3.2)
             binding.root.contentDescription = buildContentDescription(item)
             
@@ -68,13 +77,33 @@ class RecognitionHistoryAdapter(
         
         /**
          * Build TalkBack content description for history item.
-         * Format: "[category], [confidence level], [formatted timestamp]"
+         * Format: "[category], [confidence level], [spatial info], [formatted timestamp]"
          * Story 4.3 Task 3.2: Format description
+         * Story 4.5: Include spatial information in TalkBack
          */
         private fun buildContentDescription(item: RecognitionHistoryEntity): String {
             val confidence = formatConfidence(item.confidence)
             val timestamp = formatTimestamp(item.timestamp)
-            return "${item.category}, $confidence, $timestamp"
+            val spatial = formatSpatialInfo(item.distanceText, item.positionText)
+            
+            return if (spatial != null) {
+                "${item.category}, $confidence, $spatial, $timestamp"
+            } else {
+                "${item.category}, $confidence, $timestamp"
+            }
+        }
+        
+        /**
+         * Format spatial information for display.
+         * Story 4.5: Combine distance and position into readable text
+         */
+        private fun formatSpatialInfo(distanceText: String?, positionText: String?): String? {
+            return when {
+                distanceText != null && positionText != null -> "$distanceText, $positionText"
+                distanceText != null -> distanceText
+                positionText != null -> positionText
+                else -> null
+            }
         }
         
         /**
