@@ -1235,12 +1235,56 @@ Status: Deferred - Pre-existing test failures in unrelated test files (HelpComma
 - Repository pattern maintains clean separation: SpatialAnalyzer isolated in spatial/ package
 - Database migration ensures no data loss for existing recognition history
 
+**✅ Camera Preview Toggle Feature (Added 2025-01-02)**
+
+Added user-configurable camera preview visibility for testing and production use:
+
+**Implementation:**
+- Created "Camera Preview (Testing)" toggle in Settings screen
+- Added to Settings UI below Large Text Mode switch
+- Integrated with DataStore preferences via CAMERA_PREVIEW_ENABLED key
+- Observable via SettingsRepository.getCameraPreviewEnabled() Flow
+
+**Behavior:**
+- **ON** (Testing Mode): Full-screen camera preview visible (manual testing/sighted users)
+- **OFF** (Production Mode): 1x1px invisible preview (accessibility-first for blind users)
+- **Default**: OFF (production mode prioritizes blind user experience)
+
+**Files Modified for Camera Preview:**
+1. `app/src/main/java/com/visionfocus/data/preferences/PreferenceKeys.kt` - Added CAMERA_PREVIEW_ENABLED key
+2. `app/src/main/java/com/visionfocus/data/repository/SettingsRepository.kt` - Added get/setCameraPreviewEnabled() interface methods
+3. `app/src/main/java/com/visionfocus/data/repository/SettingsRepositoryImpl.kt` - Implemented camera preview DataStore persistence
+4. `app/src/main/java/com/visionfocus/ui/settings/SettingsViewModel.kt` - Added cameraPreviewEnabled StateFlow
+5. `app/src/main/java/com/visionfocus/ui/settings/SettingsFragment.kt` - Added toggle observer and listener
+6. `app/src/main/java/com/visionfocus/ui/recognition/RecognitionFragment.kt` - Dynamic preview visibility observer
+7. `app/src/main/res/layout/fragment_recognition.xml` - Full-screen preview layout (dynamically controlled)
+8. `app/src/main/res/layout/fragment_settings.xml` - Camera Preview toggle switch UI
+9. `app/src/main/res/values/strings.xml` - camera_preview_label, camera_preview_explanation, descriptions
+
+**Critical Fixes for Testing:**
+- Fixed camera binding race condition (isBindingCamera guard flag prevents multiple simultaneous bindings)
+- Deferred recognition camera initialization until continuous scanning starts (prevents preview camera destruction)
+- Hidden title/instructions text in recognition screen for clean preview during testing
+- Added 8dp elevation to FAB for visibility over camera view
+
+**Testing Artifacts:**
+- `MANUAL-TEST-STORY-4-5.md` - 10 manual test cases for spatial announcements
+- `check-spatial-database.ps1` - PowerShell script to verify positionText/distanceText in database
+
+**Rationale:**
+Camera preview was originally designed as 1x1px invisible for blind users (production). Manual testing of Story 4.5 spatial features (position/distance announcements) requires visible preview to verify object placement. Toggle allows switching between modes without code changes.
+
+**Story 4.5 AC Compliance:**
+Spatial info calculations work regardless of preview visibility. Toggle affects UI only, not recognition accuracy.
+
+**Git Commit:** 5b7be06 - "Story 4.5: Add Camera Preview toggle for manual testing"
+
 **Known Limitations:**
 1. Distance estimates are relative (no depth sensor), based on typical object sizes
 2. Accuracy depends on object type (e.g., unusually large/small objects may misclassify)
 3. Instrumentation tests blocked by pre-existing test infrastructure issues (unrelated to Story 4.5)
 
-**Recommendation:** Story 4.5 ready for manual testing and code review. Instrumentation tests should be addressed in separate test infrastructure cleanup task.
+**Recommendation:** Story 4.5 ready for manual testing and code review. Camera preview toggle enables comprehensive manual validation of spatial announcements. Instrumentation tests should be addressed in separate test infrastructure cleanup task.
 
 ### File List
 
