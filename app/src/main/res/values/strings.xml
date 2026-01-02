@@ -171,4 +171,9 @@
     <string name="history_error_retry">Retry</string>
     <string name="history_announcement_recorded_detail">%1$s. Recorded %2$s</string>
     <string name="history_announcement_recorded_basic">%1$s, %2$s. Recorded %3$s</string>
+    
+    <!-- Story 4.4: Continuous Scanning Mode Strings -->
+    <string name="scanning_started">Continuous scanning started</string>
+    <string name="stop_scanning_description">Stop scanning, button</string>
+    <string name="continuous_scanning_active">Continuous scanning active</string>
 </resources>

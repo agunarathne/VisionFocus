@@ -357,16 +357,18 @@ class MainActivity : AppCompatActivity() {
     /**
      * Update voice button appearance based on permission state.
      * Story 3.1 Task 7.6: Button state based on permission
+     * FIX: Keep button enabled but change visual appearance for permission state
      */
     private fun updateVoiceButtonState(granted: Boolean) {
-        binding.voiceFab.isEnabled = granted
+        // Keep button always enabled so user can tap to request permission
+        binding.voiceFab.isEnabled = true
         
         if (granted) {
             // Enable button with normal appearance
             binding.voiceFab.contentDescription = getString(R.string.voice_commands_button)
             binding.voiceFab.alpha = 1.0f
         } else {
-            // Disable button with visual indication
+            // Button is clickable but visually indicates permission needed
             binding.voiceFab.contentDescription = getString(R.string.voice_commands_unavailable)
             binding.voiceFab.alpha = 0.5f
         }

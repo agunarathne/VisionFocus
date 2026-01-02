@@ -10,6 +10,8 @@ import com.visionfocus.voice.commands.navigation.NavigateCommand
 import com.visionfocus.voice.commands.navigation.WhereAmICommand
 import com.visionfocus.voice.commands.recognition.RecognizeCommand
 import com.visionfocus.voice.commands.recognition.SaveLocationCommand
+import com.visionfocus.voice.commands.recognition.ScanEnvironmentCommand
+import com.visionfocus.voice.commands.recognition.StopScanningCommand
 import com.visionfocus.voice.commands.recognition.WhatDoISeeCommand
 import com.visionfocus.voice.commands.settings.DecreaseSpeedCommand
 import com.visionfocus.voice.commands.settings.HighContrastOffCommand
@@ -76,6 +78,8 @@ object VoiceCommandModule {
      * @param verbosityBriefCommand Settings commands (Story 4.1 Task 7)
      * @param verbosityStandardCommand Settings commands (Story 4.1 Task 7)
      * @param verbosityDetailedCommand Settings commands (Story 4.1 Task 7)
+     * @param scanEnvironmentCommand Recognition commands (Story 4.4 Task 7)
+     * @param stopScanningCommand Recognition commands (Story 4.4 Task 7)
      * @return Fully configured VoiceCommandProcessor
      */
     @Provides
@@ -88,6 +92,8 @@ object VoiceCommandModule {
         recognizeCommand: RecognizeCommand,
         whatDoISeeCommand: WhatDoISeeCommand,
         historyCommand: HistoryCommand,
+        scanEnvironmentCommand: ScanEnvironmentCommand,
+        stopScanningCommand: StopScanningCommand,
         // Navigation commands
         navigateCommand: NavigateCommand,
         whereAmICommand: WhereAmICommand,
@@ -132,6 +138,8 @@ object VoiceCommandModule {
         processor.registerCommand(verbosityBriefCommand)
         processor.registerCommand(verbosityStandardCommand)
         processor.registerCommand(verbosityDetailedCommand)
+        processor.registerCommand(scanEnvironmentCommand)
+        processor.registerCommand(stopScanningCommand)
         
         return processor
     }

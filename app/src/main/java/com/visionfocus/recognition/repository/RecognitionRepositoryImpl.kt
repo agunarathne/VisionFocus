@@ -46,6 +46,23 @@ class RecognitionRepositoryImpl @Inject constructor(
         }
     }
     
+    /**
+     * Start the recognition camera for continuous scanning (Story 4.4)
+     * Initializes CameraManager with lifecycle binding
+     * 
+     * @param lifecycleOwner Fragment/Activity to bind camera lifecycle
+     */
+    override suspend fun startRecognitionCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
+        try {
+            Log.d(TAG, "Starting recognition camera for continuous scanning...")
+            objectRecognitionService.startRecognitionCamera(lifecycleOwner)
+            Log.d(TAG, "✓ Recognition camera started successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "✗ Failed to start recognition camera", e)
+            throw IllegalStateException("Failed to start recognition camera: ${e.message}", e)
+        }
+    }
+    
     override suspend fun performRecognition(): RecognitionResult {
         // Story 2.1: Raw TFLite inference
         val rawResult = objectRecognitionService.recognizeObject()

@@ -9,6 +9,8 @@ import com.visionfocus.data.repository.SettingsRepository
 import com.visionfocus.recognition.processing.ConfidenceFilter
 import com.visionfocus.recognition.processing.VerbosityFormatter
 import com.visionfocus.recognition.repository.RecognitionRepository
+import com.visionfocus.recognition.scanning.ContinuousScanner
+import com.visionfocus.recognition.scanning.ScanningState
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.tts.formatter.TTSPhraseFormatter
 import com.visionfocus.voice.operation.Operation
@@ -25,7 +27,7 @@ import timber.log.Timber
 import javax.inject.Inject
 
 /**
- * ViewModel for recognition UI (Story 2.3, 2.4, 2.6, 3.3, 4.1, 4.2)
+ * ViewModel for recognition UI (Story 2.3, 2.4, 2.6, 3.3, 4.1, 4.2, 4.4)
  * 
  * Orchestrates:
  * - Story 2.1: RecognitionRepository.performRecognition() (TFLite inference)
@@ -36,6 +38,7 @@ import javax.inject.Inject
  * - Story 3.3: Operation cancellation support via OperationManager
  * - Story 4.1: Verbosity mode selection (Brief/Standard/Detailed)
  * - Story 4.2: Recognition history storage (last 50 results)
+ * - Story 4.4: Continuous scanning mode integration
  * 
  * State transitions:
  * Idle → Capturing → Recognizing → Announcing → Success → Idle (2s delay)
@@ -52,6 +55,7 @@ import javax.inject.Inject
  * @param settingsRepository Story 4.1 - User preferences (verbosity mode)
  * @param verbosityFormatter Story 4.1 - Verbosity-aware announcement formatting
  * @param recognitionHistoryRepository Story 4.2 - Recognition history storage
+ * @param continuousScanner Story 4.4 - Continuous scanning mode service
  */
 @HiltViewModel
 class RecognitionViewModel @Inject constructor(
@@ -63,7 +67,8 @@ class RecognitionViewModel @Inject constructor(
     private val operationManager: OperationManager,
     private val settingsRepository: SettingsRepository,
     private val verbosityFormatter: VerbosityFormatter,
-    private val recognitionHistoryRepository: com.visionfocus.data.repository.RecognitionHistoryRepository
+    private val recognitionHistoryRepository: com.visionfocus.data.repository.RecognitionHistoryRepository,
+    private val continuousScanner: ContinuousScanner
 ) : ViewModel() {
     
     companion object {
@@ -94,6 +99,28 @@ class RecognitionViewModel @Inject constructor(
     
     // Story 2.4 Task 9.4: Track recognition job for cancellation
     private var recognitionJob: Job? = null
+    
+    // Story 4.4 Task 10: Expose scanning state for UI observation
+    val scanningState: StateFlow<ScanningState> = continuousScanner.scanningState
+    
+    /**
+     * Initialize the recognition camera for continuous scanning
+     * Must be called before starting continuous scanning mode
+     * Story 4.4: Camera initialization fix for continuous scanning
+     * 
+     * @param lifecycleOwner Fragment lifecycle owner
+     */
+    fun initializeRecognitionCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
+        viewModelScope.launch {
+            try {
+                Timber.d("ViewModel: Initializing recognition camera...")
+                recognitionRepository.startRecognitionCamera(lifecycleOwner)
+                Timber.d("ViewModel: Recognition camera initialized successfully")
+            } catch (e: Exception) {
+                Timber.e(e, "ViewModel: Failed to initialize recognition camera")
+            }
+        }
+    }
     
     /**
      * Trigger object recognition pipeline
@@ -382,8 +409,49 @@ class RecognitionViewModel @Inject constructor(
         _uiState.value = RecognitionUiState.Idle
     }
     
+    /**
+     * Start continuous scanning mode
+     * Story 4.4 Task 10.2: Integration with ContinuousScanner service
+     * 
+     * Delegates to ContinuousScanner which handles:
+     * - Frame capture every 3 seconds
+     * - Duplicate object suppression
+     * - TTS announcements
+     * - Auto-stop after 60 seconds
+     * 
+     * Can be triggered by:
+     * - Voice command "Scan environment"
+     * - Long-press on FAB (>2 seconds)
+     */
+    fun startContinuousScanning() {
+        android.util.Log.e("RECOGNITION_VIEWMODEL", "===== START CONTINUOUS SCANNING CALLED =====")
+        Timber.d("ViewModel: Starting continuous scanning")
+        android.util.Log.e("RECOGNITION_VIEWMODEL", "Calling continuousScanner.startScanning()")
+        continuousScanner.startScanning()
+        android.util.Log.e("RECOGNITION_VIEWMODEL", "continuousScanner.startScanning() returned")
+    }
+    
+    /**
+     * Stop continuous scanning mode
+     * Story 4.4 Task 10.2: Integration with ContinuousScanner service
+     * 
+     * Stops scanning and announces summary of detected objects.
+     * Can be triggered by:
+     * - Voice command "Stop" or "Cancel"
+     * - Auto-timeout after 60 seconds
+     * - User interaction (future: tap FAB during scanning)
+     * 
+     * @param isAutoStop true if stopped by timeout, false if manual
+     */
+    fun stopContinuousScanning(isAutoStop: Boolean = false) {
+        Timber.d("ViewModel: Stopping continuous scanning (auto=$isAutoStop)")
+        continuousScanner.stopScanning(isAutoStop)
+    }
+    
     override fun onCleared() {
         super.onCleared()
         recognitionJob?.cancel()
+        // Story 4.4: Cleanup continuous scanner
+        continuousScanner.cleanup()
     }
 }

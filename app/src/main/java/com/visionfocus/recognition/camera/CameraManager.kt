@@ -44,6 +44,12 @@ class CameraManager @Inject constructor(
     private val cameraExecutor = Executors.newSingleThreadExecutor()
     private var imageAnalysis: ImageAnalysis? = null
     private var cameraProvider: ProcessCameraProvider? = null
+    private var lifecycleOwner: LifecycleOwner? = null
+    
+    // Store latest captured frame for captureFrame() calls
+    @Volatile
+    private var latestFrame: ByteBuffer? = null
+    private val frameLock = Any()
     
     companion object {
         private const val TAG = "CameraManager"
@@ -51,8 +57,8 @@ class CameraManager @Inject constructor(
         private const val TARGET_HEIGHT = 480
         private const val MODEL_INPUT_SIZE = 300
         private const val CHANNELS = 3
-        private const val BYTES_PER_FLOAT = 4
-        private const val BUFFER_SIZE = BYTES_PER_FLOAT * MODEL_INPUT_SIZE * MODEL_INPUT_SIZE * CHANNELS
+        private const val BYTES_PER_CHANNEL = 1 // uint8 quantized model
+        private const val BUFFER_SIZE = BYTES_PER_CHANNEL * MODEL_INPUT_SIZE * MODEL_INPUT_SIZE * CHANNELS
     }
     
     /**
@@ -66,6 +72,9 @@ class CameraManager @Inject constructor(
         onFrameReady: (ByteBuffer) -> Unit
     ) = withContext(Dispatchers.Main) {
         try {
+            // Store lifecycle owner for captureFrame() use
+            this@CameraManager.lifecycleOwner = lifecycleOwner
+            
             val provider = getCameraProvider()
             cameraProvider = provider
             
@@ -79,6 +88,13 @@ class CameraManager @Inject constructor(
                     analysis.setAnalyzer(cameraExecutor) { imageProxy ->
                         try {
                             val byteBuffer = processImageProxy(imageProxy)
+                            
+                            // Store latest frame for captureFrame() calls
+                            synchronized(frameLock) {
+                                latestFrame = byteBuffer
+                            }
+                            
+                            // Also call callback for continuous streaming
                             onFrameReady(byteBuffer)
                         } catch (e: Exception) {
                             Log.e(TAG, "Frame processing failed", e)
@@ -109,56 +125,30 @@ class CameraManager @Inject constructor(
     
     /**
      * Capture a single frame and convert to ByteBuffer for TFLite inference
-     * This is a simplified interface for single-shot recognition
+     * 
+     * Returns the latest frame from the continuously-running imageAnalysis.
+     * This avoids creating temporary ImageAnalysis instances which can cause conflicts.
      * 
      * @return ByteBuffer containing 300×300×3 RGB image normalized [0-255]
+     * @throws IllegalStateException if camera not started or no frame available yet
      */
-    suspend fun captureFrame(): ByteBuffer = suspendCancellableCoroutine { continuation ->
-        var resumed = false
-        var tempAnalysis: ImageAnalysis? = null
-        
-        val provider = cameraProvider ?: run {
-            if (!resumed) {
-                resumed = true
-                continuation.resumeWithException(
-                    IllegalStateException("Camera not started. Call startCamera() first.")
-                )
-            }
-            return@suspendCancellableCoroutine
+    suspend fun captureFrame(): ByteBuffer {
+        // Check camera is running
+        if (cameraProvider == null) {
+            throw IllegalStateException("Camera not started. Call startCamera() first.")
         }
         
-        // Create temporary ImageAnalysis use case
-        tempAnalysis = ImageAnalysis.Builder()
-            .setTargetResolution(android.util.Size(TARGET_WIDTH, TARGET_HEIGHT))
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
-            .build()
-            .also { analysis ->
-                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                    if (!resumed) {
-                        resumed = true
-                        try {
-                            val byteBuffer = processImageProxy(imageProxy)
-                            continuation.resume(byteBuffer)
-                        } catch (e: Exception) {
-                            continuation.resumeWithException(e)
-                        } finally {
-                            imageProxy.close()
-                            // Unbind to prevent memory leak
-                            try {
-                                provider.unbind(analysis)
-                            } catch (e: Exception) {
-                                Log.w(TAG, "Failed to unbind temp analysis", e)
-                            }
-                        }
-                    } else {
-                        imageProxy.close()
-                    }
-                }
-            }
-        
-        continuation.invokeOnCancellation {
-            tempAnalysis?.let { provider.unbind(it) }
+        // Return latest captured frame
+        return synchronized(frameLock) {
+            latestFrame?.let { frame ->
+                // Create a copy to avoid concurrent modification
+                val copy = ByteBuffer.allocateDirect(frame.capacity())
+                frame.rewind()
+                copy.put(frame)
+                frame.rewind()
+                copy.rewind()
+                copy
+            } ?: throw IllegalStateException("No frame captured yet. Camera may still be initializing.")
         }
     }
     
@@ -251,7 +241,7 @@ class CameraManager @Inject constructor(
     
     /**
      * Convert Bitmap to ByteBuffer for TFLite inference
-     * Output: 300×300×3 RGB image as Float32 [0-255]
+     * Output: 300×300×3 RGB image as UInt8 [0-255]
      */
     private fun bitmapToByteBuffer(bitmap: Bitmap): ByteBuffer {
         val byteBuffer = ByteBuffer.allocateDirect(BUFFER_SIZE)
@@ -265,10 +255,10 @@ class CameraManager @Inject constructor(
             for (j in 0 until MODEL_INPUT_SIZE) {
                 val pixelValue = intValues[pixel++]
                 
-                // Extract RGB channels (INT8 quantized model expects [0-255])
-                byteBuffer.putFloat(((pixelValue shr 16) and 0xFF).toFloat())  // R
-                byteBuffer.putFloat(((pixelValue shr 8) and 0xFF).toFloat())   // G
-                byteBuffer.putFloat((pixelValue and 0xFF).toFloat())           // B
+                // Extract RGB channels (uint8 quantized model expects [0-255])
+                byteBuffer.put(((pixelValue shr 16) and 0xFF).toByte())  // R
+                byteBuffer.put(((pixelValue shr 8) and 0xFF).toByte())   // G
+                byteBuffer.put((pixelValue and 0xFF).toByte())           // B
             }
         }
         

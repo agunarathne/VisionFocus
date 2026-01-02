@@ -83,6 +83,26 @@ class ObjectRecognitionService @Inject constructor(
     }
     
     /**
+     * Start the recognition camera for continuous scanning mode (Story 4.4)
+     * Must be called before attempting frame capture for continuous scanning
+     * 
+     * @param lifecycleOwner Fragment/Activity to bind camera lifecycle
+     * @throws IllegalStateException if camera start fails
+     */
+    suspend fun startRecognitionCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner) {
+        try {
+            Log.d(TAG, "Starting recognition camera...")
+            // CameraManager.startCamera() requires a callback for frame processing
+            // For continuous scanning, we don't use the callback - we call captureFrame() explicitly
+            cameraManager.startCamera(lifecycleOwner) { /* No-op callback */ }
+            Log.d(TAG, "Recognition camera started successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start recognition camera", e)
+            throw IllegalStateException("Failed to start recognition camera: ${e.message}", e)
+        }
+    }
+    
+    /**
      * Perform object recognition on current camera frame
      * 
      * Pipeline:

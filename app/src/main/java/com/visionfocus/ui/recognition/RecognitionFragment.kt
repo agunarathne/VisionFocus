@@ -33,6 +33,7 @@ import com.visionfocus.databinding.FragmentRecognitionBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.util.concurrent.ExecutionException
 
 /**
@@ -84,7 +85,17 @@ class RecognitionFragment : Fragment() {
          * LOW-1 FIX: Named constant for camera restart timing
          */
         private const val CAMERA_RESTART_DELAY_MS = 100L
+        
+        /**
+         * HIGH-1 FIX: Long-press threshold for continuous scanning
+         * Story 4.4 AC: "long-press FAB (>2 seconds)" requires 2000ms
+         */
+        private const val LONG_PRESS_THRESHOLD_MS = 2000L
     }
+    
+    // HIGH-1 FIX: Track long-press state for custom 2-second threshold
+    private var longPressStartTime: Long = 0L
+    private var isLongPressActive = false
     
     // View Binding
     private var _binding: FragmentRecognitionBinding? = null
@@ -129,6 +140,7 @@ class RecognitionFragment : Fragment() {
         setupFabClickListener()
         setupBackButtonHandler()
         observeUiState()
+        observeScanningState()  // Story 4.4: Observe continuous scanning state
         
         // Story 2.4 Task 1.2: Initialize CameraX if permission granted
         checkPermissionAndStartCamera()
@@ -174,10 +186,75 @@ class RecognitionFragment : Fragment() {
     
     /**
      * Story 2.3 Task 4: Implement FAB click handler with haptic feedback
+     * Story 4.4 Task 6: Add long-press support for continuous scanning
+     * 
+     * Click behavior (Story 2.3):
+     * - Single tap: Trigger single recognition
+     * - Haptic feedback on tap
+     * 
+     * Long-press behavior (Story 4.4):
+     * - Hold for >2 seconds: Activate continuous scanning mode
+     * - Haptic feedback on long-press detection
+     * 
+     * HIGH-1 FIX: Implement custom 2000ms long-press with OnTouchListener
+     * Android's setOnLongClickListener uses ~500ms default, not 2000ms as required
+     * 
      * HIGH-8 FIX: Stop TTS/announcements before starting new recognition (AC9)
      */
     private fun setupFabClickListener() {
+        // HIGH-1 FIX: Use OnTouchListener for custom 2-second long-press
+        binding.recognizeFab.setOnTouchListener { view, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    // Start tracking long-press
+                    longPressStartTime = System.currentTimeMillis()
+                    isLongPressActive = true
+                    false // Don't consume - allow click listener to work
+                }
+                android.view.MotionEvent.ACTION_UP -> {
+                    // Check if this was a long-press (>2 seconds)
+                    val pressDuration = System.currentTimeMillis() - longPressStartTime
+                    android.util.Log.e("RECOGNITION_FRAGMENT", "ACTION_UP: duration=${pressDuration}ms, threshold=$LONG_PRESS_THRESHOLD_MS")
+                    
+                    if (isLongPressActive && pressDuration >= LONG_PRESS_THRESHOLD_MS) {
+                        android.util.Log.e("RECOGNITION_FRAGMENT", "LONG PRESS DETECTED - checking camera readiness")
+                        // Long-press detected - start continuous scanning
+                        // CRITICAL FIX: Check if camera is ready before starting scanning
+                        if (imageCapture != null) {
+                            android.util.Log.e("RECOGNITION_FRAGMENT", "Camera ready - starting continuous scanning")
+                            performHapticFeedback()
+                            viewModel.startContinuousScanning()
+                            view.announceForAccessibility(getString(R.string.scanning_started))
+                        } else {
+                            // Camera not ready - announce error
+                            android.util.Log.e("RECOGNITION_FRAGMENT", "Camera NOT ready - cannot start scanning")
+                            view.announceForAccessibility("Camera not ready. Please wait.")
+                            Timber.w("Long-press detected but camera not initialized")
+                        }
+                        isLongPressActive = false
+                        true // Consume event
+                    } else {
+                        isLongPressActive = false
+                        false // Let click listener handle
+                    }
+                }
+                android.view.MotionEvent.ACTION_CANCEL -> {
+                    isLongPressActive = false
+                    false
+                }
+                else -> false
+            }
+        }
+        
+        // Single click listener (Story 2.3)
         binding.recognizeFab.setOnClickListener {
+            // Check if scanning is active - tap stops scanning
+            if (viewModel.scanningState.value is com.visionfocus.recognition.scanning.ScanningState.Scanning) {
+                performHapticFeedback()
+                viewModel.stopContinuousScanning()
+                return@setOnClickListener
+            }
+            
             // AC9: Stop TalkBack announcements when user activates FAB
             view?.announceForAccessibility("")  // Interrupts current announcement
             
@@ -277,6 +354,12 @@ class RecognitionFragment : Fragment() {
                 )
                 
                 viewModel.onCameraReady()
+                
+                // Story 4.4 FIX: Initialize recognition camera for continuous scanning
+                // This starts the CameraManager instance used by ObjectRecognitionService
+                // Must be called after preview camera is bound to avoid conflicts
+                Timber.d("Fragment: Initializing recognition camera for continuous scanning")
+                viewModel.initializeRecognitionCamera(viewLifecycleOwner)
             }
         } catch (e: Exception) {
             handleCameraError("Camera binding failed: ${e.message}")
@@ -471,6 +554,62 @@ class RecognitionFragment : Fragment() {
                 viewModel.uiState.collect { state ->
                     updateUi(state)
                 }
+            }
+        }
+    }
+    
+    /**
+     * Observe continuous scanning state and update UI
+     * Story 4.4 Task 11: Update RecognitionFragment UI for scanning mode
+     * 
+     * State changes:
+     * - Idle: FAB shows camera icon, enables single-tap recognition
+     * - Scanning: FAB shows stop icon, tap stops scanning, disables single recognition
+     * - Stopping: Brief transitional state before returning to Idle
+     * 
+     * Accessibility:
+     * - Updates FAB contentDescription for TalkBack
+     * - Announces state changes via TalkBack
+     * - Visual indicator (icon change) for sighted users
+     */
+    private fun observeScanningState() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.scanningState.collect { state ->
+                    updateScanningUi(state)
+                }
+            }
+        }
+    }
+    
+    /**
+     * Update UI based on current scanning state
+     * Story 4.4 Task 11: Handle scanning state transitions
+     */
+    private fun updateScanningUi(state: com.visionfocus.recognition.scanning.ScanningState) {
+        when (state) {
+            is com.visionfocus.recognition.scanning.ScanningState.Idle -> {
+                // Restore normal FAB state
+                binding.recognizeFab.setImageResource(R.drawable.ic_camera)
+                binding.recognizeFab.contentDescription = getString(R.string.recognize_fab_description)
+                binding.recognizeFab.isEnabled = true
+                // Note: Single-tap behavior already handles single recognition
+            }
+            
+            is com.visionfocus.recognition.scanning.ScanningState.Scanning -> {
+                // Change FAB to stop icon during scanning
+                binding.recognizeFab.setImageResource(R.drawable.ic_stop_scanning)
+                binding.recognizeFab.contentDescription = getString(R.string.stop_scanning_description)
+                binding.recognizeFab.isEnabled = true
+                // Note: Click listener already handles stopping scanning when state is Scanning
+                
+                // Announce scanning active via TalkBack
+                announceForAccessibility(getString(R.string.continuous_scanning_active))
+            }
+            
+            is com.visionfocus.recognition.scanning.ScanningState.Stopping -> {
+                // Brief transitional state - no UI change needed
+                // Summary announcement handled by ContinuousScanner
             }
         }
     }

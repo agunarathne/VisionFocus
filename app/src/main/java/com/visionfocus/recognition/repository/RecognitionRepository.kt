@@ -20,6 +20,15 @@ interface RecognitionRepository {
     fun ensureInitialized()
     
     /**
+     * Start the recognition camera for continuous scanning
+     * Must be called before continuous scanning mode to enable frame capture
+     * 
+     * @param lifecycleOwner Lifecycle owner to bind camera lifecycle
+     * @throws IllegalStateException if camera start fails
+     */
+    suspend fun startRecognitionCamera(lifecycleOwner: androidx.lifecycle.LifecycleOwner)
+    
+    /**
      * Perform object recognition on current camera frame
      * 
      * @return RecognitionResult with detected objects and timing info
