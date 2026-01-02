@@ -4,8 +4,14 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
+import com.visionfocus.data.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
@@ -31,7 +37,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class TTSManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val settingsRepository: SettingsRepository
 ) : TextToSpeech.OnInitListener {
     
     companion object {
@@ -53,6 +60,12 @@ class TTSManager @Inject constructor(
     private var tts: TextToSpeech? = null
     private var isInitialized = false
     
+    // Story 5.1: Track current speech rate
+    private var currentSpeechRate: Float = DEFAULT_SPEECH_RATE
+    
+    // Story 5.1: Coroutine scope for observing settings changes
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    
     // Track actual TTS start time for latency measurement
     private var lastUtteranceStartTime: Long? = null
     private var lastUtteranceQueueTime: Long? = null
@@ -61,12 +74,18 @@ class TTSManager @Inject constructor(
      * Initialize TextToSpeech engine
      * Should be called on Application.onCreate()
      * 
+     * Story 5.1 FIX: Start observing speech rate changes BEFORE TTS initializes
+     * This ensures we cache the user's saved rate and apply it immediately when TTS is ready
+     * 
      * Thread-safe: Can be called multiple times safely
      * Asynchronous: onInit() callback will be invoked when ready
      */
     @Synchronized
     fun initialize() {
         if (tts == null) {
+            // FIX ISSUE #1: Start observing speech rate BEFORE TTS initializes
+            // This caches the saved rate so it's ready when onInit() is called
+            observeSpeechRateChanges()
             tts = TextToSpeech(context, this)
         }
     }
@@ -92,9 +111,9 @@ class TTSManager @Inject constructor(
                 }
                 else -> {
                     isInitialized = true
-                    tts?.setSpeechRate(DEFAULT_SPEECH_RATE)
+                    tts?.setSpeechRate(currentSpeechRate)
                     setupUtteranceListener()
-                    Log.d(TAG, "TTS initialized successfully")
+                    Log.d(TAG, "TTS initialized successfully with rate: $currentSpeechRate")
                 }
             }
         } else {
@@ -127,6 +146,30 @@ class TTSManager @Inject constructor(
                 Log.e(TAG, "TTS error: $utteranceId, code: $errorCode")
             }
         })
+    }
+    
+    /**
+     * Story 5.1: Observe speech rate changes from SettingsRepository
+     * 
+     * This coroutine observes the speech rate preference and updates TTSManager
+     * whenever the user changes the setting.
+     * 
+     * CRITICAL FIX: Added null checks for isInitialized AND tts to prevent race condition
+     * on app startup when DataStore emits before TTS engine is ready.
+     */
+    private fun observeSpeechRateChanges() {
+        settingsRepository.getSpeechRate()
+            .onEach { rate ->
+                currentSpeechRate = rate
+                // CRITICAL: Check both isInitialized AND tts != null before applying
+                if (isInitialized && tts != null) {
+                    tts?.setSpeechRate(rate)
+                    Log.d(TAG, "Speech rate updated to: $rate")
+                } else {
+                    Log.d(TAG, "Speech rate cached ($rate) - TTS not ready yet")
+                }
+            }
+            .launchIn(scope)
     }
     
     /**
@@ -224,8 +267,11 @@ class TTSManager @Inject constructor(
     fun setSpeechRate(rate: Float) {
         require(rate in 0.5f..2.0f) { "Speech rate must be in range [0.5, 2.0]" }
         
-        tts?.setSpeechRate(rate)
-        Log.d(TAG, "Speech rate set to ${rate}x")
+        currentSpeechRate = rate
+        if (isInitialized) {
+            tts?.setSpeechRate(rate)
+            Log.d(TAG, "Speech rate set to ${rate}x")
+        }
     }
     
     /**
@@ -234,6 +280,7 @@ class TTSManager @Inject constructor(
      * Releases system resources
      */
     fun shutdown() {
+        scope.cancel()  // Story 5.1: Cancel coroutine scope
         tts?.stop()
         tts?.shutdown()
         tts = null

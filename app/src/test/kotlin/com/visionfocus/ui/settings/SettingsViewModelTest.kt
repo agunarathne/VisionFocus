@@ -2,6 +2,7 @@ package com.visionfocus.ui.settings
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.visionfocus.data.repository.SettingsRepository
+import com.visionfocus.tts.engine.TTSManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,21 +39,25 @@ class SettingsViewModelTest {
     
     private val testDispatcher = StandardTestDispatcher()
     
-    private lateinit var mockRepository: SettingsRepository
+    private lateinit var mockTtsManager: TTSManager
     private lateinit var viewModel: SettingsViewModel
     
     private val highContrastFlow = MutableStateFlow(false)
+    private val largeTextFlow = MutableStateFlow(false)
+    private val speechRateFlow = MutableStateFlow(1.0flse)
     private val largeTextFlow = MutableStateFlow(false)
     
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        
-        mockRepository = mock()
+        mockTtsManager = mock()
         
         // Setup mock repository flows
         whenever(mockRepository.getHighContrastMode()).thenReturn(highContrastFlow)
         whenever(mockRepository.getLargeTextMode()).thenReturn(largeTextFlow)
+        whenever(mockRepository.getSpeechRate()).thenReturn(speechRateFlow)
+        
+        viewModel = SettingsViewModel(mockRepository, mockTtsManagerthenReturn(largeTextFlow)
         
         viewModel = SettingsViewModel(mockRepository)
     }
@@ -149,6 +154,126 @@ class SettingsViewModelTest {
         viewModel.setHighContrastMode(false)
         viewModel.setHighContrastMode(true)
         advanceUntilIdle()
+    
+    // Story 5.1: Speech Rate Tests
+    
+    @Test
+    fun `speechRate initial value is 1_0`() = runTest(testDispatcher) {
+        val value = viewModel.speechRate.first()
+        assertEquals(1.0f, value)
+    }
+    
+    @Test
+    fun `setSpeechRate calls repository with clamped value`() = runTest(testDispatcher) {
+        // Act
+        viewModel.setSpeechRate(1.5f)
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockRepository).setSpeechRate(1.5f)
+    }
+    
+    @Test
+    fun `setSpeechRate clamps value below 0_5 to 0_5`() = runTest(testDispatcher) {
+        // Act
+        viewModel.setSpeechRate(0.3f)
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockRepository).setSpeechRate(0.5f)
+    }
+    
+    @Test
+    fun `setSpeechRate clamps value above 2_0 to 2_0`() = runTest(testDispatcher) {
+        // Act
+        viewModel.setSpeechRate(3.0f)
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockRepository).setSpeechRate(2.0f)
+    }
+    
+    @Test
+    fun `incrementSpeechRate adds 0_25 and calls TTSManager`() = runTest(testDispatcher) {
+        // Arrange
+        speechRateFlow.value = 1.0f
+        advanceUntilIdle()
+        
+        // Act
+        viewModel.incrementSpeechRate()
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockRepository).setSpeechRate(1.25f)
+        verify(mockTtsManager).setSpeechRate(1.25f)
+    }
+    
+    @Test
+    fun `decrementSpeechRate subtracts 0_25 and calls TTSManager`() = runTest(testDispatcher) {
+        // Arrange
+        speechRateFlow.value = 1.0f
+        advanceUntilIdle()
+        
+        // Act
+        viewModel.decrementSpeechRate()
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockRepository).setSpeechRate(0.75f)
+        verify(mockTtsManager).setSpeechRate(0.75f)
+    }
+    
+    @Test
+    fun `incrementSpeechRate at maximum emits announcement`() = runTest(testDispatcher) {
+        // Arrange
+        speechRateFlow.value = 2.0f
+        advanceUntilIdle()
+        
+        // Act
+        viewModel.incrementSpeechRate()
+        advanceUntilIdle()
+        
+        // Assert: No repository call (already at max)
+        verify(mockRepository, org.mockito.kotlin.never()).setSpeechRate(org.mockito.kotlin.any())
+    }
+    
+    @Test
+    fun `decrementSpeechRate at minimum emits announcement`() = runTest(testDispatcher) {
+        // Arrange
+        speechRateFlow.value = 0.5f
+        advanceUntilIdle()
+        
+        // Act
+        viewModel.decrementSpeechRate()
+        advanceUntilIdle()
+        
+        // Assert: No repository call (already at min)
+        verify(mockRepository, org.mockito.kotlin.never()).setSpeechRate(org.mockito.kotlin.any())
+    }
+    
+    @Test
+    fun `playSampleAnnouncement calls TTSManager announce`() = runTest(testDispatcher) {
+        // Act
+        viewModel.playSampleAnnouncement()
+        advanceUntilIdle()
+        
+        // Assert
+        verify(mockTtsManager).announce("This is how your speech rate sounds.")
+    }
+    
+    @Test
+    fun `speechRate StateFlow updates when repository emits new value`() = runTest(testDispatcher) {
+        // Arrange: Initial value is 1.0, wait for initialization
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1.0f, viewModel.speechRate.value)
+        
+        // Act: Repository emits new value
+        speechRateFlow.value = 1.5f
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Assert: StateFlow updated
+        assertEquals(1.5f, viewModel.speechRate.value)
+    }
         
         // Assert: All three calls made (no race condition blocking)
         verify(mockRepository, org.mockito.kotlin.times(3)).setHighContrastMode(org.mockito.kotlin.any())

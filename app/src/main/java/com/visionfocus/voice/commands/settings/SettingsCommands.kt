@@ -239,10 +239,14 @@ class IncreaseSpeedCommand @Inject constructor(
                 return CommandResult.Success("Already at max rate")
             }
             
-            // Save new rate
+            // Save new rate to DataStore
             settingsRepository.setSpeechRate(newRate)
             
-            // Announce new rate (specific feedback, processor already said "Increasing speech speed")
+            // FIX ISSUE #2 & #3: Apply rate immediately to TTS engine
+            // Don't wait for Flow observation - voice commands need instant feedback
+            ttsManager.setSpeechRate(newRate)
+            
+            // Announce new rate at the NEW speed (specific feedback)
             ttsManager.announce("Now at ${newRate} times normal speed")
             
             Log.d(TAG, "Speech rate increased to $newRate")
@@ -309,10 +313,14 @@ class DecreaseSpeedCommand @Inject constructor(
                 return CommandResult.Success("Already at min rate")
             }
             
-            // Save new rate
+            // Save new rate to DataStore
             settingsRepository.setSpeechRate(newRate)
             
-            // Announce new rate (specific feedback, processor already said "Decreasing speech speed")
+            // FIX ISSUE #2 & #3: Apply rate immediately to TTS engine
+            // Don't wait for Flow observation - voice commands need instant feedback
+            ttsManager.setSpeechRate(newRate)
+            
+            // Announce new rate at the NEW speed (specific feedback)
             ttsManager.announce("Now at ${newRate} times normal speed")
             
             Log.d(TAG, "Speech rate decreased to $newRate")

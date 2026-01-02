@@ -66,6 +66,27 @@
     
     <!-- Story 2.5: Settings screen strings -->
     <string name="settings_title">Settings</string>
+    
+    <!-- Story 5.1: Speech Rate Section -->
+    <string name="speech_rate_section">Speech Rate</string>
+    <string name="speech_rate_explanation">Adjust how fast the app speaks to you.</string>
+    <string name="default_speech_rate">1.0×</string>
+    <string name="min_speech_rate">0.5×</string>
+    <string name="max_speech_rate">2.0×</string>
+    <string name="speech_rate_slider_description">Speech rate, slider, currently 1.0 times normal speed</string>
+    <string name="test_speed_button">Test Speed</string>
+    <string name="test_speed_button_description">Test speed, button. Play sample announcement at current rate.</string>
+    <string name="sample_announcement_text">This is how your speech rate sounds.</string>
+    
+    <!-- Rate Limit Announcements -->
+    <string name="speech_rate_at_minimum">Speech rate at minimum</string>
+    <string name="speech_rate_at_maximum">Speech rate at maximum</string>
+    <string name="speech_rate_changed">Speech rate changed to %1$.1f times normal speed</string>
+    
+    <!-- Voice Command Announcements -->
+    <string name="speech_rate_increased">Speech rate increased to %1$.1f times</string>
+    <string name="speech_rate_decreased">Speech rate decreased to %1$.1f times</string>
+    
     <string name="theme_settings_section">Theme Settings</string>
     <string name="high_contrast_mode_label">High Contrast Mode</string>
     <string name="high_contrast_mode_explanation">Pure black and white theme with 7:1 contrast ratio for improved visibility</string>

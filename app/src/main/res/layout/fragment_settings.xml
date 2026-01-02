@@ -23,6 +23,89 @@
             android:paddingBottom="@dimen/spacing_large"
             android:importantForAccessibility="yes" />
 
+        <!-- Speech Rate Section (Story 5.1) -->
+        <TextView
+            android:id="@+id/speechRateSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/speech_rate_section"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:paddingTop="@dimen/spacing_medium"
+            android:paddingBottom="@dimen/spacing_small"
+            android:accessibilityHeading="true"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:id="@+id/speechRateExplanation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/speech_rate_explanation"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="no" />
+
+        <!-- Current Speech Rate Display -->
+        <TextView
+            android:id="@+id/currentRateTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/default_speech_rate"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="no" />
+
+        <!-- Speech Rate SeekBar (0.5x - 2.0x) -->
+        <SeekBar
+            android:id="@+id/speechRateSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:minHeight="48dp"
+            android:max="15"
+            android:progress="5"
+            android:contentDescription="@string/speech_rate_slider_description"
+            android:paddingBottom="@dimen/spacing_small" />
+
+        <!-- Range Labels Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="@dimen/spacing_small">
+
+            <TextView
+                android:id="@+id/minRateLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/min_speech_rate"
+                android:textSize="12sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/maxRateLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/max_speech_rate"
+                android:textSize="12sp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:gravity="end"
+                android:importantForAccessibility="no" />
+        </LinearLayout>
+
+        <!-- Test Speed Button -->
+        <Button
+            android:id="@+id/testSpeedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/test_speed_button"
+            android:contentDescription="@string/test_speed_button_description"
+            android:layout_marginBottom="@dimen/spacing_large" />
+
         <!-- Theme Settings Section -->
         <TextView
             android:id="@+id/themeSectionTitle"

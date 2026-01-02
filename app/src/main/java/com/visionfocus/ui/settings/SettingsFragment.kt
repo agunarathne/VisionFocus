@@ -15,9 +15,11 @@ import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.databinding.FragmentSettingsBinding
 import com.visionfocus.theme.ThemeManager
+import com.visionfocus.tts.engine.TTSManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.widget.SeekBar
 
 /**
  * Settings screen for theme preferences and haptic feedback.
@@ -64,6 +66,10 @@ class SettingsFragment : Fragment() {
     @Inject
     lateinit var hapticFeedbackManager: HapticFeedbackManager
     
+    // Story 5.1: Inject TTSManager for speech rate control
+    @Inject
+    lateinit var ttsManager: TTSManager
+    
     // Guard flag to prevent double theme application (HIGH-2 fix)
     private var isUpdatingFromObserver = false
     
@@ -101,6 +107,34 @@ class SettingsFragment : Fragment() {
      * - No memory leaks from active coroutines
      */
     private fun setupObservers() {
+        // Story 5.1: Observe speech rate preference
+        observerJobs.add(
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.speechRate.collect { rate ->
+                        // Set guard flag to prevent listener from triggering during update
+                        isUpdatingFromObserver = true
+                        
+                        // Update SeekBar position (convert rate to progress: 0.5-2.0 → 0-15)
+                        val progress = speechRateToProgress(rate)
+                        binding.speechRateSeekBar.progress = progress
+                        
+                        // Update current rate display
+                        binding.currentRateTextView.text = String.format("%.1f×", rate)
+                        
+                        // Update content description for TalkBack
+                        // MEDIUM-3 FIX: Use format string instead of brittle string replacement
+                        binding.speechRateSeekBar.contentDescription = String.format(
+                            "Speech rate, slider, currently %.1f times normal speed",
+                            rate
+                        )
+                        
+                        isUpdatingFromObserver = false
+                    }
+                }
+            }
+        )
+        
         // Observe high-contrast mode preference
         observerJobs.add(
             viewLifecycleOwner.lifecycleScope.launch {
@@ -224,6 +258,63 @@ class SettingsFragment : Fragment() {
      * TODO: Debug why toggle works once but not repeatedly after recreate().
      */
     private fun setupListeners() {
+        // Story 5.1: Speech rate SeekBar listener
+        binding.speechRateSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                // Guard: Ignore programmatic updates from observer
+                if (isUpdatingFromObserver) return
+                
+                // Update current rate display
+                val rate = progressToSpeechRate(progress)
+                binding.currentRateTextView.text = String.format("%.1f×", rate)
+                
+                // Update content description for TalkBack
+                // MEDIUM-3 FIX: Use format string instead of brittle string replacement
+                binding.speechRateSeekBar.contentDescription = String.format(
+                    "Speech rate, slider, currently %.1f times normal speed",
+                    rate
+                )
+            }
+            
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                // User started dragging slider
+            }
+            
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                // Guard: Ignore programmatic updates from observer
+                if (isUpdatingFromObserver) return
+                
+                // User released slider - save preference and apply to TTS
+                val rate = progressToSpeechRate(seekBar?.progress ?: 5)
+                android.util.Log.d("VisionFocus", "[Fragment] Speech rate changed to: $rate")
+                
+                // Announce rate change via TalkBack
+                binding.root.announceForAccessibility(
+                    getString(R.string.speech_rate_changed, rate)
+                )
+                
+                // Save preference, apply to TTS, and play sample (AC: sample plays on slider change)
+                // MEDIUM-2 FIX: Auto-play sample announcement when slider changes
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.setSpeechRate(rate)
+                    ttsManager.setSpeechRate(rate)
+                    // AC requirement: "sample announcement plays when slider changes"
+                    viewModel.playSampleAnnouncement()
+                }
+            }
+        })
+        
+        // Story 5.1: Test Speed button listener
+        binding.testSpeedButton.setOnClickListener {
+            val rate = viewModel.speechRate.value
+            android.util.Log.d("VisionFocus", "[Fragment] Test speed button clicked, rate=$rate")
+            
+            // Play sample announcement at current rate
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.playSampleAnnouncement()
+            }
+        }
+        
         binding.highContrastSwitch.setOnCheckedChangeListener { _, isChecked ->
             // Guard: Ignore programmatic updates from observer (HIGH-2 fix)
             if (isUpdatingFromObserver) return@setOnCheckedChangeListener
@@ -367,6 +458,30 @@ class SettingsFragment : Fragment() {
                 viewModel.setVerbosityMode(mode)
             }
         }
+    }
+    
+    /**
+     * Story 5.1: Convert SeekBar progress (0-15) to speech rate (0.5-2.0)
+     * 
+     * Formula: rate = 0.5 + (progress * 0.1)
+     * - progress 0 → 0.5×
+     * - progress 5 → 1.0× (default)
+     * - progress 15 → 2.0×
+     */
+    private fun progressToSpeechRate(progress: Int): Float {
+        return 0.5f + (progress * 0.1f)
+    }
+    
+    /**
+     * Story 5.1: Convert speech rate (0.5-2.0) to SeekBar progress (0-15)
+     * 
+     * Formula: progress = (rate - 0.5) / 0.1
+     * - rate 0.5× → progress 0
+     * - rate 1.0× → progress 5
+     * - rate 2.0× → progress 15
+     */
+    private fun speechRateToProgress(rate: Float): Int {
+        return ((rate - 0.5f) / 0.1f).toInt().coerceIn(0, 15)
     }
     
     override fun onDestroyView() {
