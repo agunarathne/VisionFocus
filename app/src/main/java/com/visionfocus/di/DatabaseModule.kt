@@ -70,12 +70,34 @@ object DatabaseModule {
     }
     
     /**
+     * Migration from database version 2 to 3.
+     * 
+     * Story 4.5: Adds spatial information columns to RecognitionHistoryEntity
+     * - positionText: String (nullable) - e.g., "on the left", "in center of view"
+     * - distanceText: String (nullable) - e.g., "close by", "at medium distance"
+     */
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // Add spatial information columns (nullable for backward compatibility)
+            database.execSQL(
+                "ALTER TABLE recognition_history ADD COLUMN positionText TEXT DEFAULT ''"
+            )
+            database.execSQL(
+                "ALTER TABLE recognition_history ADD COLUMN distanceText TEXT DEFAULT ''"
+            )
+        }
+    }
+    
+    /**
      * Provides singleton AppDatabase instance with encryption.
      * 
      * Story 4.2 enhancements:
      * - SQLCipher encryption with Android Keystore-managed passphrase
      * - Migration from v1 → v2 to add RecognitionHistoryEntity columns
      * - Replaced fallbackToDestructiveMigration with explicit migration
+     * 
+     * Story 4.5 enhancements:
+     * - Migration from v2 → v3 to add spatial information columns
      * 
      * Security: Database encrypted at rest with AES-256 (SQLCipher)
      */
@@ -96,7 +118,7 @@ object DatabaseModule {
                 AppDatabase.DATABASE_NAME
             )
                 .openHelperFactory(factory)  // Story 4.2: Enable SQLCipher encryption
-                .addMigrations(MIGRATION_1_2)  // Story 4.2: Migration for schema changes
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)  // Story 4.2, 4.5: Migrations for schema changes
                 .build()
         } catch (e: Exception) {
             // Fallback: Create unencrypted database if encryption fails
@@ -108,7 +130,7 @@ object DatabaseModule {
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
         }
     }

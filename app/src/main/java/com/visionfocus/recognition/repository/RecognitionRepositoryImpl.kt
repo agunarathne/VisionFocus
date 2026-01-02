@@ -2,10 +2,13 @@ package com.visionfocus.recognition.repository
 
 import android.graphics.Bitmap
 import android.util.Log
+import com.visionfocus.recognition.models.DetectionResult
 import com.visionfocus.recognition.models.RecognitionResult
 import com.visionfocus.recognition.processing.ConfidenceFilter
 import com.visionfocus.recognition.processing.NonMaximumSuppression
 import com.visionfocus.recognition.service.ObjectRecognitionService
+import com.visionfocus.recognition.spatial.Size
+import com.visionfocus.recognition.spatial.SpatialAnalyzer
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,12 +19,14 @@ import javax.inject.Singleton
  * Story 2.2: Added confidence filtering + NMS post-processing pipeline
  * Story 2.4: Added Bitmap parameter for camera-captured frames
  * Story 4.2: Will add Room database for recognition history (last 50 results)
+ * Story 4.5: Added spatial analysis (position and distance information)
  */
 @Singleton
 class RecognitionRepositoryImpl @Inject constructor(
     private val objectRecognitionService: ObjectRecognitionService,
     private val confidenceFilter: ConfidenceFilter,
-    private val nonMaximumSuppression: NonMaximumSuppression
+    private val nonMaximumSuppression: NonMaximumSuppression,
+    private val spatialAnalyzer: SpatialAnalyzer
 ) : RecognitionRepository {
     
     companion object {
@@ -63,7 +68,7 @@ class RecognitionRepositoryImpl @Inject constructor(
         }
     }
     
-    override suspend fun performRecognition(): RecognitionResult {
+    override suspend fun performRecognition(screenSize: Size?): RecognitionResult {
         // Story 2.1: Raw TFLite inference
         val rawResult = objectRecognitionService.recognizeObject()
         
@@ -73,9 +78,16 @@ class RecognitionRepositoryImpl @Inject constructor(
         // Story 2.2: Apply Non-Maximum Suppression (remove overlapping duplicates)
         val deduplicated = nonMaximumSuppression.apply(filtered)
         
+        // Story 4.5: Add spatial analysis if screen size provided
+        val detectionsWithSpatial = if (screenSize != null) {
+            addSpatialInfo(deduplicated, screenSize)
+        } else {
+            deduplicated
+        }
+        
         // Create filtered result
         val result = RecognitionResult(
-            detections = deduplicated,
+            detections = detectionsWithSpatial,
             timestampMs = rawResult.timestampMs,
             latencyMs = rawResult.latencyMs
         )
@@ -90,9 +102,10 @@ class RecognitionRepositoryImpl @Inject constructor(
      * Story 2.4: Perform recognition on captured Bitmap
      * 
      * @param bitmap Camera-captured frame
+     * @param screenSize Screen dimensions for spatial analysis (Story 4.5)
      * @return RecognitionResult with detections and timing
      */
-    override suspend fun performRecognition(bitmap: Bitmap): RecognitionResult {
+    override suspend fun performRecognition(bitmap: Bitmap, screenSize: Size?): RecognitionResult {
         // Story 2.4: Raw TFLite inference with Bitmap
         val rawResult = objectRecognitionService.recognizeObject(bitmap)
         
@@ -112,9 +125,16 @@ class RecognitionRepositoryImpl @Inject constructor(
         // Story 2.2: Apply Non-Maximum Suppression (remove overlapping duplicates)
         val deduplicated = nonMaximumSuppression.apply(filtered)
         
+        // Story 4.5: Add spatial analysis if screen size provided
+        val detectionsWithSpatial = if (screenSize != null) {
+            addSpatialInfo(deduplicated, screenSize)
+        } else {
+            deduplicated
+        }
+        
         // Create filtered result
         val result = RecognitionResult(
-            detections = deduplicated,
+            detections = detectionsWithSpatial,
             timestampMs = rawResult.timestampMs,
             latencyMs = rawResult.latencyMs
         )
@@ -123,6 +143,27 @@ class RecognitionRepositoryImpl @Inject constructor(
         lastResult = result
         
         return result
+    }
+    
+    /**
+     * Story 4.5: Add spatial information to detection results
+     * 
+     * @param detections List of detection results from TFLite
+     * @param screenSize Screen dimensions for spatial calculations
+     * @return Detection results with spatial information added
+     */
+    private fun addSpatialInfo(
+        detections: List<DetectionResult>,
+        screenSize: Size
+    ): List<DetectionResult> {
+        return detections.map { detection ->
+            val spatialInfo = spatialAnalyzer.analyze(
+                boundingBox = detection.boundingBox,
+                screenSize = screenSize
+            )
+            
+            detection.copy(spatialInfo = spatialInfo)
+        }
     }
     
     override fun getLastResult(): RecognitionResult? {

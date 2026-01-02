@@ -26,7 +26,9 @@ interface RecognitionHistoryRepository {
         category: String,
         confidence: Float,
         verbosityMode: String,
-        detailText: String
+        detailText: String,
+        positionText: String? = null,
+        distanceText: String? = null
     )
     
     /**

@@ -14,12 +14,13 @@ import com.visionfocus.data.local.entity.SavedLocationEntity
  * 1. RecognitionHistoryEntity - Stores last 50 recognition results (Epic 4)
  * 2. SavedLocationEntity - Stores user's frequently visited locations (Epic 7)
  * 
- * Database version: 2 (Story 4.2 - added RecognitionHistoryEntity columns)
- * Migration strategy: MIGRATION_1_2 for production data preservation
+ * Database version: 3 (Story 4.5 - added spatial information columns)
+ * Migration strategy: MIGRATION_2_3 for production data preservation
  * 
  * Version history:
  * - v1: Foundation schema (Story 1.4) - empty entities with id field only
  * - v2: Recognition history columns (Story 4.2) - category, confidence, timestamp, verbosityMode, detailText
+ * - v3: Spatial information (Story 4.5) - positionText, distanceText
  * 
  * Future enhancements:
  * - Story 7.1: Add full schema for SavedLocationEntity + encryption with SQLCipher
@@ -29,7 +30,7 @@ import com.visionfocus.data.local.entity.SavedLocationEntity
         RecognitionHistoryEntity::class,
         SavedLocationEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true  // Export schema for version tracking and migrations
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -2,12 +2,14 @@ package com.visionfocus.recognition.repository
 
 import android.graphics.Bitmap
 import com.visionfocus.recognition.models.RecognitionResult
+import com.visionfocus.recognition.spatial.Size
 
 /**
  * Repository interface for object recognition operations
  * 
  * Provides abstraction layer between UI/ViewModel and recognition service
  * Story 4.2 will add persistence layer (Room database) for recognition history
+ * Story 4.5 adds spatial analysis (position and distance information)
  */
 interface RecognitionRepository {
     
@@ -31,20 +33,22 @@ interface RecognitionRepository {
     /**
      * Perform object recognition on current camera frame
      * 
+     * @param screenSize Screen dimensions for spatial analysis (Story 4.5)
      * @return RecognitionResult with detected objects and timing info
      * @throws SecurityException if camera permission not granted
      * @throws IllegalStateException if service not ready
      */
-    suspend fun performRecognition(): RecognitionResult
+    suspend fun performRecognition(screenSize: Size? = null): RecognitionResult
     
     /**
      * Perform object recognition on provided Bitmap (Story 2.4)
      * 
      * @param bitmap Camera-captured frame to analyze
+     * @param screenSize Screen dimensions for spatial analysis (Story 4.5)
      * @return RecognitionResult with detected objects and timing info
      * @throws IllegalStateException if service not ready
      */
-    suspend fun performRecognition(bitmap: Bitmap): RecognitionResult
+    suspend fun performRecognition(bitmap: Bitmap, screenSize: Size? = null): RecognitionResult
     
     /**
      * Get the last recognition result (in-memory only for Story 2.1)

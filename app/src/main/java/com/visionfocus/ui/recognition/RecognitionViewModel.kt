@@ -159,20 +159,23 @@ class RecognitionViewModel @Inject constructor(
      * Perform recognition with captured camera frame
      * 
      * Story 2.4 Task 2: Called by fragment after camera capture completes
+     * Story 4.5: Added screenSize parameter for spatial analysis
      * 
      * Pipeline:
      * 1. Transition to Recognizing state
-     * 2. Call RecognitionRepository.performRecognition(bitmap) (Story 2.1)
+     * 2. Call RecognitionRepository.performRecognition(bitmap, screenSize) (Story 2.1, 4.5)
      * 3. Handle empty results (no objects detected)
-     * 4. Format announcement with TTSPhraseFormatter (Story 2.2)
+     * 4. Format announcement with VerbosityFormatter (Story 4.1, 4.5)
      * 5. Transition to Announcing state
      * 6. Call TTSManager.announce() (Story 2.2)
      * 7. Transition to Success state with results
      * 8. Auto-return to Idle after delay
      * 
      * @param bitmap Captured camera frame to analyze
+     * @param screenWidth Screen width in pixels for spatial analysis (Story 4.5)
+     * @param screenHeight Screen height in pixels for spatial analysis (Story 4.5)
      */
-    fun performRecognition(bitmap: Bitmap) {
+    fun performRecognition(bitmap: Bitmap, screenWidth: Int = 0, screenHeight: Int = 0) {
         recognitionJob = viewModelScope.launch {
             try {
                 // Story 3.3 Task 4.2: Register operation BEFORE state transition (race condition fix)
@@ -197,7 +200,13 @@ class RecognitionViewModel @Inject constructor(
                 }
                 
                 // Story 2.1: TFLite inference (≤320ms)
-                val result = recognitionRepository.performRecognition(bitmap)
+                // Story 4.5: Pass screen size for spatial analysis
+                val screenSize = if (screenWidth > 0 && screenHeight > 0) {
+                    com.visionfocus.recognition.spatial.Size(screenWidth, screenHeight)
+                } else {
+                    null  // No spatial analysis if screen size not provided
+                }
+                val result = recognitionRepository.performRecognition(bitmap, screenSize)
                 
                 // Story 2.4: Handle empty results (no objects detected)
                 if (result.detections.isEmpty()) {
@@ -253,16 +262,24 @@ class RecognitionViewModel @Inject constructor(
                 ttsManager.announce(announcement)
                 
                 // Story 4.2: Save recognition to history (non-blocking)
+                // Story 4.5: Include spatial information in history
                 // Critical: History save failures MUST NOT block recognition flow
                 viewModelScope.launch {
                     try {
+                        val spatialInfo = topDetection?.spatialInfo
                         recognitionHistoryRepository.saveRecognition(
                             category = topDetection?.label ?: "unknown",
                             confidence = topDetection?.confidence ?: 0f,
                             verbosityMode = verbosityMode.name.lowercase(),  // Convert enum to string
-                            detailText = announcement
+                            detailText = announcement,
+                            positionText = spatialInfo?.let { 
+                                com.visionfocus.recognition.spatial.PositionFormatter.toNaturalLanguage(it.position) 
+                            },
+                            distanceText = spatialInfo?.let {
+                                com.visionfocus.recognition.spatial.DistanceFormatter.toNaturalLanguage(it.distance)
+                            }
                         )
-                        Timber.d("Story 4.2: Recognition saved to history")
+                        Timber.d("Story 4.2/4.5: Recognition saved to history with spatial info")
                     } catch (e: Exception) {
                         // Non-blocking: Log error but don't surface to user
                         Timber.e(e, "Story 4.2: Failed to save recognition history")

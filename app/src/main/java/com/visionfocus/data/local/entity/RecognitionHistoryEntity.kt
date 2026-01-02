@@ -11,6 +11,7 @@ import androidx.room.PrimaryKey
  * Automatically pruned to maintain storage limit.
  * 
  * Code Review Fix: Added index on timestamp for ORDER BY query performance.
+ * Story 4.5: Added spatial information fields (positionText, distanceText)
  * 
  * @property id Unique identifier for the recognition entry (auto-generated)
  * @property category Recognized object category (e.g., "person", "car", "chair")
@@ -18,6 +19,8 @@ import androidx.room.PrimaryKey
  * @property timestamp Unix epoch time in milliseconds when recognition occurred
  * @property verbosityMode Active verbosity mode during recognition (brief/standard/detailed)
  * @property detailText Full text announcement provided to user via TTS
+ * @property positionText Human-readable position description (e.g., "on the left", "in center of view") - Story 4.5
+ * @property distanceText Human-readable distance description (e.g., "close by", "at medium distance") - Story 4.5
  */
 @Entity(
     tableName = "recognition_history",
@@ -40,5 +43,11 @@ data class RecognitionHistoryEntity(
     val verbosityMode: String,
     
     @ColumnInfo(name = "detailText")
-    val detailText: String
+    val detailText: String,
+    
+    @ColumnInfo(name = "positionText", defaultValue = "")
+    val positionText: String? = null,
+    
+    @ColumnInfo(name = "distanceText", defaultValue = "")
+    val distanceText: String? = null
 )

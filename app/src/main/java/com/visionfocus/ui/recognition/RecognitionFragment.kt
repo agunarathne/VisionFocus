@@ -400,8 +400,18 @@ class RecognitionFragment : Fragment() {
                     cameraProvider?.unbindAll()
                     this@RecognitionFragment.imageCapture = null  // Clear reference so camera rebinds on next recognition
                     
-                    // Story 2.4 Task 2.5: Pass to recognition pipeline
-                    viewModel.performRecognition(bitmap)
+                    // Story 4.5: Capture screen dimensions for spatial analysis
+                    val screenWidth = binding.previewView.width
+                    val screenHeight = binding.previewView.height
+                    
+                    // Edge case: Preview view not measured yet (width/height = 0)
+                    if (screenWidth == 0 || screenHeight == 0) {
+                        Timber.w("Preview view not measured, spatial analysis disabled")
+                        viewModel.performRecognition(bitmap, 0, 0)
+                    } else {
+                        // Story 2.4 Task 2.5: Pass to recognition pipeline with screen size (Story 4.5)
+                        viewModel.performRecognition(bitmap, screenWidth, screenHeight)
+                    }
                 }
                 
                 override fun onError(exception: ImageCaptureException) {

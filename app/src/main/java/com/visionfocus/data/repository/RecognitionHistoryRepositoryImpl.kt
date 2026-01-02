@@ -28,7 +28,9 @@ class RecognitionHistoryRepositoryImpl @Inject constructor(
         category: String,
         confidence: Float,
         verbosityMode: String,
-        detailText: String
+        detailText: String,
+        positionText: String?,
+        distanceText: String?
     ) {
         // Code Review Fix: Input validation to prevent corrupt data
         require(category.isNotBlank()) { "Category cannot be blank" }
@@ -47,7 +49,9 @@ class RecognitionHistoryRepositoryImpl @Inject constructor(
                     confidence = confidence,
                     timestamp = System.currentTimeMillis(),
                     verbosityMode = verbosityMode.lowercase(),
-                    detailText = detailText
+                    detailText = detailText,
+                    positionText = positionText,
+                    distanceText = distanceText
                 )
                 
                 // Code Review Fix: Use efficient pruning that only runs when needed
