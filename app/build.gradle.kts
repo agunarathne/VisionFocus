@@ -3,6 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     kotlin("kapt")
+    id("kotlin-parcelize")
+    id("androidx.navigation.safeargs.kotlin")  // Story 6.1: Safe Args for navigation
 }
 
 android {
@@ -91,6 +93,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-ktx:1.8.2")
     implementation("androidx.fragment:fragment-ktx:1.6.2")  // For Fragment.viewModels()
+    
+    // Navigation Component (Story 6.1)
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.6")
+    implementation("androidx.navigation:navigation-ui-ktx:2.7.6")
+    androidTestImplementation("androidx.navigation:navigation-testing:2.7.6")
     
     // DataStore Preferences (Story 1.3)
     implementation("androidx.datastore:datastore-preferences:1.0.0")

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/recognitionFragment">
+
+    <!-- Story 6.1 Task 10: Navigation Graph Integration -->
+    <!-- Home Screen: Object Recognition -->
+    <fragment
+        android:id="@+id/recognitionFragment"
+        android:name="com.visionfocus.ui.recognition.RecognitionFragment"
+        android:label="VisionFocus"
+        tools:layout="@layout/fragment_recognition">
+        
+        <action
+            android:id="@+id/action_recognition_to_destination_input"
+            app:destination="@id/destinationInputFragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:popEnterAnim="@android:anim/fade_in"
+            app:popExitAnim="@android:anim/fade_out" />
+            
+        <action
+            android:id="@+id/action_recognition_to_settings"
+            app:destination="@id/settingsFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+            
+        <action
+            android:id="@+id/action_recognition_to_history"
+            app:destination="@id/historyFragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:popEnterAnim="@android:anim/fade_in"
+            app:popExitAnim="@android:anim/fade_out" />
+    </fragment>
+
+    <!-- Story 6.1: Destination Input Screen -->
+    <fragment
+        android:id="@+id/destinationInputFragment"
+        android:name="com.visionfocus.navigation.ui.DestinationInputFragment"
+        android:label="Navigate"
+        tools:layout="@layout/fragment_destination_input">
+        
+        <!-- Optional: Pre-fill destination query -->
+        <argument
+            android:name="destinationQuery"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+            
+        <!-- Action to start navigation (Story 6.3 placeholder) -->
+        <action
+            android:id="@+id/action_destination_input_to_navigation_active"
+            app:destination="@id/navigationActiveFragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out"
+            app:popUpTo="@id/recognitionFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
+    <!-- Story 6.3 Placeholder: Navigation Active Screen -->
+    <fragment
+        android:id="@+id/navigationActiveFragment"
+        android:name="com.visionfocus.navigation.ui.NavigationActiveFragment"
+        android:label="Navigating"
+        tools:layout="@layout/fragment_navigation_active">
+        
+        <!-- Safe Args: Destination passed from destination input -->
+        <argument
+            android:name="destination"
+            app:argType="com.visionfocus.navigation.models.Destination" />
+    </fragment>
+
+    <!-- Settings Screen -->
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.visionfocus.ui.settings.SettingsFragment"
+        android:label="Settings"
+        tools:layout="@layout/fragment_settings" />
+
+    <!-- History Screen -->
+    <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.visionfocus.history.ui.HistoryFragment"
+        android:label="History"
+        tools:layout="@layout/fragment_history" />
+
+</navigation>

@@ -593,6 +593,20 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * Navigate to destination input screen for navigation feature.
+     * Story 6.1: Destination Input via Voice and Text
+     * 
+     * Replaces current fragment with DestinationInputFragment and adds to back stack
+     * for proper back navigation.
+     */
+    fun navigateToDestinationInput() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, com.visionfocus.navigation.ui.DestinationInputFragment())
+            .addToBackStack(null)
+            .commit()
+    }
+    
+    /**
      * Get current screen identifier for context tracking.
      * Story 3.5 Task 7: Screen context preservation
      * 

@@ -11,9 +11,10 @@ import javax.inject.Singleton
 /**
  * Navigate Command
  * Story 3.2 Task 2.2: Open navigation destination input
+ * Story 6.1: Updated to launch DestinationInputFragment
  * 
  * Opens navigation screen for destination input (Epic 6).
- * Placeholder implementation for Story 3.2.
+ * User can enter destination via voice or text input.
  * 
  * Command variations:
  * - "navigate"
@@ -23,7 +24,7 @@ import javax.inject.Singleton
  * - "go to"
  * 
  * @param ttsManager TTS engine for announcements
- * @since Story 3.2
+ * @since Story 3.2, implemented in Story 6.1
  */
 @Singleton
 class NavigateCommand @Inject constructor(
@@ -48,13 +49,26 @@ class NavigateCommand @Inject constructor(
         return try {
             Log.d(TAG, "Executing Navigate command")
             
-            // Placeholder: Navigation feature in Epic 6
-            ttsManager.announce("Navigation feature coming soon")
-            
-            Log.d(TAG, "Navigate command executed")
-            CommandResult.Success("Navigate placeholder")
+            // Story 6.1: Cast context to MainActivity for navigation
+            if (context is com.visionfocus.MainActivity) {
+                // Navigate to destination input screen using MainActivity helper
+                context.runOnUiThread {
+                    context.navigateToDestinationInput()
+                }
+                
+                // Announce navigation - fragment will announce "Where would you like to go?"
+                ttsManager.announce("Navigation")
+                
+                Log.d(TAG, "Navigate command executed - opened destination input")
+                CommandResult.Success("Opened destination input")
+            } else {
+                Log.e(TAG, "Context is not MainActivity - cannot navigate")
+                ttsManager.announce("Navigation error")
+                CommandResult.Failure("Context is not MainActivity")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open navigation", e)
+            ttsManager.announce("Navigation error")
             CommandResult.Failure("Navigate error: ${e.message}")
         }
     }

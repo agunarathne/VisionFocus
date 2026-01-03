@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Story 6.1 Task 11: Bottom Navigation Menu -->
+    
+    <item
+        android:id="@+id/navigation_recognition"
+        android:icon="@drawable/ic_camera"
+        android:title="@string/nav_recognition"
+        android:contentDescription="@string/nav_recognition_description" />
+    
+    <item
+        android:id="@+id/navigation_destination"
+        android:icon="@drawable/ic_navigation"
+        android:title="@string/nav_navigate"
+        android:contentDescription="@string/nav_navigate_description" />
+    
+    <item
+        android:id="@+id/navigation_settings"
+        android:icon="@drawable/ic_settings"
+        android:title="@string/nav_settings"
+        android:contentDescription="@string/nav_settings_description" />
+</menu>

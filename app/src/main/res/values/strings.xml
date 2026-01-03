@@ -226,4 +226,29 @@
     <string name="reset">Reset</string>
     <string name="cancel">Cancel</string>
     <string name="reset_success_announcement">Settings reset to defaults</string>
+    
+    <!-- Story 6.1: Destination Input Strings -->
+    <string name="destination_input_title">Where would you like to go?</string>
+    <string name="destination_input_hint">Say or type destination</string>
+    <string name="destination_input_field_description">Destination, edit text</string>
+    <string name="voice_input_button">Voice input, button</string>
+    <string name="go_button_text">Go</string>
+    <string name="go_button_description">Start navigation, button</string>
+    <string name="navigation_cancelled">Navigation cancelled</string>
+    <string name="please_enter_destination">Please enter a destination</string>
+    <string name="you_said">You said: %1$s</string>
+    <string name="destination_validated">Destination: %1$s</string>
+    <string name="destination_too_short">Destination too short. Please say more.</string>
+    <string name="invalid_destination">Invalid destination. %1$s</string>
+    <string name="multiple_locations_found">Multiple locations found. Did you mean %1$s, or %2$s?</string>
+    <string name="selected_destination">Selected: %1$s</string>
+    <string name="clarification_dialog_title">Choose Destination</string>
+    
+    <!-- Story 6.1: Bottom Navigation Strings -->
+    <string name="nav_recognition">Recognition</string>
+    <string name="nav_recognition_description">Recognition, tab 1 of 3</string>
+    <string name="nav_navigate">Navigate</string>
+    <string name="nav_navigate_description">Navigation, tab 2 of 3</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_settings_description">Settings, tab 3 of 3</string>
 </resources>
