@@ -24,13 +24,11 @@ import javax.inject.Singleton
  * - "bigger text"
  * 
  * @param settingsRepository Settings persistence layer
- * @param ttsManager TTS engine for error announcements
  * @since Story 5.5
  */
 @Singleton
 class LargeTextOnCommand @Inject constructor(
-    private val settingsRepository: SettingsRepository,
-    private val ttsManager: TTSManager
+    private val settingsRepository: SettingsRepository
 ) : VoiceCommand {
     
     companion object {
@@ -58,13 +56,20 @@ class LargeTextOnCommand @Inject constructor(
             // No duplicate TTS announcement needed (learned from Story 3.2)
             // UI will update reactively via SettingsViewModel StateFlow observation
             
+            // TODO: UI implementation needed - no UI currently observes getLargeTextMode()
+            // Must apply textScaleX = 1.5f to TextViews in all fragments when enabled
+            // Track as separate story or update existing fragments to observe this setting
+            
             Log.d(TAG, "Large text enabled")
             CommandResult.Success("Large text enabled")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to enable large text", e)
-            // Only announce error, not success (VoiceCommandProcessor handles success)
-            ttsManager.announce("Unable to change large text setting")
-            CommandResult.Failure("Large text error: ${e.message}")
+            val errorMsg = when {
+                e is java.io.IOException -> "Large text setting failed: storage unavailable"
+                else -> "Large text on failed: ${e.message ?: "unknown error"}"
+            }
+            // VoiceCommandProcessor will announce this error message
+            CommandResult.Failure(errorMsg)
         }
     }
 }
@@ -85,13 +90,11 @@ class LargeTextOnCommand @Inject constructor(
  * - "smaller text"
  * 
  * @param settingsRepository Settings persistence layer
- * @param ttsManager TTS engine for error announcements
  * @since Story 5.5
  */
 @Singleton
 class LargeTextOffCommand @Inject constructor(
-    private val settingsRepository: SettingsRepository,
-    private val ttsManager: TTSManager
+    private val settingsRepository: SettingsRepository
 ) : VoiceCommand {
     
     companion object {
@@ -124,8 +127,12 @@ class LargeTextOffCommand @Inject constructor(
             CommandResult.Success("Large text disabled")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to disable large text", e)
-            ttsManager.announce("Unable to change large text setting")
-            CommandResult.Failure("Large text error: ${e.message}")
+            val errorMsg = when {
+                e is java.io.IOException -> "Large text setting failed: storage unavailable"
+                else -> "Large text off failed: ${e.message ?: "unknown error"}"
+            }
+            // VoiceCommandProcessor will announce this error message
+            CommandResult.Failure(errorMsg)
         }
     }
 }

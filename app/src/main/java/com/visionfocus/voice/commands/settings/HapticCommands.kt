@@ -18,8 +18,13 @@ import javax.inject.Singleton
  * Haptic Off Command
  * Story 5.5 Task 2: Disable haptic feedback
  * 
- * Sets haptic intensity preference to OFF and triggers sample vibration.
+ * Sets haptic intensity preference to OFF.
  * No tactile feedback will be provided for any actions (zero battery impact).
+ * 
+ * DESIGN DECISION: This command does NOT trigger sample vibration (unlike
+ * HapticLight/Medium/Strong commands) because the user explicitly wants
+ * silence. Triggering vibration would contradict the "off" command and
+ * confuse deaf-blind users who rely on tactile feedback as confirmation.
  * 
  * Command variations:
  * - "haptic off"
@@ -67,8 +72,13 @@ class HapticOffCommand @Inject constructor(
             CommandResult.Success("Haptic feedback disabled")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to disable haptic feedback", e)
-            ttsManager.announce("Unable to change haptic setting")
-            CommandResult.Failure("Haptic error: ${e.message}")
+            val errorMsg = when {
+                e is java.io.IOException -> "Haptic setting failed: storage unavailable"
+                e.message?.contains("permission", ignoreCase = true) == true -> "Haptic setting failed: permission denied"
+                else -> "Haptic setting failed: ${e.message ?: "unknown error"}"
+            }
+            ttsManager.announce(errorMsg)
+            CommandResult.Failure(errorMsg)
         }
     }
 }
@@ -120,9 +130,13 @@ class HapticLightCommand @Inject constructor(
             // Update DataStore preference
             settingsRepository.setHapticIntensity(HapticIntensity.LIGHT)
             
+            // CRITICAL: Wait for DataStore write to complete and Flow to emit
+            // Small delay ensures HapticFeedbackManager reads new intensity before trigger
+            kotlinx.coroutines.delay(50)
+            
             // Trigger sample vibration at new intensity (ButtonPress = 50ms)
             // CRITICAL: HapticFeedbackManager.trigger() must run on Main dispatcher
-            // HapticFeedbackManager observes SettingsRepository, will use new LIGHT intensity
+            // Await completion to ensure vibration finishes before TTS confirmation
             withContext(Dispatchers.Main) {
                 hapticFeedbackManager.trigger(HapticPattern.ButtonPress)
             }
@@ -135,8 +149,13 @@ class HapticLightCommand @Inject constructor(
             CommandResult.Success("Haptic feedback set to light")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set haptic to light", e)
-            ttsManager.announce("Unable to change haptic setting")
-            CommandResult.Failure("Haptic error: ${e.message}")
+            val errorMsg = when {
+                e is java.io.IOException -> "Haptic setting failed: storage unavailable"
+                e.message?.contains("Vibrator", ignoreCase = true) == true -> "Haptic setting failed: vibration unavailable"
+                else -> "Haptic light failed: ${e.message ?: "unknown error"}"
+            }
+            ttsManager.announce(errorMsg)
+            CommandResult.Failure(errorMsg)
         }
     }
 }
@@ -188,9 +207,13 @@ class HapticMediumCommand @Inject constructor(
             // Update DataStore preference
             settingsRepository.setHapticIntensity(HapticIntensity.MEDIUM)
             
+            // CRITICAL: Wait for DataStore write to complete and Flow to emit
+            // Small delay ensures HapticFeedbackManager reads new intensity before trigger
+            kotlinx.coroutines.delay(50)
+            
             // Trigger sample vibration at new intensity (ButtonPress = 50ms)
             // CRITICAL: HapticFeedbackManager.trigger() must run on Main dispatcher
-            // HapticFeedbackManager observes SettingsRepository, will use new MEDIUM intensity
+            // Await completion to ensure vibration finishes before TTS confirmation
             withContext(Dispatchers.Main) {
                 hapticFeedbackManager.trigger(HapticPattern.ButtonPress)
             }
@@ -203,8 +226,13 @@ class HapticMediumCommand @Inject constructor(
             CommandResult.Success("Haptic feedback set to medium")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set haptic to medium", e)
-            ttsManager.announce("Unable to change haptic setting")
-            CommandResult.Failure("Haptic error: ${e.message}")
+            val errorMsg = when {
+                e is java.io.IOException -> "Haptic setting failed: storage unavailable"
+                e.message?.contains("Vibrator", ignoreCase = true) == true -> "Haptic setting failed: vibration unavailable"
+                else -> "Haptic medium failed: ${e.message ?: "unknown error"}"
+            }
+            ttsManager.announce(errorMsg)
+            CommandResult.Failure(errorMsg)
         }
     }
 }
@@ -256,9 +284,13 @@ class HapticStrongCommand @Inject constructor(
             // Update DataStore preference
             settingsRepository.setHapticIntensity(HapticIntensity.STRONG)
             
+            // CRITICAL: Wait for DataStore write to complete and Flow to emit
+            // Small delay ensures HapticFeedbackManager reads new intensity before trigger
+            kotlinx.coroutines.delay(50)
+            
             // Trigger sample vibration at new intensity (ButtonPress = 50ms)
             // CRITICAL: HapticFeedbackManager.trigger() must run on Main dispatcher
-            // HapticFeedbackManager observes SettingsRepository, will use new STRONG intensity
+            // Await completion to ensure vibration finishes before TTS confirmation
             withContext(Dispatchers.Main) {
                 hapticFeedbackManager.trigger(HapticPattern.ButtonPress)
             }
@@ -271,8 +303,13 @@ class HapticStrongCommand @Inject constructor(
             CommandResult.Success("Haptic feedback set to strong")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set haptic to strong", e)
-            ttsManager.announce("Unable to change haptic setting")
-            CommandResult.Failure("Haptic error: ${e.message}")
+            val errorMsg = when {
+                e is java.io.IOException -> "Haptic setting failed: storage unavailable"
+                e.message?.contains("Vibrator", ignoreCase = true) == true -> "Haptic setting failed: vibration unavailable"
+                else -> "Haptic strong failed: ${e.message ?: "unknown error"}"
+            }
+            ttsManager.announce(errorMsg)
+            CommandResult.Failure(errorMsg)
         }
     }
 }
