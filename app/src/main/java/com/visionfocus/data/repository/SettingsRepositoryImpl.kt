@@ -36,6 +36,7 @@ class SettingsRepositoryImpl @Inject constructor(
         private const val DEFAULT_LARGE_TEXT = false
         private val DEFAULT_HAPTIC_INTENSITY = HapticIntensity.MEDIUM
         private const val DEFAULT_CAMERA_PREVIEW = false // Production default: invisible for blind users
+        private const val DEFAULT_NETWORK_CONSENT = false // Story 6.2: No consent by default
         
         // Speech rate constraints (FR30, FR46)
         private const val MIN_SPEECH_RATE = 0.5f
@@ -196,6 +197,25 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setCameraPreviewEnabled(enabled: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferenceKeys.CAMERA_PREVIEW_ENABLED] = enabled
+        }
+    }
+    
+    // Story 6.2: Network consent for Google Maps Directions API
+    override val networkConsent: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[PreferenceKeys.NETWORK_CONSENT] ?: DEFAULT_NETWORK_CONSENT
+        }
+    
+    override suspend fun updateNetworkConsent(granted: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferenceKeys.NETWORK_CONSENT] = granted
         }
     }
 }

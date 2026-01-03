@@ -121,4 +121,22 @@ interface SettingsRepository {
      *                False for 1x1px invisible preview (production - blind users).
      */
     suspend fun setCameraPreviewEnabled(enabled: Boolean)
+    
+    /**
+     * Story 6.2: Observes network consent preference for live directions.
+     * 
+     * User must explicitly grant permission before any Google Maps API calls.
+     * Consent stored persistently to avoid repeated prompts.
+     * 
+     * @return Flow emitting boolean state.
+     *         Default: false if not set (no consent yet).
+     */
+    val networkConsent: Flow<Boolean>
+    
+    /**
+     * Story 6.2: Updates network consent preference.
+     * 
+     * @param granted True if user allowed network access, false if denied.
+     */
+    suspend fun updateNetworkConsent(granted: Boolean)
 }

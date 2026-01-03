@@ -7,6 +7,9 @@ plugins {
     id("androidx.navigation.safeargs.kotlin")  // Story 6.1: Safe Args for navigation
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
 android {
     namespace = "com.visionfocus"
     compileSdk = 34  // Latest stable
@@ -20,6 +23,32 @@ android {
         
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
+        
+        // Story 6.2: Load API key from local.properties
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(FileInputStream(localPropertiesFile))
+        }
+        val mapsApiKey = localProperties.getProperty("MAPS_API_KEY") ?: ""
+        
+        // CODE REVIEW FIX (Issue #1): Validate API key at build time
+        if (mapsApiKey.isEmpty() || mapsApiKey == "YOUR_API_KEY_HERE") {
+            throw GradleException(
+                "\n╔═══════════════════════════════════════════════════════════╗\n" +
+                "║  ERROR: MAPS_API_KEY not configured                      ║\n" +
+                "╚═══════════════════════════════════════════════════════════╝\n" +
+                "\nPlease add your Google Maps API key to local.properties:\n" +
+                "  MAPS_API_KEY=YOUR_ACTUAL_API_KEY_HERE\n\n" +
+                "Get API key: https://console.cloud.google.com/google/maps-apis/credentials\n" +
+                "Enable 'Directions API' in Google Cloud Console\n"
+            )
+        }
+        
+        buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+        
+        // Story 6.2: Add Maps API key to AndroidManifest.xml
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
     
     buildTypes {
@@ -99,6 +128,22 @@ dependencies {
     implementation("androidx.navigation:navigation-ui-ktx:2.7.6")
     androidTestImplementation("androidx.navigation:navigation-testing:2.7.6")
     
+    // Google Maps Services (Story 6.2)
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+    
+    // Retrofit & Gson (Story 6.2)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+    
+    // OkHttp Logging (Story 6.2)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    
+    // MockWebServer for testing (Story 6.2)
+    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    
     // DataStore Preferences (Story 1.3)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("androidx.datastore:datastore-preferences-core:1.0.0")
@@ -114,15 +159,20 @@ dependencies {
     
     // Coroutines for DataStore
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")  // For Google Play Services await()
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     
     // Timber Logging (Story 4.2)
     implementation("com.jakewharton.timber:timber:5.0.1")
     
-    // TensorFlow Lite - Story 2.1
-    implementation("org.tensorflow:tensorflow-lite:2.14.0")
-    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    // TensorFlow Lite - Story 2.1 (with namespace fix for Story 6.2)
+    implementation("org.tensorflow:tensorflow-lite:2.14.0") {
+        exclude(group = "org.tensorflow", module = "tensorflow-lite-api")
+    }
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4") {
+        exclude(group = "org.tensorflow", module = "tensorflow-lite-support-api")
+    }
     implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")
     
     // CameraX - Story 2.1

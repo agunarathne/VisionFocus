@@ -23,16 +23,5 @@ sealed class ValidationResult {
     data class Invalid(val reason: String) : ValidationResult()
 }
 
-/**
- * Navigation route from origin to destination.
- * 
- * Story 6.2: Google Maps Directions API Integration
- * Placeholder for turn-by-turn directions.
- */
-data class NavigationRoute(
-    val origin: Destination,
-    val destination: Destination,
-    val waypoints: List<Destination> = emptyList(),
-    val distanceMeters: Int = 0,
-    val durationSeconds: Int = 0
-)
+// NavigationRoute moved to its own file: NavigationRoute.kt
+// This placeholder is no longer needed - Story 6.2 implemented full model

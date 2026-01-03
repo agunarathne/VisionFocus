@@ -52,6 +52,17 @@ class PermissionManager @Inject constructor(
     }
     
     /**
+     * Story 6.2: Check if fine location permission is currently granted.
+     * Required for GPS navigation and Google Maps Directions API (FR56)
+     */
+    fun isLocationPermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+    
+    /**
      * Determine if rationale should be shown for camera permission.
      * Returns true if user previously denied permission.
      */

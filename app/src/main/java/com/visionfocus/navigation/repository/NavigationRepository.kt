@@ -23,13 +23,14 @@ interface NavigationRepository {
     suspend fun validateDestination(query: String): ValidationResult
     
     /**
-     * Gets turn-by-turn route from origin to destination.
+     * Gets turn-by-turn route from current GPS location to destination.
      * 
-     * Story 6.2: Google Maps Directions API integration
+     * Story 6.2: Google Maps Directions API integration with error handling.
+     * CODE REVIEW FIX (Issue #3): Origin is always current GPS location.
+     * Returns Result.success with route or Result.failure with error.
      * 
-     * @param origin Starting location
      * @param destination Target location
-     * @return NavigationRoute with waypoints and directions
+     * @return Result<NavigationRoute> with waypoints and directions or error
      */
-    suspend fun getRoute(origin: Destination, destination: Destination): NavigationRoute
+    suspend fun getRoute(destination: Destination): Result<NavigationRoute>
 }

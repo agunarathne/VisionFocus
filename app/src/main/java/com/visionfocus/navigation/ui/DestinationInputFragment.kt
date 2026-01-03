@@ -180,6 +180,15 @@ class DestinationInputFragment : Fragment() {
             }
         }
         
+        // Story 6.2: Observe navigation state for route downloading
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.navigationState.collect { state ->
+                    handleNavigationState(state)
+                }
+            }
+        }
+        
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.navigationEvent.collect { event ->
@@ -233,7 +242,66 @@ class DestinationInputFragment : Fragment() {
             is NavigationEvent.ShowClarificationDialog -> {
                 showClarificationDialog(event.options)
             }
+            is NavigationEvent.ShowNetworkConsentDialog -> {
+                showNetworkConsentDialog()
+            }
         }
+    }
+    
+    /**
+     * Story 6.2: Handle navigation state changes (route downloading, success, errors).
+     */
+    private fun handleNavigationState(state: NavigationState) {
+        when (state) {
+            is NavigationState.Idle -> {
+                binding.routeProgressIndicator.visibility = View.GONE
+            }
+            is NavigationState.RequestingRoute -> {
+                binding.routeProgressIndicator.visibility = View.VISIBLE
+                binding.goButton.isEnabled = false
+            }
+            is NavigationState.RouteReady -> {
+                binding.routeProgressIndicator.visibility = View.GONE
+                binding.goButton.isEnabled = true
+                // Story 6.3: Navigate to NavigationActiveFragment
+                Log.d(TAG, "Route ready: ${state.route.steps.size} steps, ${state.route.totalDistance}m")
+            }
+            is NavigationState.Error -> {
+                binding.routeProgressIndicator.visibility = View.GONE
+                binding.goButton.isEnabled = true
+                showErrorDialog(state.message)
+            }
+        }
+    }
+    
+    /**
+     * Story 6.2: Show network consent dialog.
+     */
+    private fun showNetworkConsentDialog() {
+        val consentDialog = com.visionfocus.navigation.consent.NetworkConsentDialog()
+        consentDialog.onConsentDecision = { granted ->
+            if (granted) {
+                viewModel.onNetworkConsentGranted()
+            }
+        }
+        consentDialog.show(parentFragmentManager, "network_consent")
+    }
+    
+    /**
+     * Story 6.2: Show error dialog with retry option.
+     */
+    private fun showErrorDialog(message: String) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Navigation Error")
+            .setMessage(message)
+            .setPositiveButton("Retry") { dialog, _ ->
+                viewModel.onGoClicked()
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.cancel) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
     
     private fun showClarificationDialog(options: List<Destination>) {

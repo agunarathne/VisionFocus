@@ -1,13 +1,20 @@
 package com.visionfocus.navigation.repository
 
 import android.content.Context
-import android.util.Log
+import com.visionfocus.navigation.api.DirectionsApiService
+import com.visionfocus.navigation.api.DirectionsError
+import com.visionfocus.navigation.consent.NetworkConsentManager
+import com.visionfocus.navigation.location.LocationError
+import com.visionfocus.navigation.location.LocationManager
 import com.visionfocus.navigation.models.Destination
+import com.visionfocus.navigation.models.LatLng
 import com.visionfocus.navigation.models.NavigationRoute
+import com.visionfocus.navigation.models.TravelMode
 import com.visionfocus.navigation.models.ValidationResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,11 +22,19 @@ import javax.inject.Singleton
  * Navigation repository implementation.
  * 
  * Story 6.1: Mock validation (no network calls, basic validation only)
- * Story 6.2: Google Maps Geocoding API + Directions API integration
+ * Story 6.2: Google Maps Directions API integration (full implementation)
+ * 
+ * @property context Application context
+ * @property directionsApiService Google Maps Directions API client
+ * @property locationManager GPS location provider
+ * @property networkConsentManager Network consent checker
  */
 @Singleton
 class NavigationRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val directionsApiService: DirectionsApiService,
+    private val locationManager: LocationManager,
+    private val networkConsentManager: NetworkConsentManager
 ) : NavigationRepository {
     
     companion object {
@@ -41,7 +56,7 @@ class NavigationRepositoryImpl @Inject constructor(
      */
     override suspend fun validateDestination(query: String): ValidationResult {
         return withContext(Dispatchers.IO) {
-            Log.d(TAG, "Validating destination: $query")
+            Timber.tag(TAG).d("Validating destination: $query")
             
             val trimmedQuery = query.trim()
             
@@ -94,15 +109,65 @@ class NavigationRepositoryImpl @Inject constructor(
     }
     
     /**
-     * Get route from origin to destination.
+     * Get route from current GPS location to destination.
      * 
-     * Story 6.2: Google Maps Directions API integration
-     * Story 6.1: Throws NotImplementedError (placeholder)
+     * Story 6.2: Google Maps Directions API integration with full error handling.
+     * CODE REVIEW FIX (Issue #3): Changed signature to accept only destination.
+     * Origin is always current GPS location from LocationManager.
+     * 
+     * @param destination Ending location from user input
+     * @return Result<NavigationRoute> with turn-by-turn steps or error
      */
     override suspend fun getRoute(
-        origin: Destination,
         destination: Destination
-    ): NavigationRoute {
-        throw NotImplementedError("Route calculation will be implemented in Story 6.2")
+    ): Result<NavigationRoute> {
+        return withContext(Dispatchers.IO) {
+            try {
+                Timber.tag(TAG).d("Getting route to: ${destination.name}")
+                
+                // Step 1: Check network consent
+                if (!networkConsentManager.hasConsent()) {
+                    Timber.tag(TAG).d("Network consent required")
+                    return@withContext Result.failure(
+                        DirectionsError.ConsentRequired("Network consent required for live directions")
+                    )
+                }
+                
+                // Step 2: Get current GPS location as origin
+                val currentLocation = locationManager.getCurrentLocation()
+                if (currentLocation.isFailure) {
+                    Timber.tag(TAG).e("Failed to get current location")
+                    return@withContext Result.failure(
+                        currentLocation.exceptionOrNull() ?: LocationError.Unknown("Unknown location error")
+                    )
+                }
+                
+                val originLatLng = currentLocation.getOrThrow()
+                Timber.tag(TAG).d("Current location: $originLatLng")
+                
+                // Step 3: Call Directions API
+                val destinationLatLng = LatLng(destination.latitude, destination.longitude)
+                val routeResult = directionsApiService.getDirections(
+                    origin = originLatLng,
+                    destination = destinationLatLng,
+                    travelMode = TravelMode.WALKING  // Default walking mode for accessibility
+                )
+                
+                if (routeResult.isFailure) {
+                    Timber.tag(TAG).e("Directions API failed", routeResult.exceptionOrNull())
+                    return@withContext routeResult
+                }
+                
+                val route = routeResult.getOrThrow()
+                Timber.tag(TAG).d("Route received: ${route.steps.size} steps, ${route.totalDistance}m, ${route.totalDuration}s")
+                
+                // Story 6.3 will use this route for turn-by-turn guidance
+                Result.success(route)
+                
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "Unexpected error in getRoute")
+                Result.failure(DirectionsError.Unknown("Route calculation failed: ${e.message}"))
+            }
+        }
     }
 }

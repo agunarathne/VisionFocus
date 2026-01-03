@@ -55,4 +55,11 @@ object PreferenceKeys {
      * Default: false (invisible 1x1px for blind users)
      */
     val CAMERA_PREVIEW_ENABLED = booleanPreferencesKey("camera_preview_enabled")
+    
+    /**
+     * Story 6.2: Network consent for Google Maps Directions API.
+     * User must explicitly grant permission before any API calls.
+     * Default: false (no consent yet)
+     */
+    val NETWORK_CONSENT = booleanPreferencesKey("network_consent")
 }
