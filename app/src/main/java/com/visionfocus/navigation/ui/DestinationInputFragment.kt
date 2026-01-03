@@ -86,7 +86,11 @@ class DestinationInputFragment : Fragment() {
     
     private fun setupTextInput() {
         binding.destinationEditText.addTextChangedListener { text ->
-            viewModel.destinationText.value = text?.toString() ?: ""
+            val query = text?.toString() ?: ""
+            viewModel.destinationText.value = query
+            
+            // AUTO-VALIDATE: Trigger validation as user types (Story 6.1 AC #6)
+            viewModel.validateDestination(query)
         }
         
         viewModel.destinationText.observe(viewLifecycleOwner) { text ->
@@ -190,21 +194,28 @@ class DestinationInputFragment : Fragment() {
             is ValidationResult.Empty -> {
                 binding.goButton.isEnabled = false
                 binding.destinationInputLayout.error = null
+                binding.destinationInputLayout.isErrorEnabled = false
             }
             is ValidationResult.TooShort -> {
                 binding.goButton.isEnabled = false
+                binding.destinationInputLayout.isErrorEnabled = true
                 binding.destinationInputLayout.error = getString(R.string.destination_too_short)
+                Log.d(TAG, "Showing TooShort error: ${getString(R.string.destination_too_short)}")
             }
             is ValidationResult.Valid -> {
                 binding.goButton.isEnabled = true
                 binding.destinationInputLayout.error = null
+                binding.destinationInputLayout.isErrorEnabled = false
+                Log.d(TAG, "Go button ENABLED - Valid destination")
             }
             is ValidationResult.Ambiguous -> {
                 binding.goButton.isEnabled = false
                 binding.destinationInputLayout.error = null
+                binding.destinationInputLayout.isErrorEnabled = false
             }
             is ValidationResult.Invalid -> {
                 binding.goButton.isEnabled = false
+                binding.destinationInputLayout.isErrorEnabled = true
                 binding.destinationInputLayout.error = getString(R.string.invalid_destination, state.reason)
             }
         }
