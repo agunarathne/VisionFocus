@@ -79,12 +79,12 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Personalization & Settings
-  epic-5: in-progress
+  epic-5: done  # Jan 3, 2026 - ALL 5 STORIES COMPLETE
   5-1-tts-speech-rate-adjustment: done  # Jan 2, 2026 - COMPLETE: Code review (7 issues found, 4 fixed), manual testing (3 critical bugs fixed), voice commands + persistence verified
   5-2-tts-voice-selection: done  # Jan 2, 2026 - COMPLETE: Implementation + adversarial code review (13 issues: 2 critical + 6 medium fixed), locale validation, test file corruption fixed, voice preview restoration working
   5-3-settings-screen-with-persistent-preferences: done  # Jan 3, 2026 - COMPLETE: Adversarial code review (8 issues: 2 critical + 5 medium fixed), i18n fix, 7-preference reset, comprehensive test coverage, build successful
   5-4-haptic-feedback-intensity-adjustment: done  # Jan 3, 2026 - COMPLETE: Code review (10 issues: 7 critical + 2 high + 1 medium fixed), unified HapticFeedbackManager, race condition fix, manual testing passed (OFF/LIGHT/MEDIUM/STRONG), persistence verified
-  5-5-quick-settings-toggle-via-voice-commands: in-progress  # Jan 3, 2026 - CODE REVIEW COMPLETE: 7 HIGH + 3 MEDIUM issues auto-fixed, 18 unit tests created, race condition resolved, improved error messages, build successful. Status: in-progress (device testing required - large text UI missing, voice recognition validation pending)
+  5-5-quick-settings-toggle-via-voice-commands: done  # Jan 3, 2026 - COMPLETE: Code review (10 issues: 7 HIGH + 3 MEDIUM fixed), 18 unit tests, device testing PASSED (4/4 commands, 75-146ms execution, 54ms avg confirmation), fuzzy matching validated, large text UI deferred
   epic-5-retrospective: optional
 
   # Epic 6: GPS-Based Navigation
