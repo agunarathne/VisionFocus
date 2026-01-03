@@ -394,6 +394,17 @@
                 android:paddingStart="@dimen/spacing_small"
                 android:paddingEnd="@dimen/spacing_small" />
         </RadioGroup>
+        
+        <!-- Story 5.3: Reset to Defaults Button -->
+        <Button
+            android:id="@+id/resetDefaultsButton"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/reset_defaults_button"
+            android:contentDescription="@string/reset_defaults_button_description"
+            android:layout_marginTop="@dimen/spacing_large" />
 
     </LinearLayout>
 

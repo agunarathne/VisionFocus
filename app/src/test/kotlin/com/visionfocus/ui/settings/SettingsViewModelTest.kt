@@ -263,13 +263,16 @@ class SettingsViewModelTest {
     }
     
     @Test
-    fun `playSampleAnnouncement calls TTSManager announce`() = runTest(testDispatcher) {
+    fun `playSampleAnnouncement calls TTSManager announce with provided text`() = runTest(testDispatcher) {
+        // Arrange
+        val sampleText = "This is how your speech rate sounds."
+        
         // Act
-        viewModel.playSampleAnnouncement()
+        viewModel.playSampleAnnouncement(sampleText)
         advanceUntilIdle()
         
         // Assert
-        verify(mockTtsManager).announce("This is how your speech rate sounds.")
+        verify(mockTtsManager).announce(sampleText)
     }
     
     @Test
@@ -363,6 +366,28 @@ class SettingsViewModelTest {
     }
     
     @Test
+    fun `playSampleWithVoice restores original voice after preview`() = runTest(testDispatcher) {
+        // Arrange: Set original voice
+        voiceLocaleFlow.value = "en-US"
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Mock successful voice setting
+        whenever(mockTtsManager.setVoice(org.mockito.kotlin.any())).thenReturn(true)
+        
+        // Act: Preview different voice
+        viewModel.playSampleWithVoice("en-GB", "Preview text")
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Advance time past restoration delay (2500ms)
+        testDispatcher.scheduler.advanceTimeBy(3000)
+        testDispatcher.scheduler.advanceUntilIdle()
+        
+        // Assert: Original voice restored (MEDIUM-5 FIX: Voice restoration test)
+        verify(mockTtsManager).setVoice("en-GB")  // Preview voice set
+        verify(mockTtsManager).setVoice("en-US")  // Original voice restored
+    }
+    
+    @Test
     fun `voiceLocale StateFlow updates when repository emits new value`() = runTest(testDispatcher) {
         // Arrange: Initial value is null, wait for initialization
         testDispatcher.scheduler.advanceUntilIdle()
@@ -374,6 +399,24 @@ class SettingsViewModelTest {
         
         // Assert: StateFlow updated
         assertEquals("en-US", viewModel.voiceLocale.value)
+    }
+    
+    // Story 5.3: Reset to Defaults Tests
+    
+    @Test
+    fun `resetToDefaults calls all repository setters with default values`() = runTest(testDispatcher) {
+        // Act
+        viewModel.resetToDefaults()
+        advanceUntilIdle()
+        
+        // Assert: All 7 preferences reset to defaults (CRITICAL-2 FIX: Added camera preview)
+        verify(mockRepository).setSpeechRate(1.0f)                                          // Default: 1.0×
+        verify(mockRepository).setVoiceLocale(null)                                         // Default: system voice
+        verify(mockRepository).setVerbosity(com.visionfocus.data.model.VerbosityMode.STANDARD)  // Default: STANDARD
+        verify(mockRepository).setHighContrastMode(false)                                   // Default: off
+        verify(mockRepository).setLargeTextMode(false)                                      // Default: off
+        verify(mockRepository).setHapticIntensity(com.visionfocus.data.model.HapticIntensity.MEDIUM) // Default: MEDIUM
+        verify(mockRepository).setCameraPreviewEnabled(false)                               // Default: off
     }
 }
 

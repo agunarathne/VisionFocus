@@ -42,6 +42,15 @@
         <item name="colorControlHighlight">#FFFFFF</item> <!-- 100% white ripple for visibility -->
         <item name="colorSwitchThumbNormal">#FFFFFF</item> <!-- White switch thumb -->
         <item name="android:colorControlActivated">#FFFFFF</item> <!-- White when active -->
+        
+        <!-- CRITICAL FIX: Text colors for labels, buttons, and UI elements -->
+        <item name="android:textColorPrimary">#FFFFFF</item> <!-- White text for labels -->
+        <item name="android:textColorSecondary">#FFFFFF</item> <!-- White text for secondary labels -->
+        <item name="colorControlNormal">#FFFFFF</item> <!-- White for unchecked switches -->
+        <item name="android:textColor">#FFFFFF</item> <!-- White text for all text views -->
+        <item name="android:buttonTint">#FFFFFF</item> <!-- White button text -->
+        <item name="materialButtonStyle">@style/Widget.VisionFocus.Button.HighContrast</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.VisionFocus.Button.OutlinedButton.HighContrast</item>
     </style>
     
     <!-- Large text theme variant (150% scaling) - Story 2.5 -->
@@ -64,5 +73,23 @@
     <style name="TextAppearance.VisionFocus.Body1.Large" parent="TextAppearance.VisionFocus.Body1">
         <item name="android:textSize">30sp</item>  <!-- 20sp * 1.5 -->
         <!-- lineHeight moved to values-v28/themes.xml for API 28+ -->
+    </style>
+    
+    <!-- Button styles for high contrast mode with white text -->
+    <style name="Widget.VisionFocus.Button.HighContrast" parent="Widget.Material3.Button">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="iconTint">#FFFFFF</item>
+        <item name="backgroundTint">#000000</item>
+        <item name="strokeColor">#FFFFFF</item>
+        <item name="strokeWidth">2dp</item>
+    </style>
+    
+    <!-- Outlined button style for high contrast mode -->
+    <style name="Widget.VisionFocus.Button.OutlinedButton.HighContrast" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="iconTint">#FFFFFF</item>
+        <item name="strokeColor">#FFFFFF</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="rippleColor">#4DFFFFFF</item> <!-- 30% white ripple -->
     </style>
 </resources>

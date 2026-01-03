@@ -320,8 +320,8 @@ class SettingsFragment : Fragment() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     viewModel.setSpeechRate(rate)
                     ttsManager.setSpeechRate(rate)
-                    // AC requirement: "sample announcement plays when slider changes"
-                    viewModel.playSampleAnnouncement()
+                    // AC requirement: "sample announcement plays when slider changes" (CRITICAL-1 FIX)
+                    viewModel.playSampleAnnouncement(getString(R.string.speech_rate_sample_announcement))
                 }
             }
         })
@@ -331,15 +331,23 @@ class SettingsFragment : Fragment() {
             val rate = viewModel.speechRate.value
             android.util.Log.d("VisionFocus", "[Fragment] Test speed button clicked, rate=$rate")
             
-            // Play sample announcement at current rate
+            // Play sample announcement at current rate (CRITICAL-1 FIX: Pass string resource)
             viewLifecycleOwner.lifecycleScope.launch {
-                viewModel.playSampleAnnouncement()
+                viewModel.playSampleAnnouncement(getString(R.string.speech_rate_sample_announcement))
             }
         }
         
         binding.highContrastSwitch.setOnCheckedChangeListener { _, isChecked ->
             // Guard: Ignore programmatic updates from observer (HIGH-2 fix)
             if (isUpdatingFromObserver) return@setOnCheckedChangeListener
+            
+            // CRITICAL FIX: Check if current preference already matches the toggle
+            // This prevents recreation loop when observer sets switch after recreate()
+            val currentPreference = viewModel.highContrastMode.value
+            if (currentPreference == isChecked) {
+                android.util.Log.d("VisionFocus", "[Fragment] High-contrast already $isChecked - ignoring duplicate")
+                return@setOnCheckedChangeListener
+            }
             
             android.util.Log.d("VisionFocus", "[Fragment] High-contrast toggle: isChecked=$isChecked, guard=$isUpdatingFromObserver")
             
@@ -379,6 +387,14 @@ class SettingsFragment : Fragment() {
         binding.largeTextSwitch.setOnCheckedChangeListener { _, isChecked ->
             // Guard: Ignore programmatic updates from observer (HIGH-2 fix)
             if (isUpdatingFromObserver) return@setOnCheckedChangeListener
+            
+            // CRITICAL FIX: Check if current preference already matches the toggle
+            // This prevents recreation loop when observer sets switch after recreate()
+            val currentPreference = viewModel.largeTextMode.value
+            if (currentPreference == isChecked) {
+                android.util.Log.d("VisionFocus", "[Fragment] Large text already $isChecked - ignoring duplicate")
+                return@setOnCheckedChangeListener
+            }
             
             android.util.Log.d("VisionFocus", "[Fragment] Large text toggle: isChecked=$isChecked, guard=$isUpdatingFromObserver")
             
@@ -479,6 +495,11 @@ class SettingsFragment : Fragment() {
             viewLifecycleOwner.lifecycleScope.launch {
                 viewModel.setVerbosityMode(mode)
             }
+        }
+        
+        // Story 5.3: Reset to Defaults button listener
+        binding.resetDefaultsButton.setOnClickListener {
+            showResetConfirmationDialog()
         }
     }
     
@@ -609,6 +630,33 @@ class SettingsFragment : Fragment() {
      */
     private fun Int.dpToPx(): Int {
         return (this * resources.displayMetrics.density).toInt()
+    }
+    
+    /**
+     * Story 5.3 Task 6: Show reset confirmation dialog with Material AlertDialog.
+     * 
+     * Displays confirmation prompt before resetting all settings to defaults.
+     * On confirm, calls ViewModel.resetToDefaults() and announces completion.
+     */
+    private fun showResetConfirmationDialog() {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.reset_confirmation_title)
+            .setMessage(R.string.reset_confirmation_message)
+            .setPositiveButton(R.string.reset) { _, _ ->
+                // User confirmed reset
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.resetToDefaults()
+                    
+                    // Announce reset completion via TalkBack
+                    binding.root.announceForAccessibility(
+                        getString(R.string.reset_success_announcement)
+                    )
+                    
+                    android.util.Log.d("VisionFocus", "[Fragment] Settings reset to defaults")
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
     
     override fun onDestroyView() {

@@ -344,12 +344,12 @@ class SettingsViewModel @Inject constructor(
      * 
      * Triggered by "Test Speed" button for instant user feedback.
      * 
-     * MEDIUM-1 FIX: Use correct announcement text from strings.xml
+     * CRITICAL-1 FIX: Use string resource via text parameter for i18n support
+     * 
+     * @param text Sample announcement text from string resource
      */
-    suspend fun playSampleAnnouncement() {
-        // Use hardcoded text since ViewModel doesn't have context
-        // Fragment will pass correct string or we use this simplified version
-        ttsManager.announce("This is a sample announcement at the current speech rate.")
+    suspend fun playSampleAnnouncement(text: String) {
+        ttsManager.announce(text)
     }
     
     /**
@@ -396,6 +396,33 @@ class SettingsViewModel @Inject constructor(
             // Wait for TTS announcement to start (typical latency ~200ms + sample duration ~2s)
             delay(2500)
             ttsManager.setVoice(originalLocale)
+        }
+    }
+    
+    /**
+     * Story 5.3 Task 1.12: Reset all preferences to default values.
+     * 
+     * Restores all user preferences to their default states:
+     * - Speech rate: 1.0×
+     * - Voice locale: null (system default)
+     * - Verbosity: STANDARD
+     * - High-contrast: false
+     * - Large text: false
+     * - Haptic intensity: MEDIUM
+     * 
+     * Used by "Reset to Defaults" button in Settings screen with confirmation dialog.
+     */
+    fun resetToDefaults() {
+        viewModelScope.launch {
+            android.util.Log.d("VisionFocus", "[ViewModel] Resetting all preferences to defaults")
+            settingsRepository.setSpeechRate(1.0f)                      // Default: 1.0× speed
+            settingsRepository.setVoiceLocale(null)                     // Default: system voice
+            settingsRepository.setVerbosity(VerbosityMode.STANDARD)     // Default: STANDARD
+            settingsRepository.setHighContrastMode(false)                // Default: off
+            settingsRepository.setLargeTextMode(false)                   // Default: off
+            settingsRepository.setHapticIntensity(HapticIntensity.MEDIUM) // Default: MEDIUM
+            settingsRepository.setCameraPreviewEnabled(false)            // Default: off (CRITICAL-2 FIX)
+            android.util.Log.d("VisionFocus", "[ViewModel] All preferences reset completed")
         }
     }
 }

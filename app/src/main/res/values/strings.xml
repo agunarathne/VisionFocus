@@ -83,6 +83,9 @@
     <string name="speech_rate_at_maximum">Speech rate at maximum</string>
     <string name="speech_rate_changed">Speech rate changed to %1$.1f times normal speed</string>
     
+    <!-- Story 5.1: Sample announcement for speech rate testing (CRITICAL-1 FIX) -->
+    <string name="speech_rate_sample_announcement">This is how your speech rate sounds</string>
+    
     <!-- Voice Command Announcements -->
     <string name="speech_rate_increased">Speech rate increased to %1$.1f times</string>
     <string name="speech_rate_decreased">Speech rate decreased to %1$.1f times</string>
@@ -213,4 +216,13 @@
     <string name="scanning_started">Continuous scanning started</string>
     <string name="stop_scanning_description">Stop scanning, button</string>
     <string name="continuous_scanning_active">Continuous scanning active</string>
+    
+    <!-- Story 5.3: Reset to Defaults Strings -->
+    <string name="reset_defaults_button">Reset to Defaults</string>
+    <string name="reset_defaults_button_description">Reset all settings to defaults, button</string>
+    <string name="reset_confirmation_title">Reset all settings to defaults?</string>
+    <string name="reset_confirmation_message">This will restore all preferences to their default values. This cannot be undone.</string>
+    <string name="reset">Reset</string>
+    <string name="cancel">Cancel</string>
+    <string name="reset_success_announcement">Settings reset to defaults</string>
 </resources>
