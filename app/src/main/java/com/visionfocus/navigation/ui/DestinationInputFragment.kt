@@ -48,6 +48,9 @@ class DestinationInputFragment : Fragment() {
     @Inject
     lateinit var hapticFeedbackManager: com.visionfocus.accessibility.haptic.HapticFeedbackManager
     
+    @Inject
+    lateinit var networkConsentManager: com.visionfocus.navigation.consent.NetworkConsentManager
+    
     companion object {
         private const val TAG = "DestinationInputFragment"
     }
@@ -280,8 +283,12 @@ class DestinationInputFragment : Fragment() {
     private fun showNetworkConsentDialog() {
         val consentDialog = com.visionfocus.navigation.consent.NetworkConsentDialog()
         consentDialog.onConsentDecision = { granted ->
-            if (granted) {
-                viewModel.onNetworkConsentGranted()
+            // BUG FIX: Save consent decision to DataStore before proceeding
+            lifecycleScope.launch {
+                networkConsentManager.setConsent(granted)
+                if (granted) {
+                    viewModel.onNetworkConsentGranted()
+                }
             }
         }
         consentDialog.show(parentFragmentManager, "network_consent")
