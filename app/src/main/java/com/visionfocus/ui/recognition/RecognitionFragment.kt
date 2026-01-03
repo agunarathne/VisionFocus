@@ -7,8 +7,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Bundle
-import android.os.VibrationEffect
-import android.os.Vibrator
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -30,6 +28,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.visionfocus.R
 import com.visionfocus.databinding.FragmentRecognitionBinding
+import com.visionfocus.accessibility.haptic.HapticFeedbackManager
+import com.visionfocus.accessibility.haptic.HapticPattern
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -62,18 +62,6 @@ class RecognitionFragment : Fragment() {
     
     companion object {
         private const val TAG = "RecognitionFragment"
-        
-        /**
-         * Medium intensity haptic feedback duration
-         * Story 2.3 AC7: Haptic feedback on FAB tap
-         */
-        private const val HAPTIC_DURATION_MS = 100L
-        
-        /**
-         * Haptic feedback amplitude (0-255)
-         * Medium intensity = 75% of maximum
-         */
-        private const val HAPTIC_AMPLITUDE = 191 // 75% of 255
         
         /**
          * Camera stabilization delay before capture
@@ -109,10 +97,9 @@ class RecognitionFragment : Fragment() {
     @Inject
     lateinit var settingsRepository: com.visionfocus.data.repository.SettingsRepository
     
-    // Haptic feedback vibrator
-    private val vibrator: Vibrator? by lazy {
-        context?.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-    }
+    // Story 5.4: Inject unified HapticFeedbackManager for haptic feedback
+    @Inject
+    lateinit var hapticManager: HapticFeedbackManager
     
     // Story 2.4: CameraX components
     private var cameraProvider: ProcessCameraProvider? = null
@@ -122,8 +109,9 @@ class RecognitionFragment : Fragment() {
     // Story 2.4 Task 4: Focus restoration flag
     private var shouldRestoreFocus = false
     
-    // Story 2.7 Task 3: Focus restoration after interruptions (phone call, notification)
+    // Story 2.7: Track last focused view for restoration after camera operations
     private var lastFocusedViewId: Int? = null
+    
     private var accessibilityManager: AccessibilityManager? = null
     
     // CRITICAL FIX: Prevent multiple simultaneous camera bindings
@@ -580,26 +568,23 @@ class RecognitionFragment : Fragment() {
     }
     
     /**
-     * Perform medium-intensity haptic feedback
+     * Story 5.4 Task 5.2: Trigger haptic feedback via unified HapticFeedbackManager.
      * 
-     * Story 2.3 Task 4.3: Medium intensity (100ms, 75% amplitude)
+     * Replaces direct Vibrator calls with centralized HapticFeedbackManager
+     * that respects user intensity preference (OFF/LIGHT/MEDIUM/STRONG).
      * 
-     * Implementation note: Inline vibrator implementation for Story 2.3.
-     * Future enhancement (Story 5.4): Extract to HapticFeedbackManager with
-     * user preference support for intensity levels (Off/Light/Medium/Strong).
+     * Used for:
+     * - FAB button presses (ButtonPress pattern)
+     * - Recognition start (RecognitionStart pattern)
+     * - Recognition success (RecognitionSuccess pattern)
+     * - Recognition error (RecognitionError pattern)
+     * 
+     * AC #8: HapticFeedbackManager applies user intensity preference automatically
      */
     private fun performHapticFeedback() {
-        vibrator?.let { vib ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // Modern API: VibrationEffect with amplitude control
-                vib.vibrate(
-                    VibrationEffect.createOneShot(HAPTIC_DURATION_MS, HAPTIC_AMPLITUDE)
-                )
-            } else {
-                // Legacy API: Simple vibration
-                @Suppress("DEPRECATION")
-                vib.vibrate(HAPTIC_DURATION_MS)
-            }
+        // Story 5.4: Use unified HapticFeedbackManager.trigger() with ButtonPress pattern
+        viewLifecycleOwner.lifecycleScope.launch {
+            hapticManager.trigger(HapticPattern.ButtonPress)
         }
     }
     
@@ -714,6 +699,11 @@ class RecognitionFragment : Fragment() {
                 announceForAccessibility(getString(R.string.starting_recognition))
                 shouldRestoreFocus = true
                 
+                // Story 5.4 Task 5.3: Trigger RecognitionStart haptic feedback
+                viewLifecycleOwner.lifecycleScope.launch {
+                    hapticManager.trigger(HapticPattern.RecognitionStart)
+                }
+                
                 // Check if camera is initialized, start it if needed
                 if (imageCapture == null && hasCameraPermission()) {
                     android.util.Log.d("RecognitionFragment", "Camera not started - initializing now")
@@ -771,11 +761,21 @@ class RecognitionFragment : Fragment() {
                 binding.recognizeFab.setImageResource(R.drawable.ic_camera)
                 // TTS announcement already handled by TTSManager
                 // Silent success state (results already announced)
+                
+                // Story 5.4 Task 5.4: Trigger RecognitionSuccess haptic feedback (double pulse)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    hapticManager.trigger(HapticPattern.RecognitionSuccess)
+                }
             }
             
             is RecognitionUiState.Error -> {
                 // Task 5.7: Error state - FAB re-enabled, error icon
                 binding.recognizeFab.isEnabled = true
+                
+                // Story 5.4 Task 5.5: Trigger RecognitionError haptic feedback (long pulse)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    hapticManager.trigger(HapticPattern.RecognitionError)
+                }
                 binding.recognizeFab.setImageResource(R.drawable.ic_camera_error)
                 // Story 2.4 Task 3.4: Announce error
                 announceForAccessibility(state.message)

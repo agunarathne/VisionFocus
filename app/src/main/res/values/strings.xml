@@ -126,6 +126,7 @@
     <string name="haptic_intensity_explanation">Adjust vibration strength for recognition events (start, success, error)</string>
     <string name="haptic_intensity_section_description">Haptic feedback intensity settings. Adjust vibration strength for recognition events.</string>
     <string name="haptic_intensity_radio_group_description">Haptic intensity options. Select vibration strength.</string>
+    <string name="haptic_intensity_radio_group_selected">Haptic intensity, radio button group. %1$s selected.</string>
     <string name="haptic_intensity_off">Off</string>
     <string name="haptic_off_description">Haptic feedback off, radio button</string>
     <string name="haptic_intensity_light">Light</string>

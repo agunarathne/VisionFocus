@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.data.repository.SettingsRepository
+import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.tts.engine.VoiceOption
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -49,7 +50,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
-    private val ttsManager: TTSManager
+    private val ttsManager: TTSManager,
+    private val hapticManager: HapticFeedbackManager  // Story 5.4: Inject unified HapticFeedbackManager
 ) : ViewModel() {
     
     companion object {
@@ -400,6 +402,22 @@ class SettingsViewModel @Inject constructor(
     }
     
     /**
+     * Story 5.4 Task 3.5: Trigger sample vibration at specified intensity.
+     * 
+     * Used in Settings UI to let user test intensity levels immediately
+     * after RadioButton selection (AC #3: "selecting intensity triggers
+     * sample vibration at that intensity").
+     * 
+     * Sample vibration: 100ms pulse at selected intensity level
+     * 
+     * @param intensity The intensity level to test
+     */
+    fun triggerSampleVibration(intensity: HapticIntensity) {
+        hapticManager.triggerSample(intensity)
+    }
+    
+    /**
+     * Story 5.
      * Story 5.3 Task 1.12: Reset all preferences to default values.
      * 
      * Restores all user preferences to their default states:

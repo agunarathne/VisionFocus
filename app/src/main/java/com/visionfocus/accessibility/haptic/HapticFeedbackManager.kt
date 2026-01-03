@@ -8,7 +8,12 @@ import android.os.VibratorManager
 import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.data.repository.SettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -66,6 +71,30 @@ class HapticFeedbackManager @Inject constructor(
         private const val DURATION_STRONG = 2.0f // 200% duration
     }
     
+    // Coroutine scope for observing preferences (Thread-safe intensity monitoring)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    
+    // Current intensity level (cached to avoid Flow collection in every trigger call)
+    @Volatile
+    private var currentIntensity = HapticIntensity.MEDIUM
+    
+    init {
+        // CRITICAL-3 FIX: Load initial intensity synchronously to prevent race condition
+        // If user has OFF setting, we must know BEFORE first trigger() call
+        runBlocking {
+            currentIntensity = settingsRepository.getHapticIntensity().first()
+            android.util.Log.d(TAG, "Initial haptic intensity loaded: $currentIntensity")
+        }
+        
+        // Then observe changes reactively
+        scope.launch {
+            settingsRepository.getHapticIntensity().collect { intensity ->
+                currentIntensity = intensity
+                android.util.Log.d(TAG, "Haptic intensity updated: $currentIntensity")
+            }
+        }
+    }
+    
     /**
      * Lazy vibrator initialization with API level compatibility
      * 
@@ -88,7 +117,12 @@ class HapticFeedbackManager @Inject constructor(
         if (v == null) {
             android.util.Log.w(TAG, "Vibrator service unavailable on this device")
         } else {
-            android.util.Log.d(TAG, "Vibrator initialized: hasVibrator=${v.hasVibrator()}")
+            val hasAmplitudeControl = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                v.hasAmplitudeControl()
+            } else {
+                false
+            }
+            android.util.Log.d(TAG, "Vibrator initialized: hasVibrator=${v.hasVibrator()}, API=${Build.VERSION.SDK_INT}, hasAmplitudeControl=$hasAmplitudeControl, Device=${Build.MANUFACTURER} ${Build.MODEL}")
         }
         
         v
@@ -135,9 +169,9 @@ class HapticFeedbackManager @Inject constructor(
                 android.util.Log.d(TAG, "Haptic trigger ignored: Intensity set to OFF")
                 return
             }
-        
-        // Execute pattern with amplitude/duration scaling
-        when (pattern) {
+            
+            // Execute pattern with amplitude/duration scaling
+            when (pattern) {
             HapticPattern.RecognitionStart -> {
                 vibratePattern(
                     timings = longArrayOf(0, 100), // [0ms delay, 100ms vibration]
@@ -180,6 +214,25 @@ class HapticFeedbackManager @Inject constructor(
                     repeat = -1
                 )
             }
+            
+            HapticPattern.ButtonPress -> {
+                // Story 5.4 Task 6: Button press feedback (50ms, same as Cancelled)
+                vibratePattern(
+                    timings = longArrayOf(0, 50), // [0ms delay, 50ms vibration]
+                    amplitudes = intArrayOf(0, getAmplitude(intensity)),
+                    repeat = -1
+                )
+            }
+            
+            HapticPattern.NavigationAlert -> {
+                // Story 5.4 Task 7: Triple pulse for navigation alerts (Epic 6 integration)
+                // Pattern: 50ms on, 50ms off, 50ms on, 50ms off, 50ms on
+                vibratePattern(
+                    timings = longArrayOf(0, 50, 50, 50, 50, 50), // [0ms, pulse, gap, pulse, gap, pulse]
+                    amplitudes = intArrayOf(0, getAmplitude(intensity), 0, getAmplitude(intensity), 0, getAmplitude(intensity)),
+                    repeat = -1
+                )
+            }
         }
         } catch (e: SecurityException) {
             android.util.Log.e(TAG, "Haptic trigger failed: VIBRATE permission revoked", e)
@@ -201,11 +254,14 @@ class HapticFeedbackManager @Inject constructor(
     private fun vibratePattern(timings: LongArray, amplitudes: IntArray, repeat: Int) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             // API 26+: Modern VibrationEffect with amplitude control
+            android.util.Log.d(TAG, "vibratePattern: API ${Build.VERSION.SDK_INT}, timings=${timings.contentToString()}, amplitudes=${amplitudes.contentToString()}")
             val effect = VibrationEffect.createWaveform(timings, amplitudes, repeat)
             vibrator?.vibrate(effect)
+            android.util.Log.d(TAG, "Vibration executed with amplitude control")
         } else {
             // Pre-API 26: Duration fallback (no amplitude control)
             // Use timings directly (amplitude scaling not available)
+            android.util.Log.d(TAG, "vibratePattern: Legacy API ${Build.VERSION.SDK_INT}, timings=${timings.contentToString()} (no amplitude control)")
             @Suppress("DEPRECATION")
             vibrator?.vibrate(timings, repeat)
         }
@@ -257,6 +313,8 @@ class HapticFeedbackManager @Inject constructor(
      * 
      * Used when user selects haptic intensity option to provide immediate
      * tactile feedback of the selected intensity level.
+     * 
+     * Story 5.4 AC #3: "selecting intensity triggers sample vibration at that intensity"
      * 
      * Duration: 100ms at selected intensity
      * 

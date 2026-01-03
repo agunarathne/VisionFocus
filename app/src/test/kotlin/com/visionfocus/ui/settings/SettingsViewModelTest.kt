@@ -66,7 +66,10 @@ class SettingsViewModelTest {
         whenever(mockTtsManager.isReady()).thenReturn(true)
         whenever(mockTtsManager.getAvailableVoices()).thenReturn(emptyList())
         
-        viewModel = SettingsViewModel(mockRepository, mockTtsManager)
+        // Story 5.4: Mock HapticManager
+        val mockHapticManager: com.visionfocus.service.haptic.HapticManager = mock()
+        
+        viewModel = SettingsViewModel(mockRepository, mockTtsManager, mockHapticManager)
     }
     
     @After

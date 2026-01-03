@@ -77,4 +77,29 @@ sealed class HapticPattern {
      * Feels like: Quick tap - "Action stopped"
      */
     object Cancelled : HapticPattern()
+    
+    /**
+     * Short vibration for button press feedback
+     * Story 5.4 Task 6: Haptic feedback for interactive elements
+     * Duration: 50ms
+     * Timing: [0ms, 50ms]
+     * 
+     * Used for: FAB, switches, radio buttons, navigation buttons
+     * Same duration as Cancelled for consistency with system UI feedback.
+     * Feels like: Quick tap - "Button pressed"
+     */
+    object ButtonPress : HapticPattern()
+    
+    /**
+     * Triple pulse vibration for navigation alerts
+     * Story 5.4 Task 7: Pre-turn warning pattern (Epic 6 integration point)
+     * Duration: 250ms total
+     * Timing: [0ms, 50ms, 50ms, 50ms, 50ms, 50ms]
+     * Pattern: 50ms on, 50ms off, 50ms on, 50ms off, 50ms on
+     * 
+     * Used for: Turn warnings 5-7 seconds before turn (Epic 6 Story 6.3)
+     * 3-pulse rhythm creates distinct "alert" sensation vs single/double pulses.
+     * Feels like: "Tap-tap-tap" - "Upcoming navigation action"
+     */
+    object NavigationAlert : HapticPattern()
 }

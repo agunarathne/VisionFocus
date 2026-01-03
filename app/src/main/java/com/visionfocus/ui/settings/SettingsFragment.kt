@@ -10,10 +10,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.visionfocus.R
-import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.databinding.FragmentSettingsBinding
+import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.theme.ThemeManager
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.tts.engine.VoiceOption
@@ -64,9 +64,9 @@ class SettingsFragment : Fragment() {
     
     private val viewModel: SettingsViewModel by viewModels()
     
-    // Story 2.6: Inject HapticFeedbackManager for sample vibrations
+    // Story 5.4: Inject unified HapticFeedbackManager for sample vibrations
     @Inject
-    lateinit var hapticFeedbackManager: HapticFeedbackManager
+    lateinit var hapticManager: HapticFeedbackManager
     
     // Story 5.1: Inject TTSManager for speech rate control
     @Inject
@@ -450,15 +450,18 @@ class SettingsFragment : Fragment() {
                 getString(R.string.haptic_sample_triggered, intensityLabel)
             )
             
-            // HIGH-8 FIX: Save preference BEFORE triggering sample to prevent race condition
-            // This ensures rapid intensity changes don't cause state desync
+            // Update RadioGroup content description (AC #2: Dynamic description with selection)
+            binding.hapticIntensityRadioGroup.contentDescription = getString(
+                R.string.haptic_intensity_radio_group_selected,
+                intensityLabel
+            )
+            
+            // Story 5.4 AC #3: Save preference and trigger sample vibration
             viewLifecycleOwner.lifecycleScope.launch {
                 viewModel.setHapticIntensity(intensity)  // Await DataStore write
                 
-                // CRITICAL FIX: Don't trigger sample for OFF intensity (amplitude=0 crashes on Android API 26+)
-                if (intensity != HapticIntensity.OFF) {
-                    hapticFeedbackManager.triggerSample(intensity)  // Then trigger sample
-                }
+                // Trigger sample vibration via ViewModel (which uses HapticManager)
+                viewModel.triggerSampleVibration(intensity)
             }
         }
         

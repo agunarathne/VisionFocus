@@ -4,7 +4,8 @@
     <!-- Camera permission for object recognition (FR53, Story 1.5) -->
     <uses-permission android:name="android.permission.CAMERA" />
     
-    <!-- Vibrate permission for haptic feedback (Story 2.3) -->
+    <!-- Vibrate permission for haptic feedback (Story 2.3, 2.6, 5.4) -->
+    <!-- Required for: Recognition events, button presses, navigation alerts (Epic 6) -->
     <uses-permission android:name="android.permission.VIBRATE" />
     
     <!-- Microphone permission for voice commands (FR55, Story 3.1) -->
