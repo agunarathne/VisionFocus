@@ -78,7 +78,13 @@ class VoiceCommandProcessor @Inject constructor(
         "Back" to "Going back",
         "Home" to "Going home",
         "Where Am I" to "Getting your location",
-        "What Do I See" to "Repeating last recognition"
+        "What Do I See" to "Repeating last recognition",
+        "Large Text On" to "Large text on",
+        "Large Text Off" to "Large text off",
+        "Haptic Off" to "Haptic feedback off",
+        "Haptic Light" to "Haptic feedback light",
+        "Haptic Medium" to "Haptic feedback medium",
+        "Haptic Strong" to "Haptic feedback strong"
     )
     
     /**

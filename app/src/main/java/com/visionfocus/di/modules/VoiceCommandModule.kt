@@ -14,9 +14,15 @@ import com.visionfocus.voice.commands.recognition.ScanEnvironmentCommand
 import com.visionfocus.voice.commands.recognition.StopScanningCommand
 import com.visionfocus.voice.commands.recognition.WhatDoISeeCommand
 import com.visionfocus.voice.commands.settings.DecreaseSpeedCommand
+import com.visionfocus.voice.commands.settings.HapticLightCommand
+import com.visionfocus.voice.commands.settings.HapticMediumCommand
+import com.visionfocus.voice.commands.settings.HapticOffCommand
+import com.visionfocus.voice.commands.settings.HapticStrongCommand
 import com.visionfocus.voice.commands.settings.HighContrastOffCommand
 import com.visionfocus.voice.commands.settings.HighContrastOnCommand
 import com.visionfocus.voice.commands.settings.IncreaseSpeedCommand
+import com.visionfocus.voice.commands.settings.LargeTextOffCommand
+import com.visionfocus.voice.commands.settings.LargeTextOnCommand
 import com.visionfocus.voice.commands.settings.SettingsCommand
 import com.visionfocus.voice.commands.settings.VerbosityBriefCommand
 import com.visionfocus.voice.commands.settings.VerbosityDetailedCommand
@@ -74,6 +80,12 @@ object VoiceCommandModule {
      * @param backCommand Navigation commands (Story 3.2 Task 2.12)
      * @param homeCommand Navigation commands (Story 3.2 Task 2.13)
      * @param whereAmICommand Navigation commands (Story 3.2 Task 2.14)
+     * @param largeTextOnCommand Settings commands (Story 5.5 Task 1)
+     * @param largeTextOffCommand Settings commands (Story 5.5 Task 1)
+     * @param hapticOffCommand Settings commands (Story 5.5 Task 2)
+     * @param hapticLightCommand Settings commands (Story 5.5 Task 2)
+     * @param hapticMediumCommand Settings commands (Story 5.5 Task 2)
+     * @param hapticStrongCommand Settings commands (Story 5.5 Task 2)
      * @param whatDoISeeCommand Recognition commands (Story 3.2 Task 2.15)
      * @param verbosityBriefCommand Settings commands (Story 4.1 Task 7)
      * @param verbosityStandardCommand Settings commands (Story 4.1 Task 7)
@@ -102,6 +114,12 @@ object VoiceCommandModule {
         // Settings commands
         settingsCommand: SettingsCommand,
         highContrastOnCommand: HighContrastOnCommand,
+        largeTextOnCommand: LargeTextOnCommand,
+        largeTextOffCommand: LargeTextOffCommand,
+        hapticOffCommand: HapticOffCommand,
+        hapticLightCommand: HapticLightCommand,
+        hapticMediumCommand: HapticMediumCommand,
+        hapticStrongCommand: HapticStrongCommand,
         highContrastOffCommand: HighContrastOffCommand,
         increaseSpeedCommand: IncreaseSpeedCommand,
         decreaseSpeedCommand: DecreaseSpeedCommand,
@@ -128,6 +146,12 @@ object VoiceCommandModule {
         processor.registerCommand(highContrastOnCommand)
         processor.registerCommand(highContrastOffCommand)
         processor.registerCommand(increaseSpeedCommand)
+        processor.registerCommand(largeTextOnCommand)
+        processor.registerCommand(largeTextOffCommand)
+        processor.registerCommand(hapticOffCommand)
+        processor.registerCommand(hapticLightCommand)
+        processor.registerCommand(hapticMediumCommand)
+        processor.registerCommand(hapticStrongCommand)
         processor.registerCommand(decreaseSpeedCommand)
         processor.registerCommand(historyCommand)
         processor.registerCommand(helpCommand)
