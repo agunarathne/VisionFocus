@@ -30,12 +30,12 @@
             android:textAppearance="?attr/textAppearanceHeadlineSmall"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:contentDescription="@string/location_permission_title_description"
             android:focusable="true"
             android:importantForAccessibility="yes"
             android:accessibilityTraversalAfter="@id/messageTextView"/>
 
         <!-- Rationale Message -->
+        <!-- MEDIUM-3 FIX: Removed duplicate contentDescription (text is self-describing) -->
         <TextView
             android:id="@+id/messageTextView"
             android:layout_width="match_parent"
@@ -45,7 +45,6 @@
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textSize="16sp"
             android:lineSpacingMultiplier="1.2"
-            android:contentDescription="@string/location_permission_rationale"
             android:focusable="true"
             android:importantForAccessibility="yes"
             android:accessibilityTraversalAfter="@id/titleTextView"

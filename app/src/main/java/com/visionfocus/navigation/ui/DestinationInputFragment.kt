@@ -64,6 +64,9 @@ class DestinationInputFragment : Fragment() {
     // Story 6.5: Location permission launcher
     private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
     
+    // HIGH-7 FIX: Track if returning from settings to optimize permission checks
+    private var isReturningFromSettings = false
+    
     companion object {
         private const val TAG = "DestinationInputFragment"
     }
@@ -242,6 +245,8 @@ class DestinationInputFragment : Fragment() {
      */
     private fun setupPermissionDeniedUI() {
         binding.openSettingsButton.setOnClickListener {
+            // HIGH-7: Set flag so onResume knows to re-check permission
+            isReturningFromSettings = true
             PermissionSettingsLauncher.openAppSettings(requireContext())
         }
     }
@@ -257,30 +262,50 @@ class DestinationInputFragment : Fragment() {
     /**
      * Story 6.5: Update UI based on current permission state.
      * Called on launch and after permission changes.
+     * 
+     * HIGH-8 FIX: Added TTS announcement when permission state changes
+     * HIGH-10 FIX: Button properly disabled when permission denied OR validation failed
      */
     private fun updateUIForPermissionState() {
         val isGranted = permissionManager.isLocationPermissionGranted()
+        val currentValidation = viewModel.validationState.value
         
         if (isGranted) {
             // Permission granted - enable navigation
             binding.permissionDeniedTextView.visibility = View.GONE
             binding.openSettingsButton.visibility = View.GONE
             binding.goButton.text = getString(R.string.go_button_text)
-            // Note: Go button enabled state managed by validation state
+            
+            // HIGH-10 FIX: Button enabled state depends on BOTH permission AND validation
+            binding.goButton.isEnabled = currentValidation is ValidationResult.Valid
+            
+            // HIGH-8 FIX: Announce when permission becomes granted (returning from settings)
+            if (isReturningFromSettings) {
+                lifecycleScope.launch {
+                    ttsManager.announce("Location enabled. Navigation ready.")
+                }
+            }
         } else {
             // Permission denied - show message and disable navigation
             binding.permissionDeniedTextView.visibility = View.VISIBLE
             binding.openSettingsButton.visibility = View.VISIBLE
             binding.goButton.text = getString(R.string.enable_location_to_navigate)
-            binding.goButton.isEnabled = true  // Keep enabled to show rationale dialog
+            
+            // HIGH-10 FIX: Keep button enabled to allow showing rationale dialog
+            // But only if destination is valid
+            binding.goButton.isEnabled = currentValidation is ValidationResult.Valid
         }
     }
     
     override fun onResume() {
         super.onResume()
-        // Story 6.5: Re-check permission when returning from settings
-        updateUIForPermissionState()
-        viewModel.checkLocationPermission()
+        // HIGH-7 FIX: Only re-check permission if returning from settings
+        // Avoids unnecessary checks when returning from voice input or other screens
+        if (isReturningFromSettings) {
+            updateUIForPermissionState()
+            viewModel.checkLocationPermission()
+            isReturningFromSettings = false
+        }
     }
     
     private fun setupBackButton() {
@@ -327,6 +352,16 @@ class DestinationInputFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.navigationEvent.collect { event ->
                     handleNavigationEvent(event)
+                }
+            }
+        }
+        
+        // MEDIUM-4 FIX: Observe permission state StateFlow reactively
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.isLocationPermissionGranted.collect { isGranted ->
+                    // Update UI when permission state changes
+                    updateUIForPermissionState()
                 }
             }
         }

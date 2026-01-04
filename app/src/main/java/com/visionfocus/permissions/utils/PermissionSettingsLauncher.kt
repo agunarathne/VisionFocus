@@ -30,6 +30,9 @@ object PermissionSettingsLauncher {
      * 
      * Story 6.5 AC #7: In-app settings link to system permission settings.
      * 
+     * HIGH-6 FIX: Added setPackage("com.android.settings") to prevent intent hijacking
+     * by malicious apps on Android 11+ devices.
+     * 
      * @param context Application or Activity context
      * @return true if settings intent launched successfully, false if unavailable
      */
@@ -38,6 +41,10 @@ object PermissionSettingsLauncher {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
                 data = Uri.fromParts("package", context.packageName, null)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                // HIGH-6 FIX: Prevent intent hijacking on Android 11+
+                addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+                // Ensure intent goes to system settings app, not malicious interceptor
+                setPackage("com.android.settings")
             }
             context.startActivity(intent)
             Log.d(TAG, "Launched app settings for package: ${context.packageName}")

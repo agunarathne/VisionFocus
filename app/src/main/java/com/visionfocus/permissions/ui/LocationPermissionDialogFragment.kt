@@ -13,7 +13,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
 import javax.inject.Inject
 
 /**
@@ -36,7 +38,24 @@ class LocationPermissionDialogFragment : DialogFragment() {
     
     /**
      * Callback interface for permission dialog decisions.
-     * Implement in hosting fragment/activity to handle user's choice.
+     * 
+     * Implement this interface in hosting Fragment to handle user's permission decision.
+     * 
+     * **Usage Example:**
+     * ```kotlin
+     * LocationPermissionDialogFragment.newInstance(
+     *     object : PermissionDialogListener {
+     *         override fun onAllowClicked() {
+     *             locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+     *         }
+     *         override fun onDenyClicked() {
+     *             showPermissionDeniedUI()
+     *         }
+     *     }
+     * ).show(parentFragmentManager, "location_rationale")
+     * ```
+     * 
+     * Story 6.5 AC #1-2: Rationale dialog with TalkBack support before system permission request.
      */
     interface PermissionDialogListener {
         /**
@@ -46,8 +65,10 @@ class LocationPermissionDialogFragment : DialogFragment() {
         fun onAllowClicked()
         
         /**
-         * Called when user taps "Not Now" button or dismisses dialog.
+         * Called when user taps "Not Now" button.
          * Host should update UI to show permission-denied state.
+         * 
+         * Note: Back button dismissal does NOT trigger this callback (see onCancel).
          */
         fun onDenyClicked()
     }
@@ -58,9 +79,11 @@ class LocationPermissionDialogFragment : DialogFragment() {
     @Inject
     lateinit var ttsManager: TTSManager
     
-    private lateinit var listener: PermissionDialogListener
+    // HIGH-2 FIX: WeakReference prevents memory leak if Activity destroyed before dialog dismissed
+    private var listener: WeakReference<PermissionDialogListener>? = null
     
     // Use CoroutineScope for TTS announcements since DialogFragment doesn't have lifecycleScope
+    // HIGH-3 FIX: Will be cancelled in onDestroyView to prevent coroutine leak
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -69,7 +92,7 @@ class LocationPermissionDialogFragment : DialogFragment() {
         )
         
         setupButtons()
-        announceTTSRationale()
+        // HIGH-4 FIX: TTS moved to onStart() where Hilt injection guaranteed complete
         
         return MaterialAlertDialogBuilder(requireContext())
             .setView(binding.root)
@@ -79,14 +102,23 @@ class LocationPermissionDialogFragment : DialogFragment() {
     
     private fun setupButtons() {
         binding.allowButton.setOnClickListener {
-            listener.onAllowClicked()
+            listener?.get()?.onAllowClicked()
             dismiss()
         }
         
         binding.notNowButton.setOnClickListener {
-            listener.onDenyClicked()
+            listener?.get()?.onDenyClicked()
             dismiss()
         }
+    }
+    
+    /**
+     * HIGH-4 FIX: Announce TTS after Hilt injection complete.
+     * Called after onCreateDialog, ensuring ttsManager initialized.
+     */
+    override fun onStart() {
+        super.onStart()
+        announceTTSRationale()
     }
     
     /**
@@ -100,15 +132,19 @@ class LocationPermissionDialogFragment : DialogFragment() {
     }
     
     /**
-     * Handle dialog cancellation (back button) as denial.
+     * HIGH-9 FIX: Back button dismissal allows retry, doesn't treat as permanent denial.
+     * Dialog can be shown again on next "Go" button press.
      */
     override fun onCancel(dialog: android.content.DialogInterface) {
         super.onCancel(dialog)
-        listener.onDenyClicked()
+        // HIGH-9: Do NOT call onDenyClicked() - back button allows retry
+        // User can press "Go" again to show permission rationale
     }
     
     override fun onDestroyView() {
         super.onDestroyView()
+        // HIGH-3 FIX: Cancel coroutine scope to prevent leaks
+        coroutineScope.cancel()
         _binding = null
     }
     
@@ -122,7 +158,8 @@ class LocationPermissionDialogFragment : DialogFragment() {
          */
         fun newInstance(listener: PermissionDialogListener): LocationPermissionDialogFragment {
             return LocationPermissionDialogFragment().apply {
-                this.listener = listener
+                // HIGH-2 FIX: Store as WeakReference to prevent memory leak
+                this.listener = WeakReference(listener)
             }
         }
     }
