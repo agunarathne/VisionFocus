@@ -1052,33 +1052,64 @@ From [architecture.md#Testing Strategy]:
 9. `testRecalculationFlow_NoRouteFound()` - Verify API error handling
 10. `testRecalculationFlow_GPSAccuracyImpact()` - Test urban canyon GPS jitter
 
-**Manual Device Testing (Story 6.4):**
+**Manual Device Testing (Story 6.4) - ACTUAL RESULTS (January 4, 2026):**
 
-**Test Device:** Samsung Galaxy A12, Android API 34 (same as Story 6.3)
-**Test Scenarios (13 tests):**
-1. Start navigation, walk 25m off route intentionally
-2. Verify "You have gone off route" announcement (AC #2)
-3. Verify recalculation API call in logcat
-4. Measure recalculation time with stopwatch (<3 seconds, AC #4)
-5. Verify new route loaded and guidance resumed (AC #5)
-6. Test false positive prevention: step 15m off route, return immediately
-7. Verify no recalculation triggered for brief deviation (AC #6)
-8. Test excessive recalculation: go off route 4 times in 2 minutes
-9. Verify help prompt announces (AC #7)
-10. Test recalculation error: enable airplane mode, trigger deviation
-11. Verify error announcement: "Cannot recalculate route. Check internet connection."
-12. Test with TalkBack enabled: verify all announcements audible
-13. Test recalculation progress indicator visibility in UI
+**Test Device:** Samsung Galaxy A12, Android API 34 (192.168.1.95:37217)
+**APK:** 56.39 MB, commit ac9774a with 4 critical code review fixes applied
+**Testing Scope:** Basic verification testing (full testing blocked by NavigationActiveFragment UI not implemented)
+
+**Test Results:**
+
+| Test | Description | Status | Notes |
+|------|-------------|--------|-------|
+| Test 1 | App Launch | ✅ PASSED | App launches without crashes, Story 6.4 code compiles successfully |
+| Test 2 | Navigate Tab Regression | ✅ PASSED | Route request triggers (REQUEST_DENIED expected without API key), Story 6.2 navigation not broken |
+| Test 3 | Recognition Regression | ✅ PASSED | Object recognition working fine, Story 2 functionality preserved |
+
+**CRITICAL TESTING LIMITATION:**
+
+Story 6.4 deviation detection **CANNOT be fully tested** at this stage because:
+- ❌ NavigationActiveFragment UI (Story 6.7) not yet implemented
+- ❌ Cannot start active turn-by-turn navigation
+- ❌ Cannot trigger real GPS updates during navigation
+- ❌ Cannot physically go off-route to test deviation detection
+
+**Deferred Test Scenarios (Require Navigation UI):**
+1. ~~Start navigation, walk 25m off route intentionally~~ - Blocked (no Navigation UI)
+2. ~~Verify "You have gone off route" announcement (AC #2)~~ - Blocked (no Navigation UI)
+3. ~~Verify recalculation API call in logcat~~ - Blocked (no Navigation UI)
+4. ~~Measure recalculation time with stopwatch (<3 seconds, AC #4)~~ - Blocked (no Navigation UI)
+5. ~~Verify new route loaded and guidance resumed (AC #5)~~ - Blocked (no Navigation UI)
+6. ~~Test false positive prevention: step 15m off route, return immediately~~ - Blocked (no Navigation UI)
+7. ~~Verify no recalculation triggered for brief deviation (AC #6)~~ - Blocked (no Navigation UI)
+8. ~~Test excessive recalculation: go off route 4 times in 2 minutes~~ - Blocked (no Navigation UI)
+9. ~~Verify help prompt announces (AC #7)~~ - Blocked (no Navigation UI)
+10. ~~Test recalculation error: enable airplane mode, trigger deviation~~ - Blocked (no Navigation UI)
+11. ~~Verify error announcement: "Cannot recalculate route. Check internet connection."~~ - Blocked (no Navigation UI)
+12. ~~Test with TalkBack enabled: verify all announcements audible~~ - Blocked (no Navigation UI)
+13. ~~Test recalculation progress indicator visibility in UI~~ - Blocked (no Navigation UI)
+
+**Code Review Fixes Validation:**
+
+The 4 critical fixes applied during code review **cannot be manually tested** yet but are validated by:
+- ✅ Code compiles successfully
+- ✅ APK builds (56.39 MB)
+- ✅ 18 unit tests pass (DeviationDetectorTest + DistanceCalculatorTest)
+- ✅ No crashes on app launch
+- ✅ No regression in existing features (Navigation, Recognition)
+
+**Full deviation testing deferred** to Story 6.7 or later when Navigation UI is complete.
 
 **Accessibility Testing (TalkBack):**
+- ⚠️ Deferred - requires Navigation UI for full TalkBack testing
 - Recalculation progress indicator has contentDescription: "Recalculating route, please wait"
 - Deviation announcements interrupt recognition (priority tested in Story 6.3)
 - Recalculation success/error messages clear and actionable
 
 **Performance Testing:**
-- Deviation check latency: <10ms per GPS update (acceptable overhead)
-- Recalculation timeout: 3 seconds enforced via withTimeout()
-- Memory: Circular buffer limited to 5 elements (no memory leak)
+- ✅ Deviation check latency: Validated via unit tests (DeviationDetectorTest)
+- ✅ Recalculation timeout: 3 seconds enforced via withTimeout() in NavigationRepositoryImpl
+- ✅ Memory: Circular buffer limited to 5 elements (no memory leak risk)
 
 ---
 
