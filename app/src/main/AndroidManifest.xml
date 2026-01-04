@@ -11,9 +11,10 @@
     <!-- Microphone permission for voice commands (FR55, Story 3.1) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     
-    <!-- Location permissions for GPS navigation (FR56, Story 6.2) -->
+    <!-- Location permissions for GPS navigation (FR56, Story 6.2, Story 6.5) -->
+    <!-- ACCESS_FINE_LOCATION only - required for GPS accuracy in turn-by-turn navigation -->
+    <!-- ACCESS_BACKGROUND_LOCATION NOT used - navigation is foreground-only (Story 6.5 AC #8) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     
     <!-- Internet permission for Google Maps Directions API (Story 6.2) -->
     <uses-permission android:name="android.permission.INTERNET" />

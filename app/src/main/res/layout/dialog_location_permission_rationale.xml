@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Location Permission Rationale Dialog Layout
+    Story 6.5: GPS Location Permissions with Clear Explanations
+    
+    Provides accessible rationale dialog before requesting location permission.
+    Full TalkBack support with proper focus order and content descriptions.
+-->
+<androidx.cardview.widget.CardView 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="24dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/titleTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/location_permission_title"
+            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:contentDescription="@string/location_permission_title_description"
+            android:focusable="true"
+            android:importantForAccessibility="yes"
+            android:accessibilityTraversalAfter="@id/messageTextView"/>
+
+        <!-- Rationale Message -->
+        <TextView
+            android:id="@+id/messageTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/location_permission_rationale"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textSize="16sp"
+            android:lineSpacingMultiplier="1.2"
+            android:contentDescription="@string/location_permission_rationale"
+            android:focusable="true"
+            android:importantForAccessibility="yes"
+            android:accessibilityTraversalAfter="@id/titleTextView"
+            android:accessibilityTraversalBefore="@id/allowButton"/>
+
+        <!-- Button Container -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:orientation="horizontal"
+            android:gravity="end">
+
+            <!-- Not Now Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/notNowButton"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="56dp"
+                android:minWidth="88dp"
+                android:minHeight="56dp"
+                android:text="@string/not_now"
+                android:textSize="14sp"
+                android:contentDescription="@string/skip_location_permission_description"
+                android:focusable="true"
+                android:importantForAccessibility="yes"
+                android:accessibilityTraversalAfter="@id/allowButton"/>
+
+            <!-- Allow Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/allowButton"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="56dp"
+                android:layout_marginStart="8dp"
+                android:minWidth="88dp"
+                android:minHeight="56dp"
+                android:text="@string/allow"
+                android:textSize="14sp"
+                android:contentDescription="@string/allow_location_access_description"
+                android:focusable="true"
+                android:importantForAccessibility="yes"
+                android:accessibilityTraversalAfter="@id/messageTextView"
+                android:accessibilityTraversalBefore="@id/notNowButton"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

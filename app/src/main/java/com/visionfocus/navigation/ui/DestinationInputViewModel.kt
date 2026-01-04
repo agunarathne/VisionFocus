@@ -37,7 +37,8 @@ class DestinationInputViewModel @Inject constructor(
     private val navigationRepository: NavigationRepository,
     private val networkConsentManager: NetworkConsentManager,
     private val ttsManager: TTSManager,
-    private val hapticFeedbackManager: HapticFeedbackManager
+    private val hapticFeedbackManager: HapticFeedbackManager,
+    private val permissionManager: com.visionfocus.permissions.manager.PermissionManager  // Story 6.5
 ) : ViewModel() {
     
     companion object {
@@ -58,6 +59,42 @@ class DestinationInputViewModel @Inject constructor(
     
     private val _navigationEvent = MutableSharedFlow<NavigationEvent>()
     val navigationEvent: SharedFlow<NavigationEvent> = _navigationEvent.asSharedFlow()
+    
+    // Story 6.5: Location permission state management
+    private val _isLocationPermissionGranted = MutableStateFlow(false)
+    val isLocationPermissionGranted: StateFlow<Boolean> = _isLocationPermissionGranted.asStateFlow()
+    
+    init {
+        // Check location permission on initialization
+        checkLocationPermission()
+    }
+    
+    /**
+     * Story 6.5: Check current location permission status.
+     */
+    fun checkLocationPermission() {
+        _isLocationPermissionGranted.value = permissionManager.isLocationPermissionGranted()
+    }
+    
+    /**
+     * Story 6.5: Update location permission state after permission result.
+     * Called from Fragment when permission launcher returns result.
+     * 
+     * @param granted true if permission granted, false if denied
+     */
+    fun updateLocationPermissionState(granted: Boolean) {
+        _isLocationPermissionGranted.value = granted
+        
+        viewModelScope.launch {
+            if (granted) {
+                // Story 6.5 AC #4: Permission granted confirmation
+                ttsManager.announce("Location permission granted. You can now use navigation.")
+            } else {
+                // Story 6.5 AC #5: Permission denied explanation
+                ttsManager.announce("Location permission denied. Navigation requires location access. You can enable it in Settings.")
+            }
+        }
+    }
     
     fun onVoiceInputComplete(transcribedText: String) {
         destinationText.value = transcribedText

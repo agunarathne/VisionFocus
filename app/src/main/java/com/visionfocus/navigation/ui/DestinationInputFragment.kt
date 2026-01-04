@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -20,10 +22,14 @@ import com.visionfocus.navigation.models.Destination
 import com.visionfocus.navigation.models.ValidationResult
 import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.accessibility.haptic.HapticPattern
+import com.visionfocus.permissions.manager.PermissionManager
+import com.visionfocus.permissions.ui.LocationPermissionDialogFragment
+import com.visionfocus.permissions.utils.PermissionSettingsLauncher
 import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.voice.recognizer.VoiceRecognitionManager
 import com.visionfocus.voice.recognizer.VoiceRecognitionState
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -52,8 +58,25 @@ class DestinationInputFragment : Fragment() {
     @Inject
     lateinit var networkConsentManager: com.visionfocus.navigation.consent.NetworkConsentManager
     
+    @Inject
+    lateinit var permissionManager: PermissionManager  // Story 6.5
+    
+    // Story 6.5: Location permission launcher
+    private lateinit var locationPermissionLauncher: ActivityResultLauncher<String>
+    
     companion object {
         private const val TAG = "DestinationInputFragment"
+    }
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        // Story 6.5: Register permission launcher in onCreate (before view creation)
+        locationPermissionLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            handleLocationPermissionResult(isGranted)
+        }
     }
     
     override fun onCreateView(
@@ -73,7 +96,11 @@ class DestinationInputFragment : Fragment() {
         setupVoiceInput()
         setupGoButton()
         setupBackButton()
+        setupPermissionDeniedUI()  // Story 6.5
         observeViewModel()
+        
+        // Story 6.5: Check permission state on launch
+        updateUIForPermissionState()
         
         // Initial TalkBack announcement
         view.post {
@@ -149,8 +176,111 @@ class DestinationInputFragment : Fragment() {
     private fun setupGoButton() {
         binding.goButton.setOnClickListener {
             Log.d(TAG, "Go button clicked")
-            viewModel.onGoClicked()
+            
+            // Story 6.5: Check location permission before starting navigation
+            if (permissionManager.isLocationPermissionGranted()) {
+                viewModel.onGoClicked()
+            } else {
+                requestLocationPermissionWithRationale()
+            }
         }
+    }
+    
+    /**
+     * Story 6.5: Request location permission with rationale dialog.
+     * Shows rationale if user previously denied, otherwise launches directly.
+     */
+    private fun requestLocationPermissionWithRationale() {
+        if (permissionManager.shouldShowLocationRationale(requireActivity())) {
+            // Show rationale dialog before system permission prompt
+            LocationPermissionDialogFragment.newInstance(
+                object : LocationPermissionDialogFragment.PermissionDialogListener {
+                    override fun onAllowClicked() {
+                        locationPermissionLauncher.launch(
+                            android.Manifest.permission.ACCESS_FINE_LOCATION
+                        )
+                    }
+                    
+                    override fun onDenyClicked() {
+                        handleLocationPermissionResult(false)
+                    }
+                }
+            ).show(parentFragmentManager, "location_rationale")
+        } else {
+            // First-time request, launch system dialog directly
+            locationPermissionLauncher.launch(
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            )
+        }
+    }
+    
+    /**
+     * Story 6.5: Handle location permission result from system dialog.
+     * Updates ViewModel state, announces result via TTS, and updates UI.
+     */
+    private fun handleLocationPermissionResult(isGranted: Boolean) {
+        viewModel.updateLocationPermissionState(isGranted)
+        
+        // Story 6.5 AC #7: Add 1-second delay before TTS to avoid collision with system dialog
+        lifecycleScope.launch {
+            delay(1000)
+            
+            if (isGranted) {
+                // Permission granted - proceed with navigation
+                viewModel.onGoClicked()
+            } else {
+                // Permission denied - show denied UI
+                showPermissionDeniedUI()
+            }
+            
+            updateUIForPermissionState()
+        }
+    }
+    
+    /**
+     * Story 6.5: Setup permission denied UI elements.
+     */
+    private fun setupPermissionDeniedUI() {
+        binding.openSettingsButton.setOnClickListener {
+            PermissionSettingsLauncher.openAppSettings(requireContext())
+        }
+    }
+    
+    /**
+     * Story 6.5: Show permission denied message and settings button.
+     */
+    private fun showPermissionDeniedUI() {
+        binding.permissionDeniedTextView.visibility = View.VISIBLE
+        binding.openSettingsButton.visibility = View.VISIBLE
+    }
+    
+    /**
+     * Story 6.5: Update UI based on current permission state.
+     * Called on launch and after permission changes.
+     */
+    private fun updateUIForPermissionState() {
+        val isGranted = permissionManager.isLocationPermissionGranted()
+        
+        if (isGranted) {
+            // Permission granted - enable navigation
+            binding.permissionDeniedTextView.visibility = View.GONE
+            binding.openSettingsButton.visibility = View.GONE
+            binding.goButton.text = getString(R.string.go_button_text)
+            // Note: Go button enabled state managed by validation state
+        } else {
+            // Permission denied - show message and disable navigation
+            binding.permissionDeniedTextView.visibility = View.VISIBLE
+            binding.openSettingsButton.visibility = View.VISIBLE
+            binding.goButton.text = getString(R.string.enable_location_to_navigate)
+            binding.goButton.isEnabled = true  // Keep enabled to show rationale dialog
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        // Story 6.5: Re-check permission when returning from settings
+        updateUIForPermissionState()
+        viewModel.checkLocationPermission()
     }
     
     private fun setupBackButton() {

@@ -77,6 +77,46 @@
         android:layout_marginTop="16dp"
         tools:visibility="gone" />
 
+    <!-- Story 6.5: Permission Denied Message -->
+    <TextView
+        android:id="@+id/permissionDeniedTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/permission_denied_message"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="?attr/colorError"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:contentDescription="@string/permission_denied_message"
+        android:importantForAccessibility="yes"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/routeProgressIndicator"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="24dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        tools:visibility="visible" />
+
+    <!-- Story 6.5: Open Settings Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/openSettingsButton"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="56dp"
+        android:minWidth="140dp"
+        android:minHeight="56dp"
+        android:text="@string/open_settings"
+        android:textSize="16sp"
+        android:contentDescription="@string/open_settings_description"
+        android:importantForAccessibility="yes"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/permissionDeniedTextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        tools:visibility="visible" />
+
     <!-- Go Button -->
     <!-- CODE REVIEW FIX: Increased button size to properly display "GO" text -->
     <com.google.android.material.button.MaterialButton

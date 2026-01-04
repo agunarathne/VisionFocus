@@ -88,12 +88,12 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: GPS-Based Navigation
-  epic-6: in-progress  # Started Jan 3, 2026 - Story 6.1, 6.2, 6.3 COMPLETE, Story 6.4 ready
+  epic-6: in-progress  # Started Jan 3, 2026 - Story 6.1, 6.2, 6.3, 6.4 COMPLETE, Story 6.5 ready
   6-1-destination-input-via-voice-and-text: done  # Jan 3, 2026 - COMPLETE: Adversarial code review (17 issues: 7 CRITICAL + 3 HIGH + 4 MEDIUM + 3 LOW), voice input + navigation graph + bottom nav + integration tests created, manual testing PASSED (20/20 tests), 3 validation bugs fixed (auto-validation, error display), all 9 ACs verified
   6-2-google-maps-directions-api-integration: done  # Jan 3, 2026 - COMPLETE: Code review (10 issues: 7 fixed + 3 deferred), duplicate NavigationRoute class fixed, missing coroutines dependency added, manual testing (network consent dialog validated, 16 consent checks logged, cancel flow working), 15 new files + 13 modified, API key validation working
   6-3-turn-by-turn-voice-guidance-with-anticipatory-warnings: done  # Jan 4, 2026 - COMPLETE: Code review (13 issues: 7 CRITICAL + 4 HIGH + 2 MEDIUM fixed), manual testing PASSED (7/7 tests 100%), 4 bugs fixed (BottomNav missing, voice tab highlight, Go button width, high contrast crash), NavigationService + GPS tracking (1Hz) + turn warnings (70m advance, 15m immediate) + TTS priority + volume boost + cardinal directions + 71 unit tests created (RouteFollower, TurnWarningCalculator, NavigationAnnouncementManager, BearingCalculator, DistanceCalculator), high contrast mode disabled (Material Design incompatibility), all 9 ACs validated, Samsung Galaxy A12 device tested
   6-4-route-deviation-detection-and-recalculation: done  # Jan 4, 2026 - COMPLETE: Code review (10 HIGH + 3 MEDIUM + 2 LOW issues: 4 CRITICAL fixes applied), manual testing PASSED (3/3 basic tests), 18 unit tests, 4 bugs fixed (excessive recalc message, cosine bug, UI update delay, window reset logic), 6 issues deferred and documented, full deviation testing blocked by NavigationActiveFragment UI (Story 6.7), production-ready for integration
-  6-5-gps-location-permissions-with-clear-explanations: backlog
+  6-5-gps-location-permissions-with-clear-explanations: review
   6-6-network-availability-indication: backlog
   epic-6-retrospective: optional
 

@@ -63,6 +63,48 @@ class PermissionManager @Inject constructor(
     }
     
     /**
+     * Story 6.5: Determine if rationale should be shown for location permission.
+     * Returns true if user previously denied permission.
+     * 
+     * Note: Only ACCESS_FINE_LOCATION is requested (foreground-only navigation).
+     * ACCESS_BACKGROUND_LOCATION is NOT used per Story 6.5 AC #8.
+     */
+    fun shouldShowLocationRationale(activity: Activity): Boolean {
+        return ActivityCompat.shouldShowRequestPermissionRationale(
+            activity,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        )
+    }
+    
+    /**
+     * Story 6.5: Request location permission for GPS navigation.
+     * 
+     * @param launcher ActivityResultLauncher from Activity
+     */
+    fun requestLocationPermission(launcher: ActivityResultLauncher<String>) {
+        launcher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+    
+    /**
+     * Story 6.5: Register location permission result launcher in Activity.
+     * Must be called during Activity initialization (before onCreate completes).
+     * 
+     * @param activity Host activity
+     * @param onResult Callback with isGranted boolean result
+     * @return ActivityResultLauncher configured for location permission
+     */
+    fun registerLocationPermissionLauncher(
+        activity: Activity,
+        onResult: (Boolean) -> Unit
+    ): ActivityResultLauncher<String> {
+        return (activity as androidx.activity.ComponentActivity).registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            onResult(isGranted)
+        }
+    }
+    
+    /**
      * Determine if rationale should be shown for camera permission.
      * Returns true if user previously denied permission.
      */
