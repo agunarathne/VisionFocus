@@ -403,8 +403,8 @@ class NavigationService : Service() {
         locationUpdatesJob?.cancel()
         locationUpdatesJob = null
         
-        // Restore original TTS volume
-        announcementManager.restoreOriginalVolume()
+        // Stop all TTS announcements immediately and restore volume
+        announcementManager.stopAllAnnouncements()
         
         // Stop foreground and remove notification
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -425,7 +425,8 @@ class NavigationService : Service() {
         locationUpdatesJob?.cancel()
         serviceScope.cancel()
         
-        announcementManager.restoreOriginalVolume()
+        // Stop all announcements on service destroy
+        announcementManager.stopAllAnnouncements()
     }
     
     /**

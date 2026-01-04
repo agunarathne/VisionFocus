@@ -567,10 +567,8 @@ class MainActivity : AppCompatActivity() {
      * for proper back navigation.
      */
     fun navigateToSettings() {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, SettingsFragment())
-            .addToBackStack(null)
-            .commit()
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        navController.navigate(R.id.settingsFragment)
     }
     
     /**
@@ -581,10 +579,8 @@ class MainActivity : AppCompatActivity() {
      * for proper back navigation.
      */
     fun navigateToHistory() {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, com.visionfocus.ui.history.HistoryFragment())
-            .addToBackStack(null)
-            .commit()
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        navController.navigate(R.id.historyFragment)
     }
     
     /**
@@ -597,10 +593,10 @@ class MainActivity : AppCompatActivity() {
      * @param ttsManager Optional TTSManager for announcement (injected from command)
      */
     fun navigateToHome(ttsManager: TTSManager? = null) {
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        
         // Check if already on home screen
-        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-        val alreadyAtHome = currentFragment is com.visionfocus.ui.recognition.RecognitionFragment && 
-                           supportFragmentManager.backStackEntryCount == 0
+        val alreadyAtHome = navController.currentDestination?.id == R.id.recognitionFragment
         
         if (alreadyAtHome) {
             // Already at home - announce once and return
@@ -613,15 +609,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
         
-        // Clear back stack
-        supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-        
-        // Navigate to home if not already there
-        if (currentFragment !is com.visionfocus.ui.recognition.RecognitionFragment) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, com.visionfocus.ui.recognition.RecognitionFragment())
-                .commit()
-        }
+        // Navigate to home (Navigation Component handles back stack)
+        navController.navigate(R.id.recognitionFragment)
         
         // Announce AFTER navigation complete
         android.util.Log.d("VisionFocus", "Navigated to home screen")
@@ -641,9 +630,11 @@ class MainActivity : AppCompatActivity() {
      * @param ttsManager Optional TTSManager for announcement (injected from command)
      */
     fun navigateBack(ttsManager: TTSManager? = null) {
-        if (supportFragmentManager.backStackEntryCount > 0) {
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        
+        if (navController.previousBackStackEntry != null) {
             // Back stack has entries - pop it
-            supportFragmentManager.popBackStack()
+            navController.popBackStack()
             android.util.Log.d("VisionFocus", "Navigated back")
             ttsManager?.let {
                 lifecycleScope.launch {
@@ -670,10 +661,8 @@ class MainActivity : AppCompatActivity() {
      * for proper back navigation.
      */
     fun navigateToDestinationInput() {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, com.visionfocus.navigation.ui.DestinationInputFragment())
-            .addToBackStack(null)
-            .commit()
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        navController.navigate(R.id.destinationInputFragment)
         
         // CODE REVIEW FIX: Update bottom navigation selected item to highlight Navigate tab
         binding.bottomNavigation.selectedItemId = R.id.navigation_destination
@@ -687,35 +676,24 @@ class MainActivity : AppCompatActivity() {
      * Handles navigation between main app sections without adding to back stack.
      */
     private fun setupBottomNavigation() {
+        // Story 6.1: Setup with Navigation Component
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        
+        // Setup bottom navigation with nav controller
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.navigation_recognition -> {
-                    // Navigate to home/recognition screen
-                    supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-                    val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-                    if (currentFragment !is com.visionfocus.ui.recognition.RecognitionFragment) {
-                        supportFragmentManager.beginTransaction()
-                            .replace(R.id.fragmentContainer, com.visionfocus.ui.recognition.RecognitionFragment())
-                            .commit()
-                    }
+                    navController.navigate(R.id.recognitionFragment)
                     android.util.Log.d("VisionFocus", "Bottom nav: Recognition selected")
                     true
                 }
                 R.id.navigation_destination -> {
-                    // Navigate to destination input
-                    supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-                    supportFragmentManager.beginTransaction()
-                        .replace(R.id.fragmentContainer, com.visionfocus.navigation.ui.DestinationInputFragment())
-                        .commit()
+                    navController.navigate(R.id.destinationInputFragment)
                     android.util.Log.d("VisionFocus", "Bottom nav: Navigate selected")
                     true
                 }
                 R.id.navigation_settings -> {
-                    // Navigate to settings
-                    supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-                    supportFragmentManager.beginTransaction()
-                        .replace(R.id.fragmentContainer, SettingsFragment())
-                        .commit()
+                    navController.navigate(R.id.settingsFragment)
                     android.util.Log.d("VisionFocus", "Bottom nav: Settings selected")
                     true
                 }
@@ -730,13 +708,17 @@ class MainActivity : AppCompatActivity() {
     /**
      * Get current screen identifier for context tracking.
      * Story 3.5 Task 7: Screen context preservation
+     * Story 6.1: Updated to use Navigation Component
      * 
-     * @return String identifier: "home", "settings", or "unknown"
+     * @return String identifier: "home", "settings", "navigate", or "unknown"
      */
     fun getCurrentScreen(): String {
-        return when (supportFragmentManager.findFragmentById(R.id.fragmentContainer)) {
-            is com.visionfocus.ui.recognition.RecognitionFragment -> "home"
-            is SettingsFragment -> "settings"
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        return when (navController.currentDestination?.id) {
+            R.id.recognitionFragment -> "home"
+            R.id.settingsFragment -> "settings"
+            R.id.destinationInputFragment -> "navigate"
+            R.id.navigationActiveFragment -> "navigation_active"
             else -> "unknown"
         }
     }
@@ -747,12 +729,9 @@ class MainActivity : AppCompatActivity() {
      * Used when RecognizeCommand is issued from Settings/other screens.
      */
     private fun navigateToHomeForRecognition() {
-        val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
-        if (currentFragment !is com.visionfocus.ui.recognition.RecognitionFragment) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, com.visionfocus.ui.recognition.RecognitionFragment())
-                .addToBackStack("recognition_from_${originScreenBeforeCommand}")
-                .commit()
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        if (navController.currentDestination?.id != R.id.recognitionFragment) {
+            navController.navigate(R.id.recognitionFragment)
             android.util.Log.d("VisionFocus", "Navigated to home for recognition (origin: $originScreenBeforeCommand)")
         }
     }
@@ -800,10 +779,30 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.d("VisionFocus", "Voice command receiver was not registered")
         }
         
+        // CRITICAL FIX: Stop NavigationService when MainActivity is destroyed
+        // This ensures voice instructions stop when app is killed
+        stopNavigationService()
+        
         // Note: ObjectRecognitionService and TTSManager are Application-scoped singletons
         // They are NOT cleaned up when Activity is destroyed - they live for app lifetime
         // Cleanup happens when Android OS kills the app process
         // VoiceRecognitionManager is cleaned up by VoiceRecognitionViewModel.onCleared()
+    }
+    
+    /**
+     * Stop NavigationService if running.
+     * Called when MainActivity is destroyed to ensure foreground service cleanup.
+     */
+    private fun stopNavigationService() {
+        try {
+            val intent = Intent(this, com.visionfocus.navigation.service.NavigationService::class.java).apply {
+                action = com.visionfocus.navigation.service.NavigationService.ACTION_STOP_NAVIGATION
+            }
+            startService(intent)
+            android.util.Log.d("VisionFocus", "NavigationService stop requested from MainActivity.onDestroy()")
+        } catch (e: Exception) {
+            android.util.Log.e("VisionFocus", "Failed to stop NavigationService", e)
+        }
     }
     
     companion object {

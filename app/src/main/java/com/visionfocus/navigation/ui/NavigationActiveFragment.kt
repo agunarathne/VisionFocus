@@ -68,8 +68,9 @@ class NavigationActiveFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         
         // Story 6.3 Task 9: Start navigation with route from Safe Args (Story 6.2 → 6.3)
+        // Story 6.5: Pass destination name for NavigationService
         if (savedInstanceState == null) {
-            viewModel.startNavigation(args.route)
+            viewModel.startNavigation(args.route, args.destinationName)
         }
         
         // Collect state flows
@@ -97,5 +98,17 @@ class NavigationActiveFragment : Fragment() {
                 }
             }
         }
+    }
+    
+    override fun onDestroyView() {
+        super.onDestroyView()
+        
+        // CRITICAL FIX: Stop navigation service when fragment is destroyed
+        // This ensures voice instructions stop when:
+        // - User taps X button and navigates away
+        // - User presses back button
+        // - User switches tabs via bottom navigation
+        // - App is killed by user or system
+        viewModel.cancelNavigation()
     }
 }

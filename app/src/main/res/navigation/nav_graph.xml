@@ -73,6 +73,11 @@
         <argument
             android:name="route"
             app:argType="com.visionfocus.navigation.models.NavigationRoute" />
+            
+        <!-- Story 6.5: Destination name for recalculation and announcements -->
+        <argument
+            android:name="destinationName"
+            app:argType="string" />
     </fragment>
 
     <!-- Settings Screen -->

@@ -342,11 +342,18 @@ class RecognitionFragment : Fragment() {
      * Story 2.4 Task 1.5: Bind CameraX Preview + ImageCapture use cases
      * Fixed: Added delay after unbindAll() to prevent buffer errors
      * CRITICAL FIX: Added guard to prevent multiple simultaneous bindings
+     * Story 6.1 NavController FIX: Check binding validity before use
      */
     private fun bindCameraUseCases() {
         // CRITICAL FIX: Guard against multiple simultaneous calls
         if (isBindingCamera) {
             Timber.d("Camera binding already in progress, skipping duplicate call")
+            return
+        }
+        
+        // NavController FIX: Check if view still exists
+        if (_binding == null) {
+            Timber.w("View destroyed before camera binding, aborting")
             return
         }
         

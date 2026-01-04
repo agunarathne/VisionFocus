@@ -186,6 +186,22 @@ class NavigationAnnouncementManager @Inject constructor(
     }
     
     /**
+     * Stop all navigation announcements immediately.
+     * 
+     * Called when navigation is cancelled or service is stopped.
+     * Stops any ongoing TTS speech and restores original volume.
+     */
+    fun stopAllAnnouncements() {
+        Log.d(TAG, "Stopping all navigation announcements")
+        
+        // Stop any ongoing TTS immediately
+        ttsManager.stop()
+        
+        // Restore original volume
+        restoreOriginalVolume()
+    }
+    
+    /**
      * Convert Maneuver enum to natural language description.
      * 
      * AC #4: Natural language and cardinal directions when helpful.

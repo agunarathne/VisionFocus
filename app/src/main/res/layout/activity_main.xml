@@ -26,15 +26,18 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Story 2.3 Task 7.2: Fragment container for navigation -->
+    <!-- Story 6.1: Changed to NavHostFragment for Navigation Component support -->
     <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/fragmentContainer"
-        android:name="com.visionfocus.ui.recognition.RecognitionFragment"
+        android:id="@+id/nav_host_fragment"
+        android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:defaultNavHost="true"
+        app:navGraph="@navigation/nav_graph"
         tools:layout="@layout/fragment_recognition" />
 
     <!-- Story 6.1 Task 11: Bottom Navigation (Recognition/Navigate/Settings) -->

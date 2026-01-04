@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.visionfocus.navigation.models.Destination
 import com.visionfocus.navigation.models.NavigationProgress
 import com.visionfocus.navigation.models.NavigationRoute
 import com.visionfocus.navigation.service.NavigationService
@@ -73,8 +74,9 @@ class NavigationActiveViewModel @Inject constructor(
      * for GPS tracking and turn-by-turn voice guidance.
      * 
      * @param route Complete navigation route from Story 6.2
+     * @param destinationName Human-readable destination name for announcements
      */
-    fun startNavigation(route: NavigationRoute) {
+    fun startNavigation(route: NavigationRoute, destinationName: String) {
         viewModelScope.launch {
             currentRoute = route
             _isNavigating.value = true
@@ -95,9 +97,18 @@ class NavigationActiveViewModel @Inject constructor(
             )
             
             // Start NavigationService for GPS tracking
+            // Create Destination from route coordinates and Safe Args name
+            val destination = Destination(
+                query = "", // Not needed for service
+                name = destinationName,
+                latitude = route.destination.latitude,
+                longitude = route.destination.longitude
+            )
+            
             val intent = Intent(context, NavigationService::class.java).apply {
                 action = NavigationService.ACTION_START_NAVIGATION
                 putExtra(NavigationService.EXTRA_ROUTE, route)
+                putExtra(NavigationService.EXTRA_DESTINATION, destination)
             }
             context.startForegroundService(intent)
         }

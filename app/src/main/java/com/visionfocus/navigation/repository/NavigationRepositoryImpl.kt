@@ -33,6 +33,7 @@ import javax.inject.Singleton
 class NavigationRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val directionsApiService: DirectionsApiService,
+    private val geocodingApiService: com.visionfocus.navigation.api.GeocodingApiService,
     private val locationManager: LocationManager,
     private val networkConsentManager: NetworkConsentManager
 ) : NavigationRepository {
@@ -40,19 +41,15 @@ class NavigationRepositoryImpl @Inject constructor(
     companion object {
         private const val TAG = "NavigationRepositoryImpl"
         private const val MIN_QUERY_LENGTH = 3
-        
-        // Mock coordinates for Story 6.1 (NYC)
-        private const val MOCK_LATITUDE = 40.7128
-        private const val MOCK_LONGITUDE = -74.0060
     }
     
     /**
-     * Mock destination validation for Story 6.1.
+     * Destination validation using Google Maps Geocoding API.
      * 
-     * Story 6.2 will replace this with Google Maps Geocoding API calls.
+     * Story 6.2 FIX: Now properly geocodes destination names to coordinates.
      * 
      * @param query User-entered destination
-     * @return ValidationResult with mock coordinates
+     * @return ValidationResult with real coordinates from Geocoding API
      */
     override suspend fun validateDestination(query: String): ValidationResult {
         return withContext(Dispatchers.IO) {
@@ -70,41 +67,27 @@ class NavigationRepositoryImpl @Inject constructor(
                 return@withContext ValidationResult.TooShort
             }
             
-            // Story 6.1: Mock implementation - accept any valid query
-            // Story 6.2: Replace with Google Maps Geocoding API
+            // Use Google Geocoding API to convert destination name to coordinates
+            val geocodeResult = geocodingApiService.geocode(trimmedQuery)
             
-            // Simulate potential ambiguous destinations for testing
-            if (trimmedQuery.contains("central park", ignoreCase = true)) {
-                return@withContext ValidationResult.Ambiguous(
-                    options = listOf(
-                        Destination(
-                            query = trimmedQuery,
-                            name = "Central Park, New York",
-                            latitude = 40.785091,
-                            longitude = -73.968285,
-                            formattedAddress = "Central Park, New York, NY, USA"
-                        ),
-                        Destination(
-                            query = trimmedQuery,
-                            name = "Central Park, Sacramento",
-                            latitude = 38.595371,
-                            longitude = -121.428337,
-                            formattedAddress = "Central Park, Sacramento, CA, USA"
-                        )
+            if (geocodeResult.isSuccess) {
+                val coordinates = geocodeResult.getOrNull()!!
+                ValidationResult.Valid(
+                    Destination(
+                        query = trimmedQuery,
+                        name = trimmedQuery,
+                        latitude = coordinates.latitude,
+                        longitude = coordinates.longitude,
+                        formattedAddress = trimmedQuery
                     )
                 )
-            }
-            
-            // Default: return valid destination with mock coordinates
-            ValidationResult.Valid(
-                Destination(
-                    query = trimmedQuery,
-                    name = trimmedQuery,
-                    latitude = MOCK_LATITUDE,
-                    longitude = MOCK_LONGITUDE,
-                    formattedAddress = "$trimmedQuery (Mock Location)"
+            } else {
+                // Geocoding failed - location not found
+                ValidationResult.Invalid(
+                    reason = geocodeResult.exceptionOrNull()?.message 
+                        ?: "Location not found: $trimmedQuery"
                 )
-            )
+            }
         }
     }
     

@@ -203,12 +203,9 @@ class DestinationInputViewModel @Inject constructor(
                     val route = routeResult.getOrThrow()
                     Timber.tag(TAG).d("Route received: ${route.steps.size} steps, ${route.totalDistance}m")
                     
-                    _navigationState.value = NavigationState.RouteReady(route)
+                    _navigationState.value = NavigationState.RouteReady(route, destination.name)
                     
-                    // Story 6.3: Will navigate to NavigationActiveFragment
-                    // For Story 6.2: Just announce placeholder
-                    ttsManager.announce("Route calculated. Navigation feature in Story 6.3")
-                    _navigationEvent.emit(NavigationEvent.StartNavigation(destination))
+                    // Story 6.5: Navigation triggered from Fragment after permission check
                     
                 } else {
                     val error = routeResult.exceptionOrNull()
@@ -299,6 +296,6 @@ sealed class NavigationEvent {
 sealed class NavigationState {
     object Idle : NavigationState()
     object RequestingRoute : NavigationState()
-    data class RouteReady(val route: NavigationRoute) : NavigationState()
+    data class RouteReady(val route: NavigationRoute, val destinationName: String) : NavigationState()
     data class Error(val message: String) : NavigationState()
 }

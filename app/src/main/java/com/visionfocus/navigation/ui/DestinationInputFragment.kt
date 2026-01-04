@@ -402,11 +402,9 @@ class DestinationInputFragment : Fragment() {
     private fun handleNavigationEvent(event: NavigationEvent) {
         when (event) {
             is NavigationEvent.StartNavigation -> {
-                Log.d(TAG, "Starting navigation to: ${event.destination.name}")
-                
-                lifecycleScope.launch {
-                    ttsManager.announce("Navigation feature will be implemented in Story 6.3")
-                }
+                // Deprecated: Navigation now handled directly in RouteReady state handler
+                // after location permission check (Story 6.5)
+                Log.d(TAG, "StartNavigation event deprecated - navigation handled in RouteReady state")
             }
             is NavigationEvent.ShowClarificationDialog -> {
                 showClarificationDialog(event.options)
@@ -432,13 +430,45 @@ class DestinationInputFragment : Fragment() {
             is NavigationState.RouteReady -> {
                 binding.routeProgressIndicator.visibility = View.GONE
                 binding.goButton.isEnabled = true
-                // Story 6.3: Navigate to NavigationActiveFragment with route
+                
+                // Story 6.5: Check location permission before starting navigation
                 Log.d(TAG, "Route ready: ${state.route.steps.size} steps, ${state.route.totalDistance}m")
                 
-                // Navigate using Safe Args to pass route
-                val action = DestinationInputFragmentDirections
-                    .actionDestinationInputToNavigationActive(state.route)
-                findNavController().navigate(action)
+                // Safety check: Only proceed if fragment is still attached and view exists
+                Log.d(TAG, "Lifecycle check: isAdded=$isAdded, view=${view != null}")
+                if (isAdded && view != null) {
+                    val hasPermission = permissionManager.isLocationPermissionGranted()
+                    Log.d(TAG, "Location permission check: hasPermission=$hasPermission")
+                    
+                    if (hasPermission) {
+                        // Permission granted → Navigate to NavigationActiveFragment
+                        Log.d(TAG, "Attempting navigation to NavigationActiveFragment")
+                        
+                        // Post navigation to main thread to ensure NavController is ready
+                        view?.post {
+                            try {
+                                if (isAdded && view != null) {
+                                    val action = DestinationInputFragmentDirections
+                                        .actionDestinationInputToNavigationActive(state.route, state.destinationName)
+                                    findNavController().navigate(action)
+                                    Log.d(TAG, "Navigation successful!")
+                                } else {
+                                    Log.w(TAG, "Fragment detached before navigation could complete")
+                                }
+                            } catch (e: IllegalStateException) {
+                                Log.e(TAG, "NavController not available - navigation failed", e)
+                                // Show error to user
+                                showErrorDialog("Navigation error. Please try again.")
+                            }
+                        }
+                    } else {
+                        // Permission NOT granted → Show location permission rationale (Story 6.5 AC #1)
+                        Log.d(TAG, "Location permission required - showing rationale dialog")
+                        requestLocationPermissionWithRationale()
+                    }
+                } else {
+                    Log.w(TAG, "Fragment detached, cannot handle route ready state")
+                }
             }
             is NavigationState.Error -> {
                 binding.routeProgressIndicator.visibility = View.GONE
