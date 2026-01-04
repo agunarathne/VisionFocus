@@ -4,25 +4,98 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.fragment.navArgs
+import com.google.android.material.button.MaterialButton
 import com.visionfocus.R
+import com.visionfocus.navigation.models.NavigationRoute
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 /**
- * Navigation Active screen - placeholder for Story 6.3.
+ * Story 6.3: Navigation Active screen with turn-by-turn voice guidance.
  * 
- * Story 6.1: Placeholder fragment for navigation action
- * Story 6.3: Full turn-by-turn navigation implementation
+ * Displays current navigation instruction, distance/time remaining,
+ * and provides cancel button. Updates in real-time based on GPS location.
+ * 
+ * Accessibility:
+ * - Live regions announce progress updates via TalkBack
+ * - Large text sizes for visibility
+ * - Cancel button with 56×56 dp touch target
+ * - Works with screen locked (minimal UI design)
  */
 @AndroidEntryPoint
 class NavigationActiveFragment : Fragment() {
+    
+    private val viewModel: NavigationActiveViewModel by viewModels()
+    private val args: NavigationActiveFragmentArgs by navArgs()
+    
+    private lateinit var currentInstructionText: TextView
+    private lateinit var distanceRemainingText: TextView
+    private lateinit var timeRemainingText: TextView
+    private lateinit var cancelNavigationButton: MaterialButton
     
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Story 6.3 will implement full navigation UI
-        return inflater.inflate(R.layout.fragment_navigation_active, container, false)
+        val view = inflater.inflate(R.layout.fragment_navigation_active, container, false)
+        
+        // Bind views
+        currentInstructionText = view.findViewById(R.id.currentInstructionText)
+        distanceRemainingText = view.findViewById(R.id.distanceRemainingText)
+        timeRemainingText = view.findViewById(R.id.timeRemainingText)
+        cancelNavigationButton = view.findViewById(R.id.cancelNavigationButton)
+        
+        // Set up cancel button
+        cancelNavigationButton.setOnClickListener {
+            viewModel.cancelNavigation()
+            // Navigate back to destination input
+            findNavController().popBackStack()
+        }
+        
+        return view
+    }
+    
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        
+        // Story 6.3 Task 9: Start navigation with route from Safe Args (Story 6.2 → 6.3)
+        if (savedInstanceState == null) {
+            viewModel.startNavigation(args.route)
+        }
+        
+        // Collect state flows
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                // Current instruction
+                launch {
+                    viewModel.currentInstruction.collect { instruction ->
+                        currentInstructionText.text = instruction
+                    }
+                }
+                
+                // Distance remaining
+                launch {
+                    viewModel.distanceRemaining.collect { distance ->
+                        distanceRemainingText.text = distance
+                    }
+                }
+                
+                // Time remaining
+                launch {
+                    viewModel.timeRemaining.collect { time ->
+                        timeRemainingText.text = time
+                    }
+                }
+            }
+        }
     }
 }

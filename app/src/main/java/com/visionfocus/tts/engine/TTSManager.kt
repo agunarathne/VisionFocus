@@ -85,6 +85,9 @@ class TTSManager @Inject constructor(
     // Story 5.2: Track current voice locale
     private var currentVoiceLocale: String? = null
     
+    // Story 6.3: Track current volume level
+    private var currentVolume: Float = 1.0f
+    
     // Story 5.1: Coroutine scope for observing settings changes
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
@@ -241,10 +244,15 @@ class TTSManager @Inject constructor(
         val utteranceId = "recognition_${System.currentTimeMillis()}"
         
         // Speak with QUEUE_FLUSH to immediately replace any pending announcements
+        // Story 6.3: Apply volume from currentVolume (for navigation 10% increase)
+        val params = android.os.Bundle().apply {
+            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, currentVolume)
+        }
+        
         val result = tts?.speak(
             text,
             TextToSpeech.QUEUE_FLUSH,
-            null,
+            params,
             utteranceId
         )
         
@@ -308,6 +316,37 @@ class TTSManager @Inject constructor(
             tts?.setSpeechRate(rate)
             Log.d(TAG, "Speech rate set to ${rate}x")
         }
+    }
+    
+    /**
+     * Story 6.3: Get current TTS volume level
+     * 
+     * @return Current volume (0.0-1.0)
+     */
+    fun getVolume(): Float {
+        return currentVolume
+    }
+    
+    /**
+     * Story 6.3: Set TTS volume level
+     * 
+     * Used by NavigationAnnouncementManager to increase volume 10% for
+     * safety-critical navigation announcements (AC #7).
+     * 
+     * Note: This affects the audio stream volume, not the device master volume.
+     * 
+     * @param volume Volume level (0.0-1.0, where 1.0 = 100%)
+     */
+    fun setVolume(volume: Float) {
+        require(volume in 0f..1f) { "Volume must be in range [0.0, 1.0]" }
+        
+        currentVolume = volume
+        Log.d(TAG, "TTS volume set to $volume")
+        
+        // Note: Android TTS doesn't have a setVolume() API
+        // Volume is controlled via AudioManager audio stream or per-utterance params
+        // For Story 6.3, we'll use Bundle params in speak() method
+        // Story 8.1 will implement more sophisticated audio ducking/priority
     }
     
     /**

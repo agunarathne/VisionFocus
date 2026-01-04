@@ -1,5 +1,8 @@
 package com.visionfocus.navigation.models
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
 /**
  * Complete navigation route from origin to destination.
  * 
@@ -14,6 +17,7 @@ package com.visionfocus.navigation.models
  * @property polyline Encoded polyline for route visualization (Story 6.3)
  * @property summary Human-readable route summary (e.g., "via Main St and Oak Ave")
  */
+@Parcelize
 data class NavigationRoute(
     val origin: LatLng,
     val destination: LatLng,
@@ -22,7 +26,7 @@ data class NavigationRoute(
     val totalDuration: Int,        // seconds
     val polyline: String,
     val summary: String
-)
+) : Parcelable
 
 /**
  * Single step in navigation route.
@@ -35,6 +39,7 @@ data class NavigationRoute(
  * @property endLocation GPS coordinates where step ends
  * @property polyline Encoded polyline for this step (optional, for map display)
  */
+@Parcelize
 data class RouteStep(
     val instruction: String,       // "Turn left onto Main Street"
     val distance: Int,              // meters to this step
@@ -43,7 +48,7 @@ data class RouteStep(
     val startLocation: LatLng,
     val endLocation: LatLng,
     val polyline: String? = null
-)
+) : Parcelable
 
 /**
  * Maneuver types from Google Maps Directions API.

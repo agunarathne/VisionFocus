@@ -102,8 +102,8 @@
     
     <string name="theme_settings_section">Theme Settings</string>
     <string name="high_contrast_mode_label">High Contrast Mode</string>
-    <string name="high_contrast_mode_explanation">Pure black and white theme with 7:1 contrast ratio for improved visibility</string>
-    <string name="high_contrast_mode_description_off">High contrast mode, switch, currently off</string>
+    <string name="high_contrast_mode_explanation">Currently unavailable. High contrast theme is incompatible with Material Design bottom navigation and causes app crashes. Feature disabled until alternative implementation available.</string>
+    <string name="high_contrast_mode_description_off">High contrast mode, switch, currently off, unavailable</string>
     <string name="high_contrast_mode_description_on">High contrast mode, switch, currently on</string>
     <string name="large_text_mode_label">Large Text Mode</string>
     <string name="large_text_mode_explanation">Increases all text sizes by 150% for easier reading</string>
@@ -234,7 +234,6 @@
     <string name="voice_input_button">Voice input, button</string>
     <string name="go_button_text">Go</string>
     <string name="go_button_description">Start navigation, button</string>
-    <string name="navigation_cancelled">Navigation cancelled</string>
     <string name="please_enter_destination">Please enter a destination</string>
     <string name="you_said">You said: %1$s</string>
     <string name="destination_validated">Destination: %1$s</string>
@@ -264,4 +263,8 @@
     <string name="network_error_no_connection">Cannot download directions. Check internet connection.</string>
     <string name="network_error_service_unavailable">Navigation service unavailable. Please try again later.</string>
     <string name="downloading_directions">Downloading directions</string>
+    
+    <!-- Story 6.3: Navigation Active Strings -->
+    <string name="cancel_navigation_button">Cancel navigation, button</string>
+    <string name="navigation_cancelled">Navigation cancelled</string>
 </resources>

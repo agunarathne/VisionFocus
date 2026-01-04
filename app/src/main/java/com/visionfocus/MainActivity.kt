@@ -131,8 +131,14 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        // CRITICAL FIX: Set BottomNavigationView colors programmatically to support theme switching
+        applyBottomNavigationColors()
+        
         // Story 2.5: Set up toolbar with menu
         setSupportActionBar(binding.toolbar)
+        
+        // Story 6.1 Task 11: Setup bottom navigation
+        setupBottomNavigation()
         
         // Fix Issue #4: Enable TalkBack announcements on root view
         binding.root.importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES
@@ -491,6 +497,69 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * CRITICAL FIX: Apply BottomNavigationView colors programmatically.
+     * 
+     * Resolves colors from the active theme at runtime to support dynamic theme
+     * switching without recreating the activity. This prevents crashes when
+     * switching to high contrast mode.
+     * 
+     * Uses MaterialColors.getColor() to safely resolve theme attributes
+     * (?attr/colorPrimary, ?attr/colorOnSurface) from the current theme context.
+     */
+    private fun applyBottomNavigationColors() {
+        val colorPrimary = com.google.android.material.color.MaterialColors.getColor(
+            this,
+            com.google.android.material.R.attr.colorPrimary,
+            android.graphics.Color.MAGENTA // Fallback color (should never be used)
+        )
+        
+        val colorOnSurface = com.google.android.material.color.MaterialColors.getColor(
+            this,
+            com.google.android.material.R.attr.colorOnSurface,
+            android.graphics.Color.BLACK // Fallback color
+        )
+        
+        // Create ColorStateList for icons (checked = primary, unchecked = onSurface with 60% alpha)
+        val iconColors = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_checked),
+                intArrayOf() // default state
+            ),
+            intArrayOf(
+                colorPrimary,
+                android.graphics.Color.argb(
+                    (255 * 0.6).toInt(),
+                    android.graphics.Color.red(colorOnSurface),
+                    android.graphics.Color.green(colorOnSurface),
+                    android.graphics.Color.blue(colorOnSurface)
+                )
+            )
+        )
+        
+        // Create ColorStateList for text (same as icons)
+        val textColors = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_checked),
+                intArrayOf() // default state
+            ),
+            intArrayOf(
+                colorPrimary,
+                android.graphics.Color.argb(
+                    (255 * 0.6).toInt(),
+                    android.graphics.Color.red(colorOnSurface),
+                    android.graphics.Color.green(colorOnSurface),
+                    android.graphics.Color.blue(colorOnSurface)
+                )
+            )
+        )
+        
+        binding.bottomNavigation.itemIconTintList = iconColors
+        binding.bottomNavigation.itemTextColor = textColors
+        
+        android.util.Log.d("VisionFocus", "[MainActivity] Applied BottomNavigation colors programmatically")
+    }
+    
+    /**
      * Navigates to SettingsFragment.
      * Story 3.5: Made public for SettingsCommand voice navigation access
      * 
@@ -595,6 +664,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * Navigate to destination input screen for navigation feature.
      * Story 6.1: Destination Input via Voice and Text
+     * CODE REVIEW FIX: Update bottom navigation selected item when navigating programmatically
      * 
      * Replaces current fragment with DestinationInputFragment and adds to back stack
      * for proper back navigation.
@@ -604,6 +674,57 @@ class MainActivity : AppCompatActivity() {
             .replace(R.id.fragmentContainer, com.visionfocus.navigation.ui.DestinationInputFragment())
             .addToBackStack(null)
             .commit()
+        
+        // CODE REVIEW FIX: Update bottom navigation selected item to highlight Navigate tab
+        binding.bottomNavigation.selectedItemId = R.id.navigation_destination
+        android.util.Log.d("VisionFocus", "Navigate tab highlighted after programmatic navigation")
+    }
+    
+    /**
+     * Setup bottom navigation menu.
+     * Story 6.1 Task 11: Bottom navigation with 3 tabs (Recognition, Navigate, Settings)
+     * 
+     * Handles navigation between main app sections without adding to back stack.
+     */
+    private fun setupBottomNavigation() {
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.navigation_recognition -> {
+                    // Navigate to home/recognition screen
+                    supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                    val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer)
+                    if (currentFragment !is com.visionfocus.ui.recognition.RecognitionFragment) {
+                        supportFragmentManager.beginTransaction()
+                            .replace(R.id.fragmentContainer, com.visionfocus.ui.recognition.RecognitionFragment())
+                            .commit()
+                    }
+                    android.util.Log.d("VisionFocus", "Bottom nav: Recognition selected")
+                    true
+                }
+                R.id.navigation_destination -> {
+                    // Navigate to destination input
+                    supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainer, com.visionfocus.navigation.ui.DestinationInputFragment())
+                        .commit()
+                    android.util.Log.d("VisionFocus", "Bottom nav: Navigate selected")
+                    true
+                }
+                R.id.navigation_settings -> {
+                    // Navigate to settings
+                    supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragmentContainer, SettingsFragment())
+                        .commit()
+                    android.util.Log.d("VisionFocus", "Bottom nav: Settings selected")
+                    true
+                }
+                else -> false
+            }
+        }
+        
+        // Set default selected item (Recognition)
+        binding.bottomNavigation.selectedItemId = R.id.navigation_recognition
     }
     
     /**

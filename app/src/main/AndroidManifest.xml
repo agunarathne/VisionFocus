@@ -21,6 +21,10 @@
     <!-- Network state permission for connectivity checks (Story 6.2) -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
+    <!-- Foreground service permission for turn-by-turn navigation (Story 6.3) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    
     <!-- Hardware feature - camera optional for graceful degradation (FR57) -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     
@@ -48,6 +52,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- Story 6.3: Navigation foreground service -->
+        <service
+            android:name=".navigation.service.NavigationService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
         
     </application>
 

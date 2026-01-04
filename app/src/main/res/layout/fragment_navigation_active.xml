@@ -1,19 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  Story 6.3: Navigation Active Fragment Layout
+  
+  Turn-by-turn navigation UI with cancel button, progress info, and current instruction.
+  Optimized for screen-lock compatibility (minimal UI) and TalkBack accessibility.
+  
+  Accessibility Features:
+  - Large text sizes for visibility
+  - High contrast colors
+  - Live region for progress updates
+  - Clear contentDescriptions for TalkBack
+  - Touch target sizes ≥56dp
+-->
 <androidx.constraintlayout.widget.ConstraintLayout 
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".navigation.ui.NavigationActiveFragment">
 
-    <!-- Story 6.3 Placeholder: Navigation Active UI -->
+    <!-- Current Instruction (Large, High Contrast) -->
     <TextView
-        android:layout_width="wrap_content"
+        android:id="@+id/currentInstructionText"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Navigation Active - Story 6.3"
-        android:textSize="24sp"
+        android:layout_marginTop="32dp"
+        android:textSize="28sp"
+        android:textColor="?attr/colorOnSurface"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:importantForAccessibility="yes"
+        android:accessibilityLiveRegion="assertive"
+        tools:text="Turn left onto Main Street"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Distance Remaining -->
+    <TextView
+        android:id="@+id/distanceRemainingText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:textSize="20sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:importantForAccessibility="yes"
+        android:accessibilityLiveRegion="polite"
+        tools:text="1.2 km remaining"
+        app:layout_constraintTop_toBottomOf="@id/currentInstructionText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Time Remaining (ETA) -->
+    <TextView
+        android:id="@+id/timeRemainingText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textSize="18sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:importantForAccessibility="yes"
+        android:accessibilityLiveRegion="polite"
+        tools:text="15 minutes"
+        app:layout_constraintTop_toBottomOf="@id/distanceRemainingText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Cancel Navigation Button (56×56 dp touch target) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/cancelNavigationButton"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:contentDescription="@string/cancel_navigation_button"
+        app:icon="@drawable/ic_close"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        style="@style/Widget.Material3.Button.ElevatedButton"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="32dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

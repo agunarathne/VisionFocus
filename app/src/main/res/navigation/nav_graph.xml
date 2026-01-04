@@ -62,17 +62,17 @@
             app:popUpToInclusive="false" />
     </fragment>
 
-    <!-- Story 6.3 Placeholder: Navigation Active Screen -->
+    <!-- Story 6.3: Navigation Active Screen with Turn-by-Turn Guidance -->
     <fragment
         android:id="@+id/navigationActiveFragment"
         android:name="com.visionfocus.navigation.ui.NavigationActiveFragment"
         android:label="Navigating"
         tools:layout="@layout/fragment_navigation_active">
         
-        <!-- Safe Args: Destination passed from destination input -->
+        <!-- Safe Args: NavigationRoute passed from destination input (Story 6.2 → 6.3) -->
         <argument
-            android:name="destination"
-            app:argType="com.visionfocus.navigation.models.Destination" />
+            android:name="route"
+            app:argType="com.visionfocus.navigation.models.NavigationRoute" />
     </fragment>
 
     <!-- Settings Screen -->

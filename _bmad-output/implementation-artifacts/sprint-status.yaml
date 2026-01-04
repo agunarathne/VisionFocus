@@ -88,10 +88,10 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: GPS-Based Navigation
-  epic-6: in-progress  # Started Jan 3, 2026 - Story 6.1 & 6.2 complete, Story 6.3 next
+  epic-6: in-progress  # Started Jan 3, 2026 - Story 6.1 & 6.2 complete, Story 6.3 code review complete (requires manual QA)
   6-1-destination-input-via-voice-and-text: done  # Jan 3, 2026 - COMPLETE: Adversarial code review (17 issues: 7 CRITICAL + 3 HIGH + 4 MEDIUM + 3 LOW), voice input + navigation graph + bottom nav + integration tests created, manual testing PASSED (20/20 tests), 3 validation bugs fixed (auto-validation, error display), all 9 ACs verified
   6-2-google-maps-directions-api-integration: done  # Jan 3, 2026 - COMPLETE: Code review (10 issues: 7 fixed + 3 deferred), duplicate NavigationRoute class fixed, missing coroutines dependency added, manual testing (network consent dialog validated, 16 consent checks logged, cancel flow working), 15 new files + 13 modified, API key validation working
-  6-3-turn-by-turn-voice-guidance-with-anticipatory-warnings: backlog
+  6-3-turn-by-turn-voice-guidance-with-anticipatory-warnings: in-progress  # Jan 4, 2026 - COMPLETE: Adversarial code review (13 issues: 7 CRITICAL + 4 HIGH + 2 MEDIUM), all fixes applied (StateFlow broadcasting, volume increase, cardinal directions, roundabout exits, accessibility), 71 tests created (61 unit + 10 integration), all 9 ACs passing, awaiting manual QA with TalkBack + real device GPS testing before marking 'done'
   6-4-route-deviation-detection-and-recalculation: backlog
   6-5-gps-location-permissions-with-clear-explanations: backlog
   6-6-network-availability-indication: backlog

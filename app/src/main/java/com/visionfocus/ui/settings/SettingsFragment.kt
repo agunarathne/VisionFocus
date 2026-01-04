@@ -337,6 +337,13 @@ class SettingsFragment : Fragment() {
             }
         }
         
+        // CRITICAL FIX (Story 6.3 manual testing): Disable high contrast mode
+        // Root cause: Material Design BottomNavigationView incompatible with dynamic theme switching
+        // Crashes with "Resource ID #0x0" during inflation when high contrast theme applied
+        binding.highContrastSwitch.isEnabled = false
+        binding.highContrastSwitch.alpha = 0.5f  // Visual indicator that it's disabled
+        android.util.Log.d("VisionFocus", "[Fragment] High contrast switch disabled (Material Design incompatibility)")
+        
         binding.highContrastSwitch.setOnCheckedChangeListener { _, isChecked ->
             // Guard: Ignore programmatic updates from observer (HIGH-2 fix)
             if (isUpdatingFromObserver) return@setOnCheckedChangeListener

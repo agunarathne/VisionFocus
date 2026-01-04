@@ -12,6 +12,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.visionfocus.R
 import com.visionfocus.databinding.FragmentDestinationInputBinding
@@ -266,8 +267,13 @@ class DestinationInputFragment : Fragment() {
             is NavigationState.RouteReady -> {
                 binding.routeProgressIndicator.visibility = View.GONE
                 binding.goButton.isEnabled = true
-                // Story 6.3: Navigate to NavigationActiveFragment
+                // Story 6.3: Navigate to NavigationActiveFragment with route
                 Log.d(TAG, "Route ready: ${state.route.steps.size} steps, ${state.route.totalDistance}m")
+                
+                // Navigate using Safe Args to pass route
+                val action = DestinationInputFragmentDirections
+                    .actionDestinationInputToNavigationActive(state.route)
+                findNavController().navigate(action)
             }
             is NavigationState.Error -> {
                 binding.routeProgressIndicator.visibility = View.GONE

@@ -44,8 +44,9 @@ class LargeTextCommandsTest {
         
         // When
         val result = command.execute(context)
+        
+        // Then
         verify(settingsRepository).setLargeTextMode(true)
-        assertTrue(result is CommandResult.Success
         assertTrue(result is CommandResult.Success)
         assertEquals("Large text enabled", (result as CommandResult.Success).message)
     }
@@ -61,7 +62,8 @@ class LargeTextCommandsTest {
         val result = command.execute(context)
         
         // Then
-        assertTrue(result is CommandResult.Failure
+        assertTrue(result is CommandResult.Failure)
+    }
     
     @Test
     fun `LargeTextOnCommand should have correct displayName`() {
@@ -99,7 +101,9 @@ class LargeTextCommandsTest {
         coVerify { settingsRepository.setLargeTextMode(false) }
         assertTrue(result is CommandResult.Success)
         verify(settingsRepository).setLargeTextMode(false)
-        assertTrue(result is CommandResult.Success
+        assertTrue(result is CommandResult.Success)
+    }
+    
     @Test
     fun `LargeTextOffCommand execute() should return failure on DataStore exception`() = runTest {
         // Given
@@ -112,7 +116,9 @@ class LargeTextCommandsTest {
         val result = command.execute(context)
         
         // Then
-        assertTrue(result is CommandResult.Failure
+        assertTrue(result is CommandResult.Failure)
+    }
+    
     @Test
     fun `LargeTextOffCommand should have correct displayName`() {
         // Given

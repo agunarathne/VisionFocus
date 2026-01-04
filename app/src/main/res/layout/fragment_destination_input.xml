@@ -78,12 +78,13 @@
         tools:visibility="gone" />
 
     <!-- Go Button -->
+    <!-- CODE REVIEW FIX: Increased button size to properly display "GO" text -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/goButton"
-        android:layout_width="56dp"
+        android:layout_width="100dp"
         android:layout_height="56dp"
         android:text="@string/go_button_text"
-        android:textSize="16sp"
+        android:textSize="18sp"
         android:contentDescription="@string/go_button_description"
         android:importantForAccessibility="yes"
         android:enabled="false"

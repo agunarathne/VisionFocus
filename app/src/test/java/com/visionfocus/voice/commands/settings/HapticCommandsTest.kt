@@ -121,7 +121,7 @@ class HapticCommandsTest {
         val result = command.execute(context)
         
         // Then
-        assertTrue(result is CommandResult.Failure
+        assertTrue(result is CommandResult.Failure)
         assertTrue((result as CommandResult.Failure).message.contains("storage unavailable"))
     }
     
@@ -200,6 +200,7 @@ class HapticCommandsTest {
         
         // Then
         verify(hapticFeedbackManager).trigger(HapticPattern.ButtonPress)
+    }
     
     @Test
     fun `HapticStrongCommand should have expected keywords`() {
