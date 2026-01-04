@@ -128,4 +128,156 @@ class DistanceCalculatorTest {
         assertTrue("Distance should be ~100m, got $distance", 
             distance in 95f..105f)
     }
+    
+    // ==================================================================================
+    // Story 6.4 Task 9: Point-to-Line Distance Tests
+    // ==================================================================================
+    
+    @Test
+    fun `perpendicular distance - point on line returns zero`() {
+        // Arrange: Point directly on line
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7138, -74.0070)
+        val pointOnLine = LatLng(40.7133, -74.0065)  // Midpoint of line
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(pointOnLine, lineStart, lineEnd)
+        
+        // Assert (allow small tolerance for floating point)
+        assertTrue("Point on line should have distance ~0m, got $distance", distance < 5f)
+    }
+    
+    @Test
+    fun `perpendicular distance - point perpendicular to midpoint`() {
+        // Arrange: Point perpendicular to line midpoint
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7138, -74.0070)
+        val pointPerpendicular = LatLng(40.7133, -74.0055)  // ~40m east of midpoint
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(pointPerpendicular, lineStart, lineEnd)
+        
+        // Assert (should be ~40m)
+        assertTrue("Perpendicular distance should be ~40m, got $distance", distance in 35f..45f)
+    }
+    
+    @Test
+    fun `perpendicular distance - point before line start returns distance to start`() {
+        // Arrange: Point before line start
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7138, -74.0070)
+        val pointBefore = LatLng(40.7118, -74.0060)  // ~100m south of start
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(pointBefore, lineStart, lineEnd)
+        val expectedDistance = DistanceCalculator.calculateDistance(pointBefore, lineStart)
+        
+        // Assert (should equal distance to start point)
+        assertTrue("Distance should be ~100m to start point, got $distance", distance in 95f..115f)
+        assertEquals(expectedDistance, distance, 5f)
+    }
+    
+    @Test
+    fun `perpendicular distance - point after line end returns distance to end`() {
+        // Arrange: Point after line end
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7138, -74.0070)
+        val pointAfter = LatLng(40.7148, -74.0070)  // ~100m north of end
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(pointAfter, lineStart, lineEnd)
+        val expectedDistance = DistanceCalculator.calculateDistance(pointAfter, lineEnd)
+        
+        // Assert (should equal distance to end point)
+        assertTrue("Distance should be ~100m to end point, got $distance", distance in 95f..115f)
+        assertEquals(expectedDistance, distance, 5f)
+    }
+    
+    @Test
+    fun `perpendicular distance - real GPS coordinates for deviation scenario`() {
+        // Arrange: Realistic navigation scenario
+        val lineStart = LatLng(40.7580, -73.9855)  // Times Square start
+        val lineEnd = LatLng(40.7589, -73.9855)    // 100m north
+        val userLocation = LatLng(40.7585, -73.9852)  // ~25m east of route midpoint
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(userLocation, lineStart, lineEnd)
+        
+        // Assert (should be ~25m - triggers deviation threshold)
+        assertTrue("User 25m off route, got $distance", distance in 20f..30f)
+    }
+    
+    @Test
+    fun `perpendicular distance - 25m off route triggers deviation threshold`() {
+        // Arrange: Route segment
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7138, -74.0060)
+        val offRoutePoint = LatLng(40.7133, -74.0057)  // ~25m east
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(offRoutePoint, lineStart, lineEnd)
+        
+        // Assert (should exceed 20m deviation threshold)
+        assertTrue("Distance should be >20m (deviation threshold), got $distance", distance > 20f)
+        assertTrue("Distance should be ~25m, got $distance", distance in 20f..30f)
+    }
+    
+    @Test
+    fun `perpendicular distance - 15m near edge warning zone`() {
+        // Arrange: Near-edge scenario (15-20m)
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7138, -74.0060)
+        val nearEdgePoint = LatLng(40.7133, -74.0058)  // ~17m east
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(nearEdgePoint, lineStart, lineEnd)
+        
+        // Assert (should be in 15-20m warning zone)
+        assertTrue("Distance should be 15-20m (near-edge), got $distance", distance in 15f..20f)
+    }
+    
+    @Test
+    fun `perpendicular distance - long line segment 500m`() {
+        // Arrange: Long route segment
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7173, -74.0060)  // ~500m north
+        val userLocation = LatLng(40.7150, -74.0057)  // Midpoint, ~25m east
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(userLocation, lineStart, lineEnd)
+        
+        // Assert (should be ~25m regardless of line length)
+        assertTrue("Distance should be ~25m, got $distance", distance in 20f..30f)
+    }
+    
+    @Test
+    fun `perpendicular distance - short line segment 10m`() {
+        // Arrange: Short route segment
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7129, -74.0060)  // ~10m north
+        val userLocation = LatLng(40.7128, -74.0057)  // Near start, ~25m east
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(userLocation, lineStart, lineEnd)
+        
+        // Assert (should measure to closest point on short segment)
+        assertTrue("Distance should be ~25m, got $distance", distance in 20f..30f)
+    }
+    
+    @Test
+    fun `perpendicular distance - degenerate line (same start and end)`() {
+        // Arrange: Line with same start and end (point)
+        val lineStart = LatLng(40.7128, -74.0060)
+        val lineEnd = LatLng(40.7128, -74.0060)
+        val userLocation = LatLng(40.7128, -74.0057)  // ~25m east
+        
+        // Act
+        val distance = DistanceCalculator.calculatePerpendicularDistance(userLocation, lineStart, lineEnd)
+        
+        // Assert (should equal distance to point)
+        val expectedDistance = DistanceCalculator.calculateDistance(userLocation, lineStart)
+        assertEquals(expectedDistance, distance, 5f)
+        assertTrue("Distance should be ~25m, got $distance", distance in 20f..30f)
+    }
 }
+

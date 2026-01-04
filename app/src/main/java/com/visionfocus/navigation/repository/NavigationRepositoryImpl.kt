@@ -170,4 +170,55 @@ class NavigationRepositoryImpl @Inject constructor(
             }
         }
     }
+    
+    /**
+     * Recalculates route from current location to original destination.
+     * 
+     * Story 6.4: Reuses existing DirectionsApiService from Story 6.2.
+     * Called when user deviates from route (>20m for 5 seconds).
+     * 
+     * @param origin Current GPS location (where user deviated)
+     * @param destination Original destination (unchanged)
+     * @return Result<NavigationRoute> with new route or error
+     */
+    override suspend fun recalculateRoute(
+        origin: LatLng,
+        destination: Destination
+    ): Result<NavigationRoute> {
+        return withContext(Dispatchers.IO) {
+            try {
+                Timber.tag(TAG).d("Recalculating route from $origin to ${destination.name}")
+                
+                // Check network consent (reuse Story 6.2 logic)
+                if (!networkConsentManager.hasConsent()) {
+                    Timber.tag(TAG).d("Network consent required for recalculation")
+                    return@withContext Result.failure(
+                        DirectionsError.ConsentRequired("Network consent required for recalculation")
+                    )
+                }
+                
+                // Call Google Maps Directions API (reuse Story 6.2 service)
+                val destinationLatLng = LatLng(destination.latitude, destination.longitude)
+                val routeResult = directionsApiService.getDirections(
+                    origin = origin,
+                    destination = destinationLatLng,
+                    travelMode = TravelMode.WALKING  // Story 6.4: Walking mode only (transit in future)
+                )
+                
+                if (routeResult.isFailure) {
+                    Timber.tag(TAG).e("Recalculation failed", routeResult.exceptionOrNull())
+                    return@withContext routeResult
+                }
+                
+                val route = routeResult.getOrThrow()
+                Timber.tag(TAG).d("Route recalculated: ${route.totalDistance}m, ${route.totalDuration}s, ${route.steps.size} steps")
+                
+                Result.success(route)
+                
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "Recalculation error")
+                Result.failure(DirectionsError.Unknown("Recalculation failed: ${e.message}"))
+            }
+        }
+    }
 }

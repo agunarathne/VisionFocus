@@ -13,20 +13,25 @@ import androidx.core.app.NotificationCompat
 import com.visionfocus.MainActivity
 import com.visionfocus.R
 import com.visionfocus.navigation.location.LocationManager
+import com.visionfocus.navigation.models.DeviationState
+import com.visionfocus.navigation.models.Destination
 import com.visionfocus.navigation.models.LatLng
 import com.visionfocus.navigation.models.NavigationProgress
 import com.visionfocus.navigation.models.NavigationRoute
 import com.visionfocus.navigation.models.TurnWarning
+import com.visionfocus.navigation.repository.NavigationRepository
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 
 /**
@@ -68,6 +73,7 @@ class NavigationService : Service() {
         
         // Intent extras
         const val EXTRA_ROUTE = "EXTRA_ROUTE"
+        const val EXTRA_DESTINATION = "EXTRA_DESTINATION"
         
         // Notification
         private const val NOTIFICATION_ID = 1001
@@ -80,12 +86,19 @@ class NavigationService : Service() {
         
         // Checkpoint distance for straight sections
         private const val CHECKPOINT_DISTANCE = 200f // meters
+        
+        // Story 6.4: Recalculation constants
+        private const val RECALCULATION_TIMEOUT = 3000L  // 3 seconds (AC #4)
+        private const val EXCESSIVE_RECALC_THRESHOLD = 3  // >3 recalcs (AC #7)
+        private const val EXCESSIVE_RECALC_WINDOW = 120_000L  // 2 minutes in milliseconds
     }
     
     @Inject lateinit var locationManager: LocationManager
     @Inject lateinit var routeFollower: RouteFollower
     @Inject lateinit var turnWarningCalculator: TurnWarningCalculator
     @Inject lateinit var announcementManager: NavigationAnnouncementManager
+    @Inject lateinit var deviationDetector: DeviationDetector
+    @Inject lateinit var navigationRepository: NavigationRepository
     
     // Coroutine scope for GPS updates
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -93,8 +106,14 @@ class NavigationService : Service() {
     
     // Current navigation state
     private var navigationRoute: NavigationRoute? = null
+    private var originalDestination: Destination? = null
     private var previousProgress: NavigationProgress? = null
     private var isNavigating = false
+    
+    // Story 6.4: Recalculation tracking
+    private var recalculationCount = 0
+    private var recalculationWindowStart: Long = 0
+    private var isRecalculating = false
     
     // StateFlow for progress broadcasting to UI
     private val _navigationProgress = MutableStateFlow<NavigationProgress?>(null)
@@ -118,10 +137,17 @@ class NavigationService : Service() {
                     intent.getParcelableExtra(EXTRA_ROUTE)
                 }
                 
-                if (route != null) {
-                    startNavigation(route)
+                val destination = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(EXTRA_DESTINATION, Destination::class.java)
                 } else {
-                    Log.e(TAG, "No route provided in intent")
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(EXTRA_DESTINATION)
+                }
+                
+                if (route != null && destination != null) {
+                    startNavigation(route, destination)
+                } else {
+                    Log.e(TAG, "No route or destination provided in intent")
                     stopSelf()
                 }
             }
@@ -145,13 +171,21 @@ class NavigationService : Service() {
      * 1. Start foreground service with notification
      * 2. Announce navigation start via TTS
      * 3. Begin GPS location updates at 1Hz
+     * 
+     * Story 6.4: Store destination for recalculation
      */
-    private fun startNavigation(route: NavigationRoute) {
-        Log.d(TAG, "Starting navigation: ${route.steps.size} steps, ${route.totalDistance}m")
+    private fun startNavigation(route: NavigationRoute, destination: Destination) {
+        Log.d(TAG, "Starting navigation: ${route.steps.size} steps, ${route.totalDistance}m to ${destination.name}")
         
         navigationRoute = route
+        originalDestination = destination
         previousProgress = null
         isNavigating = true
+        recalculationCount = 0
+        recalculationWindowStart = System.currentTimeMillis()
+        
+        // Reset deviation detector
+        deviationDetector.resetHistory()
         
         // Start foreground service with notification
         val notification = createNavigationNotification()
@@ -197,6 +231,8 @@ class NavigationService : Service() {
      * 2. Check for turn warnings via TurnWarningCalculator
      * 3. Announce warnings via NavigationAnnouncementManager
      * 4. Update progress (will be broadcast to UI in future task)
+     * 
+     * Story 6.4: Check for route deviation and recalculate if needed
      */
     private suspend fun handleLocationUpdate(currentLocation: LatLng, route: NavigationRoute) {
         // Calculate navigation progress
@@ -205,6 +241,34 @@ class NavigationService : Service() {
         Log.d(TAG, "Location update: step ${progress.currentStepIndex}/${route.steps.size}, " +
                 "distance ${progress.distanceToCurrentStep.toInt()}m, " +
                 "totalRemaining ${progress.totalDistanceRemaining.toInt()}m")
+        
+        // Story 6.4: Check for route deviation
+        val deviationState = deviationDetector.checkDeviation(
+            currentLocation,
+            route,
+            progress.currentStepIndex
+        )
+        
+        when (deviationState) {
+            is DeviationState.OffRoute -> {
+                // Deviation persisted for 5 seconds - trigger recalculation
+                if (deviationState.consecutiveCount >= DeviationState.CONSECUTIVE_REQUIRED) {
+                    handleRouteDeviation(currentLocation)
+                    return  // Don't process turn warnings during recalculation
+                }
+            }
+            is DeviationState.NearEdge -> {
+                // User near edge - log warning but don't recalculate
+                Log.w(TAG, "User near route edge: ${deviationState.distanceFromRoute}m")
+            }
+            is DeviationState.OnRoute -> {
+                // User on route - reset deviation history if previously deviated
+                if (deviationDetector.countConsecutiveDeviations() > 0) {
+                    Log.d(TAG, "User returned to route")
+                    deviationDetector.resetHistory()
+                }
+            }
+        }
         
         // Check for turn warnings
         val warning = turnWarningCalculator.checkForWarning(progress, route)
@@ -243,6 +307,90 @@ class NavigationService : Service() {
         
         // Broadcast progress to NavigationActiveViewModel (CRITICAL Issue #1 fix)
         _navigationProgress.value = progress
+    }
+    
+    /**
+     * Handles route deviation by recalculating route and resuming guidance.
+     * 
+     * Story 6.4 AC #2, #3, #4, #5, #7
+     */
+    private suspend fun handleRouteDeviation(currentLocation: LatLng) {
+        val destination = originalDestination
+        if (destination == null) {
+            Log.e(TAG, "Cannot recalculate: no destination stored")
+            return
+        }
+        
+        // Prevent multiple simultaneous recalculations
+        if (isRecalculating) {
+            Log.w(TAG, "Recalculation already in progress, skipping")
+            return
+        }
+        
+        Log.i(TAG, "Route deviation detected. Recalculating from $currentLocation to ${destination.name}")
+        
+        // Check for excessive recalculations (AC #7)
+        val now = System.currentTimeMillis()
+        
+        // Increment count first
+        recalculationCount++
+        
+        // Check if this is the first recalc or if window expired
+        if (recalculationWindowStart == 0L || now - recalculationWindowStart > EXCESSIVE_RECALC_WINDOW) {
+            // Start new window
+            recalculationWindowStart = now
+            recalculationCount = 1  // Reset count for new window
+        }
+        
+        // Check threshold (>3 means 4th recalc within 2 minutes)
+        if (recalculationCount > EXCESSIVE_RECALC_THRESHOLD) {
+            // User having trouble staying on route - provide guidance
+            announcementManager.announceExcessiveRecalculations()
+            // Reset counter to avoid repeating guidance immediately
+            recalculationCount = 0
+            recalculationWindowStart = now
+        }
+        
+        // Announce deviation (AC #2)
+        announcementManager.announceDeviation()
+        
+        // Set recalculating flag
+        isRecalculating = true
+        
+        try {
+            // Recalculate route with 3-second timeout (AC #4)
+            val newRoute = withTimeout(RECALCULATION_TIMEOUT) {
+                val result = navigationRepository.recalculateRoute(currentLocation, destination)
+                when {
+                    result.isSuccess -> result.getOrThrow()
+                    else -> throw Exception(result.exceptionOrNull()?.message ?: "Unknown error")
+                }
+            }
+            
+            // Replace route and reset route follower (AC #5)
+            navigationRoute = newRoute
+            previousProgress = routeFollower.replaceRoute(newRoute)  // Store for immediate UI update
+            deviationDetector.resetHistory()
+            
+            // Broadcast progress immediately (AC #5: guidance resumes immediately)
+            _navigationProgress.value = previousProgress
+            
+            // Announce success
+            announcementManager.announceRecalculationSuccess()
+            
+            Log.i(TAG, "Route recalculated successfully. New route: ${newRoute.steps.size} steps")
+            
+        } catch (e: TimeoutCancellationException) {
+            // Recalculation timed out (>3 seconds)
+            Log.e(TAG, "Route recalculation timed out", e)
+            announcementManager.announceRecalculationError("Recalculation is taking too long. Continuing with original route.")
+        } catch (e: Exception) {
+            // Network error, API failure, or other error
+            Log.e(TAG, "Route recalculation failed", e)
+            announcementManager.announceRecalculationError("Cannot recalculate route. Check internet connection.")
+        } finally {
+            isRecalculating = false
+        }
     }
     
     /**

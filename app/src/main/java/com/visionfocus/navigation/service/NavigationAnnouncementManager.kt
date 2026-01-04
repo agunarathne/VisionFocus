@@ -282,4 +282,51 @@ class NavigationAnnouncementManager @Inject constructor(
         
         return ""
     }
+    
+    /**
+     * Announces route deviation to user.
+     * 
+     * Story 6.4 AC #2: "You have gone off route. Recalculating directions."
+     */
+    suspend fun announceDeviation() {
+        val message = "You have gone off route. Recalculating directions."
+        Log.d(TAG, "Deviation announcement: $message")
+        announceWithPriority(message)
+    }
+    
+    /**
+     * Announces successful recalculation.
+     * 
+     * Story 6.4 AC #5: Confirmation that new route is ready.
+     */
+    suspend fun announceRecalculationSuccess() {
+        val message = "New route calculated. Resuming navigation."
+        Log.d(TAG, "Recalculation success: $message")
+        announceWithPriority(message)
+    }
+    
+    /**
+     * Announces recalculation error.
+     * 
+     * Story 6.4: Network error, timeout, or API failure.
+     * 
+     * @param reason Human-readable error description
+     */
+    suspend fun announceRecalculationError(reason: String) {
+        val message = reason
+        Log.e(TAG, "Recalculation error: $message")
+        announceWithPriority(message)
+    }
+    
+    /**
+     * Announce excessive recalculations guidance.
+     * 
+     * Story 6.4 AC #7: Helpful prompt when user goes off route frequently.
+     * Changed from question to statement - no response handler implemented yet.
+     */
+    suspend fun announceExcessiveRecalculations() {
+        val message = "You're going off route frequently. Try listening for earlier turn warnings to stay on track."
+        Log.w(TAG, "Excessive recalculations: $message")
+        announceWithPriority(message)
+    }
 }

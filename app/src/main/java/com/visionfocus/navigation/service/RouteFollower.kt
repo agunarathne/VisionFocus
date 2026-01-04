@@ -201,4 +201,29 @@ class RouteFollower @Inject constructor() {
     fun markImmediateWarningGiven(progress: NavigationProgress): NavigationProgress {
         return progress.copy(hasGivenImmediateWarning = true)
     }
+    
+    /**
+     * Replaces current route with recalculated route.
+     * 
+     * Story 6.4 AC #5: Reset navigation state for new route.
+     * Called after successful recalculation.
+     * 
+     * @param newRoute Recalculated route from current location to destination
+     * @return NavigationProgress with reset state for immediate UI update
+     */
+    fun replaceRoute(newRoute: NavigationRoute): NavigationProgress {
+        Log.i(TAG, "Replacing route with ${newRoute.steps.size} steps")
+        
+        // Return initial progress for new route
+        return NavigationProgress(
+            currentStepIndex = 0,
+            distanceToCurrentStep = newRoute.steps.firstOrNull()?.distance?.toFloat() ?: 0f,
+            totalDistanceRemaining = newRoute.totalDistance.toFloat(),
+            estimatedTimeRemaining = newRoute.totalDuration,
+            hasGivenAdvanceWarning = false,
+            hasGivenImmediateWarning = false,
+            hasCompletedCurrentStep = false,
+            bearingToNextStep = null
+        )
+    }
 }

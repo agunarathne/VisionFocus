@@ -1,6 +1,7 @@
 package com.visionfocus.navigation.repository
 
 import com.visionfocus.navigation.models.Destination
+import com.visionfocus.navigation.models.LatLng
 import com.visionfocus.navigation.models.NavigationRoute
 import com.visionfocus.navigation.models.ValidationResult
 
@@ -9,6 +10,7 @@ import com.visionfocus.navigation.models.ValidationResult
  * 
  * Story 6.1: Destination Input via Voice and Text (mock implementation)
  * Story 6.2: Google Maps Directions API Integration (geocoding implementation)
+ * Story 6.4: Route recalculation for deviation recovery
  */
 interface NavigationRepository {
     /**
@@ -33,4 +35,16 @@ interface NavigationRepository {
      * @return Result<NavigationRoute> with waypoints and directions or error
      */
     suspend fun getRoute(destination: Destination): Result<NavigationRoute>
+    
+    /**
+     * Recalculates route from current location to destination.
+     * 
+     * Story 6.4: Called when user deviates from route (>20m for 5 seconds).
+     * Reuses DirectionsApiService from Story 6.2.
+     * 
+     * @param origin Current GPS location (where user deviated)
+     * @param destination Original destination (unchanged)
+     * @return Result<NavigationRoute> with new route or error
+     */
+    suspend fun recalculateRoute(origin: LatLng, destination: Destination): Result<NavigationRoute>
 }
