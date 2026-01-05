@@ -282,4 +282,19 @@
     <string name="open_settings">Open Settings</string>
     <string name="open_settings_description">Open system settings to enable location</string>
     <string name="permission_denied_message">Navigation requires location access. Enable it in Settings.</string>
+    
+    <!-- Story 6.6: Network availability strings -->
+    <string name="network_status_online">Online - live directions available</string>
+    <string name="network_status_offline">Offline</string>
+    <string name="network_status_offline_with_maps">Offline - Maps Available</string>
+    <string name="network_lost_announcement">Lost internet connection. Navigation will use saved maps or wait for reconnection.</string>
+    <string name="network_connected_announcement">Internet connected. Updating route with live traffic.</string>
+    <string name="offline_dialog_title">No Internet Connection</string>
+    <string name="offline_dialog_message">No internet connection. You can navigate using saved offline maps or wait for connectivity.</string>
+    <string name="use_offline_maps">Use Offline Maps</string>
+    <string name="wait_for_connection">Wait for Connection</string>
+    <string name="network_requirements_title">Navigation Network Requirements</string>
+    <string name="network_requirements_summary">Navigation requires internet for live directions. Recognition works offline.</string>
+    <string name="offline_maps_not_available">Offline maps not available for this destination. Please connect to internet.</string>
 </resources>
+

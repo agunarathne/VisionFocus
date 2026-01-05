@@ -395,6 +395,41 @@
                 android:paddingEnd="@dimen/spacing_small" />
         </RadioGroup>
         
+        <!-- Story 6.6: Network Status Section -->
+        <TextView
+            android:id="@+id/networkStatusSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/network_requirements_title"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:paddingTop="@dimen/spacing_large"
+            android:paddingBottom="@dimen/spacing_small"
+            android:accessibilityHeading="true"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:id="@+id/networkStatusExplanation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/network_requirements_summary"
+            android:textAppearance="?attr/textAppearanceBody2"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="yes" />
+
+        <!-- Current Network Status (updated dynamically) -->
+        <TextView
+            android:id="@+id/currentNetworkStatusTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/network_status_online"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="?attr/colorPrimary"
+            android:paddingBottom="@dimen/spacing_medium"
+            android:importantForAccessibility="yes"
+            android:contentDescription="@string/network_status_online" />
+        
         <!-- Story 5.3: Reset to Defaults Button -->
         <Button
             android:id="@+id/resetDefaultsButton"

@@ -23,6 +23,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="32dp" />
 
+    <!-- Story 6.6: Network Status Indicator -->
+    <include
+        android:id="@+id/networkStatusComponent"
+        layout="@layout/component_network_status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/titleTextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp" />
+
     <!-- Destination Input Field -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/destinationInputLayout"
@@ -33,10 +44,10 @@
         app:endIconMode="custom"
         app:endIconDrawable="@drawable/ic_mic"
         app:endIconContentDescription="@string/voice_input_button"
-        app:layout_constraintTop_toBottomOf="@id/titleTextView"
+        app:layout_constraintTop_toBottomOf="@id/networkStatusComponent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="48dp">
+        android:layout_marginTop="24dp">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/destinationEditText"

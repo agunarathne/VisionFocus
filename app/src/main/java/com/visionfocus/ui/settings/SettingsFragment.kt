@@ -13,6 +13,7 @@ import com.visionfocus.R
 import com.visionfocus.data.model.HapticIntensity
 import com.visionfocus.data.model.VerbosityMode
 import com.visionfocus.databinding.FragmentSettingsBinding
+import com.visionfocus.network.ui.NetworkStatusViewModel
 import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.theme.ThemeManager
 import com.visionfocus.tts.engine.TTSManager
@@ -63,6 +64,7 @@ class SettingsFragment : Fragment() {
     private val binding get() = _binding!!
     
     private val viewModel: SettingsViewModel by viewModels()
+    private val networkStatusViewModel: NetworkStatusViewModel by viewModels()  // Story 6.6
     
     // Story 5.4: Inject unified HapticFeedbackManager for sample vibrations
     @Inject
@@ -259,6 +261,32 @@ class SettingsFragment : Fragment() {
                 }
             }
         )
+        
+        // Story 6.6: Observe network status for Settings display
+        observerJobs.add(
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    networkStatusViewModel.networkStatus.collect { status ->
+                        updateNetworkStatusDisplay(status)
+                    }
+                }
+            }
+        )
+    }
+    
+    /**
+     * Story 6.6: Update network status display in Settings screen.
+     * Shows current network state and updates on transitions.
+     */
+    private fun updateNetworkStatusDisplay(status: NetworkStatusViewModel.NetworkStatus) {
+        val statusText = when (status) {
+            is NetworkStatusViewModel.NetworkStatus.Online -> getString(R.string.network_status_online)
+            is NetworkStatusViewModel.NetworkStatus.Offline -> getString(R.string.network_status_offline)
+            is NetworkStatusViewModel.NetworkStatus.OfflineWithMaps -> getString(R.string.network_status_offline_with_maps)
+        }
+        
+        binding.currentNetworkStatusTextView.text = statusText
+        binding.currentNetworkStatusTextView.contentDescription = statusText
     }
     
     /**

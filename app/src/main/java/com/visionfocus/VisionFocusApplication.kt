@@ -3,6 +3,7 @@ package com.visionfocus
 import android.app.Application
 import android.util.Log
 import android.widget.Toast
+import com.visionfocus.network.monitor.NetworkStateMonitor
 import com.visionfocus.recognition.service.ObjectRecognitionService
 import com.visionfocus.tts.engine.TTSManager
 import dagger.hilt.EntryPoint
@@ -44,12 +45,15 @@ class VisionFocusApplication : Application() {
     /**
      * Hilt EntryPoint for manual dependency retrieval in Application.onCreate()
      * This allows us to get dependencies AFTER Hilt initialization completes
+     * 
+     * Story 6.6: Added NetworkStateMonitor for cleanup in onTerminate()
      */
     @EntryPoint
     @InstallIn(SingletonComponent::class)
     interface InitializationEntryPoint {
         fun objectRecognitionService(): ObjectRecognitionService
         fun ttsManager(): TTSManager
+        fun networkStateMonitor(): NetworkStateMonitor
     }
     
     override fun onCreate() {
@@ -134,9 +138,28 @@ class VisionFocusApplication : Application() {
         }
     }
     
+    /**
+     * Called when application is terminated (process killed).
+     * 
+     * Story 6.6 FIX (CRITICAL #1): Cleanup NetworkStateMonitor to prevent memory leak.
+     * Unregisters network callback to release ConnectivityManager reference.
+     * 
+     * NOTE: onTerminate() is NOT called in production (only in emulator).
+     * For production cleanup, consider using ProcessLifecycleOwner.
+     */
     override fun onTerminate() {
         super.onTerminate()
-        // Note: onTerminate() is never called in production, only in emulator
-        // Actual cleanup happens when process is killed by Android OS
+        
+        // Cleanup NetworkStateMonitor (Story 6.6)
+        try {
+            val entryPoint = EntryPointAccessors.fromApplication(
+                applicationContext,
+                InitializationEntryPoint::class.java
+            )
+            entryPoint.networkStateMonitor().unregister()
+            Timber.d(TAG, "NetworkStateMonitor cleaned up successfully")
+        } catch (e: Exception) {
+            Timber.e(TAG, "Failed to cleanup NetworkStateMonitor", e)
+        }
     }
 }

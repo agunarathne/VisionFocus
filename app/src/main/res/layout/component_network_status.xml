@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Story 6.6: Network Availability Indication
+    Network status indicator component for navigation screen.
+    
+    Design Requirements:
+    - Minimum height 48dp for TalkBack focus target
+    - Icon + text layout for redundant information
+    - Color-coded status: Green (online), Red (offline), Amber (offline with maps)
+    - High-contrast mode compatible (7:1 contrast ratio)
+    - TalkBack contentDescription with full status
+    
+    MEDIUM #3 FIX: Removed RTL suppression, added proper RTL support
+    
+    Usage: Included in fragment_navigation_input.xml
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/networkStatusContainer"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:layoutDirection="locale"
+    android:background="?attr/colorSurfaceVariant"
+    android:importantForAccessibility="yes">
+    
+    <!-- Network status icon (24dp, color-coded) -->
+    <ImageView
+        android:id="@+id/networkStatusIcon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_wifi"
+        android:contentDescription="@string/network_status_online"
+        android:importantForAccessibility="no"
+        tools:ignore="ContentDescription" />
+    
+    <!-- Network status text (full accessibility label) -->
+    <TextView
+        android:id="@+id/networkStatusText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="8dp"
+        android:text="@string/network_status_online"
+        android:textSize="16sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:importantForAccessibility="yes"
+        android:contentDescription="@string/network_status_online" />
+</LinearLayout>

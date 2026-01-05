@@ -11,6 +11,8 @@ import com.visionfocus.navigation.models.LatLng
 import com.visionfocus.navigation.models.NavigationRoute
 import com.visionfocus.navigation.models.TravelMode
 import com.visionfocus.navigation.models.ValidationResult
+import com.visionfocus.network.exceptions.NetworkUnavailableException
+import com.visionfocus.network.monitor.NetworkStateMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,11 +25,14 @@ import javax.inject.Singleton
  * 
  * Story 6.1: Mock validation (no network calls, basic validation only)
  * Story 6.2: Google Maps Directions API integration (full implementation)
+ * Story 6.6: Network state monitoring before API calls (graceful offline fallback)
  * 
  * @property context Application context
  * @property directionsApiService Google Maps Directions API client
+ * @property geocodingApiService Google Maps Geocoding API client
  * @property locationManager GPS location provider
  * @property networkConsentManager Network consent checker
+ * @property networkStateMonitor Network state monitor for connectivity checks
  */
 @Singleton
 class NavigationRepositoryImpl @Inject constructor(
@@ -35,7 +40,8 @@ class NavigationRepositoryImpl @Inject constructor(
     private val directionsApiService: DirectionsApiService,
     private val geocodingApiService: com.visionfocus.navigation.api.GeocodingApiService,
     private val locationManager: LocationManager,
-    private val networkConsentManager: NetworkConsentManager
+    private val networkConsentManager: NetworkConsentManager,
+    private val networkStateMonitor: NetworkStateMonitor
 ) : NavigationRepository {
     
     companion object {
@@ -95,6 +101,7 @@ class NavigationRepositoryImpl @Inject constructor(
      * Get route from current GPS location to destination.
      * 
      * Story 6.2: Google Maps Directions API integration with full error handling.
+     * Story 6.6: Network state check before API call with graceful offline fallback.
      * CODE REVIEW FIX (Issue #3): Changed signature to accept only destination.
      * Origin is always current GPS location from LocationManager.
      * 
@@ -108,7 +115,16 @@ class NavigationRepositoryImpl @Inject constructor(
             try {
                 Timber.tag(TAG).d("Getting route to: ${destination.name}")
                 
-                // Step 1: Check network consent
+                // Step 1: Check network state (Story 6.6)
+                if (!networkStateMonitor.getCurrentNetworkState()) {
+                    Timber.tag(TAG).d("Network unavailable for live directions")
+                    // TODO: Check offline map availability when Story 7.4 implemented
+                    return@withContext Result.failure(
+                        NetworkUnavailableException.noConnection(hasOfflineMaps = false)
+                    )
+                }
+                
+                // Step 2: Check network consent
                 if (!networkConsentManager.hasConsent()) {
                     Timber.tag(TAG).d("Network consent required")
                     return@withContext Result.failure(
@@ -116,7 +132,7 @@ class NavigationRepositoryImpl @Inject constructor(
                     )
                 }
                 
-                // Step 2: Get current GPS location as origin
+                // Step 3: Get current GPS location as origin
                 val currentLocation = locationManager.getCurrentLocation()
                 if (currentLocation.isFailure) {
                     Timber.tag(TAG).e("Failed to get current location")
@@ -128,7 +144,7 @@ class NavigationRepositoryImpl @Inject constructor(
                 val originLatLng = currentLocation.getOrThrow()
                 Timber.tag(TAG).d("Current location: $originLatLng")
                 
-                // Step 3: Call Directions API
+                // Step 4: Call Directions API
                 val destinationLatLng = LatLng(destination.latitude, destination.longitude)
                 val routeResult = directionsApiService.getDirections(
                     origin = originLatLng,
@@ -158,6 +174,7 @@ class NavigationRepositoryImpl @Inject constructor(
      * Recalculates route from current location to original destination.
      * 
      * Story 6.4: Reuses existing DirectionsApiService from Story 6.2.
+     * Story 6.6: Network state check before recalculation API call.
      * Called when user deviates from route (>20m for 5 seconds).
      * 
      * @param origin Current GPS location (where user deviated)
@@ -171,6 +188,15 @@ class NavigationRepositoryImpl @Inject constructor(
         return withContext(Dispatchers.IO) {
             try {
                 Timber.tag(TAG).d("Recalculating route from $origin to ${destination.name}")
+                
+                // Check network state before recalculation (Story 6.6)
+                if (!networkStateMonitor.getCurrentNetworkState()) {
+                    Timber.tag(TAG).d("Network unavailable for recalculation")
+                    // TODO: Fall back to offline maps when Story 7.4 implemented
+                    return@withContext Result.failure(
+                        NetworkUnavailableException.noConnection(hasOfflineMaps = false)
+                    )
+                }
                 
                 // Check network consent (reuse Story 6.2 logic)
                 if (!networkConsentManager.hasConsent()) {

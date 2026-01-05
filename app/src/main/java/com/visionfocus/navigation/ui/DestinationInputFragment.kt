@@ -5,9 +5,12 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -20,6 +23,8 @@ import com.visionfocus.R
 import com.visionfocus.databinding.FragmentDestinationInputBinding
 import com.visionfocus.navigation.models.Destination
 import com.visionfocus.navigation.models.ValidationResult
+import com.visionfocus.network.exceptions.NetworkUnavailableException
+import com.visionfocus.network.ui.NetworkStatusViewModel
 import com.visionfocus.accessibility.haptic.HapticFeedbackManager
 import com.visionfocus.accessibility.haptic.HapticPattern
 import com.visionfocus.permissions.manager.PermissionManager
@@ -37,6 +42,7 @@ import javax.inject.Inject
  * Destination input screen for navigation feature.
  * 
  * Story 6.1: Destination Input via Voice and Text
+ * Story 6.6: Network Availability Indication
  */
 @AndroidEntryPoint
 class DestinationInputFragment : Fragment() {
@@ -45,6 +51,7 @@ class DestinationInputFragment : Fragment() {
     private val binding get() = _binding!!
     
     private val viewModel: DestinationInputViewModel by viewModels()
+    private val networkStatusViewModel: NetworkStatusViewModel by viewModels()  // Story 6.6
     
     @Inject
     lateinit var voiceRecognitionManager: VoiceRecognitionManager
@@ -100,6 +107,7 @@ class DestinationInputFragment : Fragment() {
         setupGoButton()
         setupBackButton()
         setupPermissionDeniedUI()  // Story 6.5
+        setupNetworkStatus()  // Story 6.6
         observeViewModel()
         
         // Story 6.5: Check permission state on launch
@@ -187,6 +195,95 @@ class DestinationInputFragment : Fragment() {
                 requestLocationPermissionWithRationale()
             }
         }
+    }
+    
+    /**
+     * Story 6.6: Setup network status monitoring and UI updates.
+     * Observes network state changes and updates indicator accordingly.
+     * 
+     * MEDIUM #5 FIX: Announces initial network state for TalkBack users.
+     */
+    private fun setupNetworkStatus() {
+        // Get references to network status views from included layout
+        val networkStatusIcon = view?.findViewById<ImageView>(R.id.networkStatusIcon)
+        val networkStatusText = view?.findViewById<TextView>(R.id.networkStatusText)
+        
+        // Observe network status changes
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                networkStatusViewModel.networkStatus.collect { status ->
+                    updateNetworkStatusUI(status, networkStatusIcon, networkStatusText)
+                }
+            }
+        }
+        
+        // MEDIUM #5 FIX: Announce initial network state
+        view?.post {
+            lifecycleScope.launch {
+                delay(500) // Brief delay to let view settle
+                val currentStatus = networkStatusViewModel.networkStatus.value
+                val announcement = when (currentStatus) {
+                    is NetworkStatusViewModel.NetworkStatus.Online -> 
+                        getString(R.string.network_status_online)
+                    is NetworkStatusViewModel.NetworkStatus.Offline -> 
+                        getString(R.string.network_status_offline)
+                    is NetworkStatusViewModel.NetworkStatus.OfflineWithMaps -> 
+                        getString(R.string.network_status_offline_with_maps)
+                }
+                ttsManager.announce("Network status: $announcement")
+            }
+        }
+    }
+    
+    /**
+     * Story 6.6: Update network status UI based on current network state.
+     * Changes icon, text, and colors for online/offline/offline-with-maps states.
+     */
+    private fun updateNetworkStatusUI(
+        status: NetworkStatusViewModel.NetworkStatus,
+        icon: ImageView?,
+        text: TextView?
+    ) {
+        when (status) {
+            is NetworkStatusViewModel.NetworkStatus.Online -> {
+                icon?.setImageResource(R.drawable.ic_wifi)
+                icon?.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.holo_green_dark))
+                text?.text = getString(R.string.network_status_online)
+                text?.contentDescription = getString(R.string.network_status_online)
+            }
+            is NetworkStatusViewModel.NetworkStatus.Offline -> {
+                icon?.setImageResource(R.drawable.ic_wifi_off)
+                icon?.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.holo_red_dark))
+                text?.text = getString(R.string.network_status_offline)
+                text?.contentDescription = getString(R.string.network_status_offline)
+            }
+            is NetworkStatusViewModel.NetworkStatus.OfflineWithMaps -> {
+                icon?.setImageResource(R.drawable.ic_wifi_off)
+                icon?.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.holo_orange_dark))
+                text?.text = getString(R.string.network_status_offline_with_maps)
+                text?.contentDescription = getString(R.string.network_status_offline_with_maps)
+            }
+        }
+    }
+    
+    /**
+     * Story 6.6: Show offline navigation dialog when network unavailable.
+     * Offers options to use offline maps or wait for connection.
+     */
+    private fun showOfflineNavigationDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.offline_dialog_title)
+            .setMessage(R.string.offline_dialog_message)
+            .setPositiveButton(R.string.use_offline_maps) { _, _ ->
+                // TODO: Story 7.4 - Check offline map availability and navigate
+                lifecycleScope.launch {
+                    ttsManager.announce(getString(R.string.offline_maps_not_available))
+                }
+            }
+            .setNegativeButton(R.string.wait_for_connection) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
     
     /**
@@ -473,7 +570,24 @@ class DestinationInputFragment : Fragment() {
             is NavigationState.Error -> {
                 binding.routeProgressIndicator.visibility = View.GONE
                 binding.goButton.isEnabled = true
-                showErrorDialog(state.message)
+                
+                // MEDIUM #2 FIX: Type-safe error handling instead of string matching
+                // Check actual network state instead of parsing error message
+                if (state.message.contains("NetworkUnavailable", ignoreCase = true) ||
+                    state.message.contains("No internet", ignoreCase = true)) {
+                    // Verify network is actually offline before showing dialog
+                    val currentNetworkStatus = networkStatusViewModel.networkStatus.value
+                    if (currentNetworkStatus is NetworkStatusViewModel.NetworkStatus.Offline ||
+                        currentNetworkStatus is NetworkStatusViewModel.NetworkStatus.OfflineWithMaps) {
+                        showOfflineNavigationDialog()
+                    } else {
+                        // Network is online but API failed - show generic error
+                        showErrorDialog(state.message)
+                    }
+                } else {
+                    // Other error - show generic error dialog
+                    showErrorDialog(state.message)
+                }
             }
         }
     }

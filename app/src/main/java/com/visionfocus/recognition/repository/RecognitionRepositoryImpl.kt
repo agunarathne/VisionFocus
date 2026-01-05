@@ -20,6 +20,18 @@ import javax.inject.Singleton
  * Story 2.4: Added Bitmap parameter for camera-captured frames
  * Story 4.2: Will add Room database for recognition history (last 50 results)
  * Story 4.5: Added spatial analysis (position and distance information)
+ * Story 6.6: Verified 100% offline operation - NO network dependencies
+ * 
+ * OFFLINE OPERATION GUARANTEE:
+ * Recognition operates 100% offline with ZERO network dependencies.
+ * All components are local, on-device operations:
+ * - ObjectRecognitionService: TFLite model from assets (app/src/main/assets/model.tflite)
+ * - ConfidenceFilter: Local confidence threshold filtering
+ * - NonMaximumSuppression: Local bounding box deduplication
+ * - SpatialAnalyzer: Local position/distance calculations
+ * 
+ * This ensures recognition works in airplane mode, underground, or anywhere
+ * without internet connectivity.
  */
 @Singleton
 class RecognitionRepositoryImpl @Inject constructor(
