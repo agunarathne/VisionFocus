@@ -89,6 +89,51 @@ object DatabaseModule {
     }
     
     /**
+     * Migration from database version 3 to 4.
+     * 
+     * Story 7.1: Adds full schema columns to SavedLocationEntity
+     * - name: String - user-provided location name
+     * - latitude: Double - GPS latitude coordinate
+     * - longitude: Double - GPS longitude coordinate
+     * - createdAt: Long - timestamp when location was saved
+     * - lastUsedAt: Long - timestamp when location was last used for navigation
+     * - address: String (nullable) - reverse geocoded address (future enhancement)
+     */
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // Add SavedLocationEntity columns with NOT NULL and default values
+            database.execSQL(
+                "ALTER TABLE saved_locations ADD COLUMN name TEXT NOT NULL DEFAULT ''"
+            )
+            database.execSQL(
+                "ALTER TABLE saved_locations ADD COLUMN latitude REAL NOT NULL DEFAULT 0.0"
+            )
+            database.execSQL(
+                "ALTER TABLE saved_locations ADD COLUMN longitude REAL NOT NULL DEFAULT 0.0"
+            )
+            database.execSQL(
+                "ALTER TABLE saved_locations ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0"
+            )
+            database.execSQL(
+                "ALTER TABLE saved_locations ADD COLUMN lastUsedAt INTEGER NOT NULL DEFAULT 0"
+            )
+            database.execSQL(
+                "ALTER TABLE saved_locations ADD COLUMN address TEXT DEFAULT NULL"
+            )
+            
+            // Add index on name for duplicate check query performance
+            database.execSQL(
+                "CREATE INDEX IF NOT EXISTS idx_saved_location_name ON saved_locations(name)"
+            )
+            
+            // Add index on lastUsedAt for ORDER BY query performance
+            database.execSQL(
+                "CREATE INDEX IF NOT EXISTS idx_saved_location_last_used ON saved_locations(lastUsedAt DESC)"
+            )
+        }
+    }
+    
+    /**
      * Provides singleton AppDatabase instance with encryption.
      * 
      * Story 4.2 enhancements:
@@ -98,6 +143,9 @@ object DatabaseModule {
      * 
      * Story 4.5 enhancements:
      * - Migration from v2 → v3 to add spatial information columns
+     * 
+     * Story 7.1 enhancements:
+     * - Migration from v3 → v4 to add SavedLocationEntity full schema
      * 
      * Security: Database encrypted at rest with AES-256 (SQLCipher)
      */
@@ -118,7 +166,7 @@ object DatabaseModule {
                 AppDatabase.DATABASE_NAME
             )
                 .openHelperFactory(factory)  // Story 4.2: Enable SQLCipher encryption
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)  // Story 4.2, 4.5: Migrations for schema changes
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)  // Story 4.2, 4.5, 7.1: Migrations for schema changes
                 .build()
         } catch (e: Exception) {
             // Fallback: Create unencrypted database if encryption fails
@@ -130,7 +178,7 @@ object DatabaseModule {
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
         }
     }

@@ -296,5 +296,31 @@
     <string name="network_requirements_title">Navigation Network Requirements</string>
     <string name="network_requirements_summary">Navigation requires internet for live directions. Recognition works offline.</string>
     <string name="offline_maps_not_available">Offline maps not available for this destination. Please connect to internet.</string>
+    
+    <!-- Story 7.1: Save Location Dialog Strings -->
+    <string name="save_location_title">Save Current Location</string>
+    <string name="location_name_hint">Enter location name (e.g., Home, Work)</string>
+    <string name="location_name_helper">Name must be at least 2 characters</string>
+    <string name="location_name_content_description">Location name, edit text</string>
+    <string name="voice_input_description">Use voice to enter name</string>
+    <string name="save">Save</string>
+    <!-- cancel string already defined in Story 5.3 -->
+    <string name="save_location_button_description">Save location</string>
+    <string name="cancel_save_location_description">Cancel save location</string>
+    <string name="getting_location">Getting your location...</string>
+    <string name="save_location_announcement">Save current location. Enter a name.</string>
+    <string name="location_saved">Location saved as %1$s</string>
+    <string name="location_name_too_short">Location name must be at least 2 characters</string>
+    <string name="location_name_empty">Please enter a location name</string>
+    <string name="duplicate_location_title">Location Name Already Exists</string>
+    <string name="duplicate_location_message">You already have a location named %1$s. Overwrite or choose a different name?</string>
+    <string name="overwrite">Overwrite</string>
+    <string name="choose_different">Choose Different</string>
+    <string name="gps_unavailable_title">GPS Location Unavailable</string>
+    <string name="gps_unavailable_message">GPS location unavailable. Please enable location services.</string>
+    <string name="ok">OK</string>
+    <string name="location_permission_required_for_save">Location permission required to save current location</string>
+    <string name="save_location_error">Failed to save location. Please try again.</string>
 </resources>
+
 

@@ -165,8 +165,7 @@ class NetworkStatusViewModelTest {
         
         // Then: TTS should NOT be called (initial state, no transition)
         coVerify(exactly = 0) {
-            ttsManager.announce(
-            ttsManager.announce(any(), any())
+            ttsManager.announce(any())
         }
     }
     
@@ -189,10 +188,12 @@ class NetworkStatusViewModelTest {
         
         // Then: Only ONE announcement (not two)
         coVerify(atMost = 1) {
-            ttsManager.announce((not two)
-        verify(atMost = 1) {
-            ttsManager.announce(any(), any())
-        }correct TTS API.
+            ttsManager.announce(any())
+        }
+    }
+    
+    /**
+     * Test: Announcements use correct TTS API.
      * Story 6.6: TTSManager.announce() is a suspend function with single String parameter.
      * 
      * CRITICAL #3 FIX: Removed priority parameter (doesn't exist in actual API)
@@ -211,10 +212,6 @@ class NetworkStatusViewModelTest {
         // Then: TTS should be called with correct API signature
         coVerify {
             ttsManager.announce(any())  // Suspend function, no priority parameter
-        
-        // Then: TTS should use MEDIUM priority
-        verify {
-            ttsManager.announce(any(), TTSManager.Priority.MEDIUM)
         }
     }
     

@@ -6,6 +6,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Singleton
 
 /**
@@ -29,6 +31,17 @@ object AppModule {
     fun provideApplicationContext(@ApplicationContext context: Context): Context {
         return context
     }
+    
+    /**
+     * Provides IO Dispatcher for database and file operations.
+     * 
+     * Story 7.1 Code Review Fix: Added for testability in repositories.
+     * Allows mocking with TestCoroutineDispatcher in unit tests.
+     */
+    @Provides
+    @Singleton
+    @IODispatcher
+    fun provideIODispatcher(): CoroutineDispatcher = Dispatchers.IO
     
     // Future app-level dependencies will be added here:
     // - TFLite model loader (Epic 2)

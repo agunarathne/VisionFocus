@@ -2,6 +2,8 @@ package com.visionfocus.di
 
 import com.visionfocus.data.repository.SampleRepository
 import com.visionfocus.data.repository.SampleRepositoryImpl
+import com.visionfocus.data.repository.SavedLocationRepository
+import com.visionfocus.data.repository.SavedLocationRepositoryImpl
 import com.visionfocus.data.repository.SettingsRepository
 import com.visionfocus.data.repository.SettingsRepositoryImpl
 import dagger.Binds
@@ -35,4 +37,15 @@ abstract class RepositoryModule {
     abstract fun bindSettingsRepository(
         settingsRepositoryImpl: SettingsRepositoryImpl
     ): SettingsRepository
+    
+    /**
+     * Binds SavedLocationRepository interface to Room database implementation.
+     * 
+     * Story 7.1: Saved locations feature with GPS coordinates storage.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindSavedLocationRepository(
+        savedLocationRepositoryImpl: SavedLocationRepositoryImpl
+    ): SavedLocationRepository
 }

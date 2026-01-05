@@ -102,13 +102,24 @@ class SaveLocationCommand @Inject constructor(
         return try {
             Log.d(TAG, "Executing Save Location command")
             
-            // Placeholder: Saved locations in Epic 7
-            ttsManager.announce("Save location feature coming soon")
+            // Story 7.1: Show SaveLocationDialogFragment
+            val activity = context as? androidx.fragment.app.FragmentActivity
             
-            Log.d(TAG, "Save Location command executed")
-            CommandResult.Success("Save Location placeholder")
+            if (activity == null) {
+                Log.e(TAG, "Context is not FragmentActivity, cannot show dialog")
+                ttsManager.announce("Save location unavailable")
+                return CommandResult.Failure("Context is not FragmentActivity")
+            }
+            
+            // Show save location dialog (direct instantiation for Hilt injection)
+            val dialog = com.visionfocus.ui.savedlocations.SaveLocationDialogFragment()
+            dialog.show(activity.supportFragmentManager, "SaveLocationDialog")
+            
+            Log.d(TAG, "Save Location dialog shown")
+            CommandResult.Success("Save location dialog shown")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to save location", e)
+            Log.e(TAG, "Failed to show save location dialog", e)
+            ttsManager.announce("Save location error")
             CommandResult.Failure("Save Location error: ${e.message}")
         }
     }

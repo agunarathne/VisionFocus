@@ -1,24 +1,55 @@
 package com.visionfocus.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
  * Room entity for saved locations storage.
  * 
- * Foundation schema for Story 1.4. Full columns will be added in Story 7.1
- * when saved locations feature is implemented (Epic 7).
+ * Story 7.1: Complete schema with all columns for saved locations feature.
+ * Encrypted at rest with SQLCipher (configured in Story 4.2).
  * 
- * Future columns (Story 7.1):
- * - name: String (user-provided location name)
- * - latitude: Double (GPS coordinate)
- * - longitude: Double (GPS coordinate)
- * - createdAt: Long (timestamp in milliseconds)
+ * Schema fields:
+ * - id: Auto-generated primary key
+ * - name: User-provided location name (e.g., "Home", "Work")
+ * - latitude: GPS latitude coordinate
+ * - longitude: GPS longitude coordinate
+ * - createdAt: Timestamp when location was saved (milliseconds)
+ * - lastUsedAt: Timestamp when location was last used for navigation (Story 7.2)
+ * - address: Reverse geocoded address (optional, future enhancement)
+ * 
+ * Indexes:
+ * - name: For duplicate check query performance (findByName)
+ * - lastUsedAt: For getAllLocationsSorted() query performance
  */
-@Entity(tableName = "saved_locations")
+@Entity(
+    tableName = "saved_locations",
+    indices = [
+        Index(value = ["name"]),
+        Index(value = ["lastUsedAt"])
+    ]
+)
 data class SavedLocationEntity(
     @PrimaryKey(autoGenerate = true)
-    val id: Long = 0
+    val id: Long = 0,
     
-    // Columns will be added in Story 7.1 (Epic 7: Saved Locations)
+    @ColumnInfo(name = "name")
+    val name: String,
+    
+    @ColumnInfo(name = "latitude")
+    val latitude: Double,
+    
+    @ColumnInfo(name = "longitude")
+    val longitude: Double,
+    
+    @ColumnInfo(name = "createdAt")
+    val createdAt: Long,
+    
+    @ColumnInfo(name = "lastUsedAt")
+    val lastUsedAt: Long = createdAt,
+    
+    @ColumnInfo(name = "address")
+    val address: String? = null
 )
