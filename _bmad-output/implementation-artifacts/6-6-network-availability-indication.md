@@ -784,22 +784,34 @@ Story 6.6 successfully implements real-time network availability monitoring with
 - Wrapped TTS calls in `viewModelScope.launch` since `announce()` is a suspend function
 
 **Testing Status:**
-- ✅ Unit Tests: 17 tests created (9 for NetworkStateMonitor, 8 for NetworkStatusViewModel)
-- ✅ Build: Compilation successful (compileDebugKotlin passed)
-- ❌ Integration Tests (Task 12): Skipped (typical for dev-story workflow - deferred to QA)
-- ❌ Manual Device Testing (Task 13): Deferred to user for device-specific validation
+- ✅ Unit Tests: 17 tests created (9 for NetworkStateMonitor, 8 for NetworkStatusViewModel) - ALL PASSING
+- ✅ Build: Compilation successful (41s, BUILD SUCCESSFUL)
+- ✅ Manual Device Testing (Task 13): PARTIAL - Network status indicator working, TTS announcements functional
+  - ✅ Phase 1: Online state detection - Green icon, "Online" text visible
+  - ✅ Phase 2: Offline state - Icon changes to red, "Offline" text updates
+  - ✅ Phase 3: Network recovery - TTS announcements working
+  - ⚠️ Phase 2 (AC #2): Offline dialog unreachable - blocked by geocoding validation requiring network
+  - Note: Validation requires internet for geocoding, prevents reaching offline dialog when actually offline
+  - Workaround tested: Validate destination online, then go offline → dialog accessible
+- ❌ Integration Tests (Task 12): Deferred to QA story
+- ✅ APK Installed: Samsung device, version with all code review fixes
 
 **Known Limitations:**
 - Offline map availability check currently returns `false` (placeholder for Story 7.4 implementation)
 - "Use Offline Maps" dialog action navigates to Settings (Story 7.4 will implement actual offline navigation)
 - Network transitions during active navigation not yet tested (requires Story 6.4 Route Deviation integration)
-- TalkBack testing deferred to manual device testing phase (Task 13)
+- **UX BUG DISCOVERED:** Offline dialog (AC #2) unreachable in true offline scenario because destination validation requires Google Geocoding API (network dependency). Workaround: Validate online, then go offline. Proper fix requires Story 7.1+ to cache validated destinations or Story 6.1 refactor to separate validation types.
 
 **Next Steps:**
-- Manual device testing with airplane mode toggling (Task 13.1-13.23)
-- Integration tests with Espresso + IdlingResource (Task 12.1-12.10)
-- Story 7.4 integration for actual offline map support
-- Story 8.1 integration for audio priority queue (network TTS at MEDIUM priority)
+- Integration tests with Espresso + IdlingResource (Task 12.1-12.10) - deferred to QA story
+- Story 7.1-7.4: Saved Locations & Offline Navigation (will fix offline dialog UX bug)
+- Story 8.1: Audio priority queue integration (network TTS at MEDIUM priority)
+- Future improvement: Separate validation types (syntax vs geocoding) to allow offline dialog testing
+
+**Commit:**
+- Git commit: 9ca81fe "Story 6.6: Network Availability Indication - Complete with Code Review Fixes"
+- 19 files changed, 1413 insertions(+), 139 deletions(-)
+- Date: January 5, 2026
 
 ### File List
 
