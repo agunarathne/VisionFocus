@@ -7,6 +7,7 @@ import com.visionfocus.voice.commands.navigation.BackCommand
 import com.visionfocus.voice.commands.navigation.HistoryCommand
 import com.visionfocus.voice.commands.navigation.HomeCommand
 import com.visionfocus.voice.commands.navigation.NavigateCommand
+import com.visionfocus.voice.commands.navigation.SavedLocationsCommand
 import com.visionfocus.voice.commands.navigation.WhereAmICommand
 import com.visionfocus.voice.commands.recognition.RecognizeCommand
 import com.visionfocus.voice.commands.recognition.SaveLocationCommand
@@ -111,6 +112,7 @@ object VoiceCommandModule {
         whereAmICommand: WhereAmICommand,
         backCommand: BackCommand,
         homeCommand: HomeCommand,
+        savedLocationsCommand: SavedLocationsCommand,
         // Settings commands
         settingsCommand: SettingsCommand,
         highContrastOnCommand: HighContrastOnCommand,
@@ -157,6 +159,7 @@ object VoiceCommandModule {
         processor.registerCommand(helpCommand)
         processor.registerCommand(backCommand)
         processor.registerCommand(homeCommand)
+        processor.registerCommand(savedLocationsCommand)
         processor.registerCommand(whereAmICommand)
         processor.registerCommand(whatDoISeeCommand)
         processor.registerCommand(verbosityBriefCommand)

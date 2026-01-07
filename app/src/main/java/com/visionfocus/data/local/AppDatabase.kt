@@ -32,7 +32,7 @@ import com.visionfocus.data.local.entity.SavedLocationEntity
         RecognitionHistoryEntity::class,
         SavedLocationEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true  // Export schema for version tracking and migrations
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Story 7.2: Location Action Menu Dialog
+  Provides Navigate, Edit, and Delete actions for saved locations
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="?attr/colorSurface">
+    
+    <!-- Dialog Title -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/location_actions"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        android:accessibilityHeading="true"
+        android:paddingBottom="16dp" />
+    
+    <!-- Story 7.2 AC6: Navigate Action Button -->
+    <Button
+        android:id="@+id/navigateButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/navigate_action"
+        android:textSize="16sp"
+        android:minHeight="48dp"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+    
+    <!-- Story 7.2 AC7: Edit Action Button -->
+    <Button
+        android:id="@+id/editButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/edit_action"
+        android:textSize="16sp"
+        android:minHeight="48dp"
+        android:layout_marginTop="8dp"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+    
+    <!-- Story 7.2 AC8: Delete Action Button (destructive styling) -->
+    <Button
+        android:id="@+id/deleteButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/delete_action"
+        android:textSize="16sp"
+        android:minHeight="48dp"
+        android:layout_marginTop="8dp"
+        android:textColor="?attr/colorError"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+    
+</LinearLayout>

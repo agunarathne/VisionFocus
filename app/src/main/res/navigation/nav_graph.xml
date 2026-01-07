@@ -94,4 +94,18 @@
         android:label="History"
         tools:layout="@layout/fragment_history" />
 
+    <!-- Story 7.2: Saved Locations Management Screen -->
+    <fragment
+        android:id="@+id/savedLocationsFragment"
+        android:name="com.visionfocus.ui.savedlocations.SavedLocationsFragment"
+        android:label="Saved Locations"
+        tools:layout="@layout/fragment_saved_locations">
+        
+        <action
+            android:id="@+id/action_savedLocations_to_navigationActive"
+            app:destination="@id/navigationActiveFragment"
+            app:popUpTo="@id/recognitionFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
+
 </navigation>

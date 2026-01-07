@@ -8,6 +8,12 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+/**
+ * Module for binding NavigationRepository interface to implementation.
+ * 
+ * Story 7.2 Code Review Fix: NavigationManager binding moved to separate
+ * NavigationManagerModule to follow single-responsibility principle.
+ */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class NavigationModule {

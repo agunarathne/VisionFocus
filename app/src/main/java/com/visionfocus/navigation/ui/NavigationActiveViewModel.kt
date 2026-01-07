@@ -122,17 +122,20 @@ class NavigationActiveViewModel @Inject constructor(
      */
     fun cancelNavigation() {
         viewModelScope.launch {
-            // Haptic feedback for cancel action
-            hapticFeedbackManager.trigger(com.visionfocus.accessibility.haptic.HapticPattern.ButtonPress)
+            // CRITICAL FIX: Stop all ongoing TTS FIRST to prevent continuous announcements
+            ttsManager.stop()
             
-            // TTS announcement
-            ttsManager.announce("Navigation cancelled")
-            
-            // Stop NavigationService
+            // Stop NavigationService immediately (stops GPS updates and recalculation loop)
             val intent = Intent(context, NavigationService::class.java).apply {
                 action = NavigationService.ACTION_STOP_NAVIGATION
             }
             context.startService(intent)
+            
+            // Haptic feedback for cancel action
+            hapticFeedbackManager.trigger(com.visionfocus.accessibility.haptic.HapticPattern.ButtonPress)
+            
+            // TTS announcement (after stopping ongoing speech)
+            ttsManager.announce("Navigation cancelled")
             
             // Reset state
             _isNavigating.value = false

@@ -77,9 +77,9 @@ class NavigateCommand @Inject constructor(
 /**
  * Where Am I Command
  * Story 3.2 Task 2.14: Announce current GPS location
+ * Story 7.1+ Enhancement: Implement actual location announcement using LocationManager
  * 
- * Announces current GPS coordinates or address (Epic 6).
- * Placeholder implementation for Story 3.2.
+ * Announces current GPS coordinates and approximate address.
  * 
  * Command variations:
  * - "where am i"
@@ -87,11 +87,13 @@ class NavigateCommand @Inject constructor(
  * - "current location"
  * 
  * @param ttsManager TTS engine for announcements
- * @since Story 3.2
+ * @param locationManager GPS location service
+ * @since Story 3.2, enhanced Story 7.1+
  */
 @Singleton
 class WhereAmICommand @Inject constructor(
-    private val ttsManager: TTSManager
+    private val ttsManager: TTSManager,
+    private val locationManager: com.visionfocus.navigation.location.LocationManager
 ) : VoiceCommand {
     
     companion object {
@@ -110,13 +112,33 @@ class WhereAmICommand @Inject constructor(
         return try {
             Log.d(TAG, "Executing Where Am I command")
             
-            // Placeholder: GPS location in Epic 6
-            ttsManager.announce("Location feature coming soon")
+            // Announce getting location
+            ttsManager.announce("Getting your location")
             
-            Log.d(TAG, "Where Am I command executed")
-            CommandResult.Success("Where Am I placeholder")
+            // Get current location (returns Result<LatLng>)
+            val locationResult = locationManager.getCurrentLocation()
+            
+            if (locationResult.isSuccess) {
+                val location = locationResult.getOrNull()!!
+                
+                // Format coordinates to 4 decimal places
+                val lat = String.format("%.4f", location.latitude)
+                val lng = String.format("%.4f", location.longitude)
+                
+                val announcement = "Your location: latitude $lat, longitude $lng"
+                
+                ttsManager.announce(announcement)
+                Log.d(TAG, "Where Am I command executed: $announcement")
+                CommandResult.Success("Location announced")
+            } else {
+                val error = locationResult.exceptionOrNull()
+                ttsManager.announce("Could not get your location. Please check GPS and permissions.")
+                Log.w(TAG, "Location unavailable: ${error?.message}")
+                CommandResult.Failure("Location unavailable: ${error?.message}")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get location", e)
+            ttsManager.announce("Location error. Please try again.")
             CommandResult.Failure("Location error: ${e.message}")
         }
     }
@@ -366,6 +388,70 @@ class HistoryCommand @Inject constructor(
             Log.e(TAG, "Failed to navigate to history", e)
             ttsManager.announce("Navigation error")
             CommandResult.Failure("History error: ${e.message}")
+        }
+    }
+}
+
+/**
+ * Saved Locations Command
+ * Story 7.2 Task 10: Open saved locations management screen
+ * 
+ * Opens saved locations screen to view, edit, and delete saved locations.
+ * User can navigate to saved locations or manage location list.
+ * 
+ * Command variations:
+ * - "saved locations"
+ * - "show saved locations"
+ * - "saved places"
+ * - "my locations"
+ * 
+ * @param ttsManager TTS engine for announcements
+ * @since Story 7.2
+ */
+@Singleton
+class SavedLocationsCommand @Inject constructor(
+    private val ttsManager: TTSManager
+) : VoiceCommand {
+    
+    companion object {
+        private const val TAG = "SavedLocationsCommand"
+    }
+    
+    override val displayName: String = "Saved Locations"
+    
+    override val keywords: List<String> = listOf(
+        "saved locations",
+        "show saved locations",
+        "saved places",
+        "show saved places",
+        "my locations"
+    )
+    
+    override suspend fun execute(context: Context): CommandResult {
+        return try {
+            Log.d(TAG, "Executing Saved Locations command")
+            
+            // Story 7.2: Cast context to MainActivity for navigation
+            if (context is com.visionfocus.MainActivity) {
+                // Navigate to saved locations screen using MainActivity helper
+                context.runOnUiThread {
+                    context.navigateToSavedLocations()
+                }
+                
+                // Announce navigation
+                ttsManager.announce("Opening saved locations")
+                
+                Log.d(TAG, "Saved Locations command executed - navigated to saved locations")
+                CommandResult.Success("Navigated to saved locations")
+            } else {
+                Log.e(TAG, "Context is not MainActivity - cannot navigate")
+                ttsManager.announce("Navigation error")
+                CommandResult.Failure("Context is not MainActivity")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to navigate to saved locations", e)
+            ttsManager.announce("Navigation error")
+            CommandResult.Failure("Saved locations error: ${e.message}")
         }
     }
 }

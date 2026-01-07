@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Story 7.2: Delete Confirmation Dialog
+  Warning dialog before deleting a saved location
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="?attr/colorSurface">
+    
+    <!-- Dialog Title -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/delete_confirmation_title"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        android:accessibilityHeading="true"
+        android:paddingBottom="16dp" />
+    
+    <!-- Warning Message -->
+    <TextView
+        android:id="@+id/messageText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textColor="?attr/colorOnSurface"
+        android:lineSpacingExtra="4dp"
+        android:paddingBottom="24dp" />
+    
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+        
+        <!-- Cancel Button -->
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@android:string/cancel"
+            android:minWidth="88dp"
+            android:minHeight="48dp"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+        
+        <!-- Delete Button (Story 7.2 AC8: Destructive styling) -->
+        <Button
+            android:id="@+id/deleteButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/delete_action"
+            android:minWidth="88dp"
+            android:minHeight="48dp"
+            android:layout_marginStart="8dp"
+            android:textColor="?attr/colorError"
+            style="@style/Widget.MaterialComponents.Button.TextButton" />
+    </LinearLayout>
+    
+</LinearLayout>

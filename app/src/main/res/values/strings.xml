@@ -321,6 +321,46 @@
     <string name="ok">OK</string>
     <string name="location_permission_required_for_save">Location permission required to save current location</string>
     <string name="save_location_error">Failed to save location. Please try again.</string>
+    
+    <!-- Story 7.2: Saved Locations Management UI Strings -->
+    <string name="saved_locations_title">Saved Locations</string>
+    <string name="saved_locations_list_description">Saved locations list</string>
+    <string name="no_saved_locations">No saved locations yet</string>
+    <string name="save_location_hint">Say \'Save location\' when at a place you visit frequently.</string>
+    <string name="empty_state_icon_description">No saved locations</string>
+    <string name="no_saved_locations_announcement">No saved locations yet. Say Save location when at a place you visit frequently.</string>
+    
+    <!-- Location Item Strings -->
+    <string name="location_item_description">%1$s, %2$s, saved %3$s</string>
+    <string name="no_address_available">Address unavailable</string>
+    
+    <!-- Action Menu Strings -->
+    <string name="location_actions">Location Actions</string>
+    <string name="navigate_to_location_description">Navigate to %1$s</string>
+    <string name="edit_location_description">Edit %1$s</string>
+    <string name="delete_location_description">Delete %1$s</string>
+    <string name="navigate_action">Navigate</string>
+    <string name="edit_action">Edit</string>
+    <string name="delete_action">Delete</string>
+    
+    <!-- Edit Location Dialog Strings -->
+    <string name="edit_location_title">Edit Location Name</string>
+    <string name="location_name_edit_description">Location name, edit text</string>
+    <string name="save_location_name_description">Save location name</string>
+    <string name="name_too_short_error">Location name must be at least 2 characters</string>
+    
+    <!-- Delete Confirmation Dialog Strings -->
+    <string name="delete_confirmation_title">Delete Location?</string>
+    <string name="delete_confirmation_message">Delete %1$s? This cannot be undone.</string>
+    <string name="delete_location_confirm_description">Delete %1$s</string>
+    <string name="cancel_description">Cancel</string>
+    
+    <!-- TalkBack Announcements -->
+    <string name="starting_navigation_to">Starting navigation to %1$s</string>
+    <string name="location_name_updated_to">Location name updated to %1$s</string>
+    <string name="location_deleted">%1$s deleted</string>
+    <string name="location_already_exists">A location named %1$s already exists</string>
 </resources>
+
 
 

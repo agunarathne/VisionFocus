@@ -134,6 +134,31 @@ object DatabaseModule {
     }
     
     /**
+     * Migration from database version 4 to 5.
+     * 
+     * Story 7.2 FIX: Recreate saved_locations table with correct index names
+     * - Old: idx_saved_location_name, idx_saved_location_last_used
+     * - New: index_saved_locations_name, index_saved_locations_lastUsedAt
+     * 
+     * This migration fixes the index name mismatch between Story 7.1 and 7.2.
+     */
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // Drop old indices
+            database.execSQL("DROP INDEX IF EXISTS idx_saved_location_name")
+            database.execSQL("DROP INDEX IF EXISTS idx_saved_location_last_used")
+            
+            // Create new indices with correct names (matching SavedLocationEntity @Index)
+            database.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_saved_locations_name ON saved_locations(name)"
+            )
+            database.execSQL(
+                "CREATE INDEX IF NOT EXISTS index_saved_locations_lastUsedAt ON saved_locations(lastUsedAt)"
+            )
+        }
+    }
+    
+    /**
      * Provides singleton AppDatabase instance with encryption.
      * 
      * Story 4.2 enhancements:
@@ -166,7 +191,8 @@ object DatabaseModule {
                 AppDatabase.DATABASE_NAME
             )
                 .openHelperFactory(factory)  // Story 4.2: Enable SQLCipher encryption
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)  // Story 4.2, 4.5, 7.1: Migrations for schema changes
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)  // Story 4.2, 4.5, 7.1, 7.2: Migrations for schema changes
+                .fallbackToDestructiveMigration()  // TEMPORARY: Story 7.2 testing - rebuild database if migration fails
                 .build()
         } catch (e: Exception) {
             // Fallback: Create unencrypted database if encryption fails
@@ -178,7 +204,8 @@ object DatabaseModule {
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .fallbackToDestructiveMigration()  // TEMPORARY: Story 7.2 testing - rebuild database if migration fails
                 .build()
         }
     }

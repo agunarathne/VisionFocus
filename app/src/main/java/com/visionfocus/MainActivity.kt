@@ -584,6 +584,18 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * Navigate to SavedLocationsFragment.
+     * Story 7.2 Task 10: Voice command "Saved locations" navigation
+     * 
+     * Navigates to saved locations management screen for viewing,
+     * editing, and deleting saved locations.
+     */
+    fun navigateToSavedLocations() {
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        navController.navigate(R.id.savedLocationsFragment)
+    }
+    
+    /**
      * Navigate to home screen (RecognitionFragment).
      * Story 3.5 Task 8: HomeCommand implementation
      * 

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Story 7.2: Saved Location List Item Layout
+  Displays location name, address (if available), and timestamp
+  Full accessibility support with comprehensive content description
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:minHeight="48dp"
+    android:background="?attr/selectableItemBackground"
+    android:focusable="true"
+    android:clickable="true">
+    
+    <!-- Story 7.2 AC2: Location name (primary text) -->
+    <TextView
+        android:id="@+id/locationNameText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSurface"
+        android:importantForAccessibility="no"
+        tools:text="Home" />
+    
+    <!-- Story 7.2 AC2: Address (secondary text, optional) -->
+    <TextView
+        android:id="@+id/locationAddressText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="4dp"
+        android:importantForAccessibility="no"
+        tools:text="123 Main Street" />
+    
+    <!-- Story 7.2 AC2: Timestamp (tertiary text) -->
+    <TextView
+        android:id="@+id/timestampText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:layout_marginTop="4dp"
+        android:importantForAccessibility="no"
+        tools:text="saved December 20, 2025" />
+    
+    <!-- Note: Individual TextViews marked importantForAccessibility="no"
+         because parent LinearLayout contentDescription provides comprehensive announcement -->
+</LinearLayout>
