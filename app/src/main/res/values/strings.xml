@@ -370,6 +370,21 @@
     <string name="multiple_locations_select_one">Multiple locations found. Select one.</string>
     <string name="multiple_locations_announcement">Multiple locations found: %1$s. Please be more specific.</string>
     <string name="disambiguation_dialog_title">Select Location</string>
+    
+    <!-- Story 7.4: Offline Map Pre-Caching Strings -->
+    <string name="download_offline_map_action">Download Offline Map</string>
+    <string name="delete_offline_map_action">Delete Offline Map</string>
+    <string name="download_offline_map_description">Download offline map for %1$s</string>
+    <string name="delete_offline_map_description">Delete offline map for %1$s</string>
+    <string name="offline_map_downloaded">Offline map downloaded for %1$s</string>
+    <string name="offline_map_deleted">Offline map deleted for %1$s</string>
+    <string name="offline_map_download_failed">Failed to download offline map</string>
+    <string name="offline_map_download_dialog_message">Download offline map for %1$s?\n\n• Estimated size: %2$s\n• WiFi recommended\n• Valid for 30 days\n\nThis allows navigation without internet connection.</string>
+    <string name="download">Download</string>
+    <string name="offline_map_status_available">Offline maps available (%1$s)</string>
+    <string name="offline_map_status_downloading">Downloading offline maps: %1$d%%</string>
+    <string name="offline_map_status_expired">Offline maps expired. Update now?</string>
+    <string name="update_offline_map">Update Offline Map</string>
 </resources>
 
 

@@ -6,6 +6,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.visionfocus.data.local.AppDatabase
 import com.visionfocus.data.local.EncryptionHelper
+import com.visionfocus.data.local.dao.OfflineMapDao
 import com.visionfocus.data.local.dao.RecognitionHistoryDao
 import com.visionfocus.data.local.dao.SavedLocationDao
 import com.visionfocus.data.repository.RecognitionHistoryRepository
@@ -159,6 +160,43 @@ object DatabaseModule {
     }
     
     /**
+     * Story 7.4: Migration from v5 to v6 - Add offline maps table
+     * 
+     * Adds OfflineMapEntity table with:
+     * - Foreign key to SavedLocationEntity (CASCADE delete)
+     * - Download metadata (status, size, timestamps)
+     * - Expiration tracking (30-day Mapbox limit)
+     * - Mapbox region ID for management operations
+     */
+    private val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // Create offline_maps table
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS offline_maps (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    locationId INTEGER NOT NULL,
+                    regionName TEXT NOT NULL,
+                    centerLat REAL NOT NULL,
+                    centerLng REAL NOT NULL,
+                    radiusMeters INTEGER NOT NULL,
+                    downloadedAt INTEGER NOT NULL,
+                    expiresAt INTEGER NOT NULL,
+                    sizeBytes INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    mapboxRegionId INTEGER NOT NULL,
+                    errorMessage TEXT,
+                    FOREIGN KEY(locationId) REFERENCES saved_locations(id) ON DELETE CASCADE
+                )
+            """.trimIndent())
+            
+            // Create indices for offline_maps
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_maps_locationId ON offline_maps(locationId)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_maps_status ON offline_maps(status)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_maps_expiresAt ON offline_maps(expiresAt)")
+        }
+    }
+    
+    /**
      * Provides singleton AppDatabase instance with encryption.
      * 
      * Story 4.2 enhancements:
@@ -171,6 +209,9 @@ object DatabaseModule {
      * 
      * Story 7.1 enhancements:
      * - Migration from v3 → v4 to add SavedLocationEntity full schema
+     * 
+     * Story 7.4 enhancements:
+     * - Migration from v5 → v6 to add OfflineMapEntity table
      * 
      * Security: Database encrypted at rest with AES-256 (SQLCipher)
      */
@@ -191,8 +232,8 @@ object DatabaseModule {
                 AppDatabase.DATABASE_NAME
             )
                 .openHelperFactory(factory)  // Story 4.2: Enable SQLCipher encryption
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)  // Story 4.2, 4.5, 7.1, 7.2: Migrations for schema changes
-                .fallbackToDestructiveMigration()  // TEMPORARY: Story 7.2 testing - rebuild database if migration fails
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)  // Story 4.2, 4.5, 7.1, 7.2, 7.4: Migrations for schema changes
+                .fallbackToDestructiveMigration()  // TEMPORARY: Story 7.4 testing - rebuild database if migration fails
                 .build()
         } catch (e: Exception) {
             // Fallback: Create unencrypted database if encryption fails
@@ -204,8 +245,8 @@ object DatabaseModule {
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
-                .fallbackToDestructiveMigration()  // TEMPORARY: Story 7.2 testing - rebuild database if migration fails
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .fallbackToDestructiveMigration()  // TEMPORARY: Story 7.4 testing - rebuild database if migration fails
                 .build()
         }
     }
@@ -224,13 +265,23 @@ object DatabaseModule {
     /**
      * Provides SavedLocationDao.
      * 
-     * DAO methods will be added in Story 7.1 when saved locations
-     * feature is implemented (Epic 7).
+     * DAO methods added in Story 7.1 for saved locations feature.
      */
     @Provides
     @Singleton
     fun provideSavedLocationDao(database: AppDatabase): SavedLocationDao {
         return database.savedLocationDao()
+    }
+    
+    /**
+     * Provides OfflineMapDao.
+     * 
+     * DAO methods added in Story 7.4 for offline map pre-caching.
+     */
+    @Provides
+    @Singleton
+    fun provideOfflineMapDao(database: AppDatabase): OfflineMapDao {
+        return database.offlineMapDao()
     }
     
     /**

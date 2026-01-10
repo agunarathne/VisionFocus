@@ -49,6 +49,24 @@ android {
         
         // Story 6.2: Add Maps API key to AndroidManifest.xml
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
+        
+        // Story 7.4: Load Mapbox access token from local.properties
+        val mapboxToken = localProperties.getProperty("MAPBOX_ACCESS_TOKEN") ?: ""
+        
+        // Validate Mapbox token at build time
+        if (mapboxToken.isEmpty() || mapboxToken == "YOUR_MAPBOX_TOKEN_HERE") {
+            throw GradleException(
+                "\n╔═══════════════════════════════════════════════════════════╗\n" +
+                "║  ERROR: MAPBOX_ACCESS_TOKEN not configured               ║\n" +
+                "╚═══════════════════════════════════════════════════════════╝\n" +
+                "\nPlease add your Mapbox access token to local.properties:\n" +
+                "  MAPBOX_ACCESS_TOKEN=pk.YOUR_ACTUAL_TOKEN_HERE\n\n" +
+                "Get token: https://account.mapbox.com/access-tokens/\n" +
+                "Token must have downloads:read scope for offline maps\n"
+            )
+        }
+        
+        buildConfigField("String", "MAPBOX_ACCESS_TOKEN", "\"$mapboxToken\"")
     }
     
     buildTypes {
@@ -131,6 +149,17 @@ dependencies {
     // Google Maps Services (Story 6.2)
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.1.0")
+    
+    // Mapbox Maps SDK for offline navigation - Story 7.4
+    implementation("com.mapbox.maps:android:10.16.0")
+    implementation("com.mapbox.navigation:android:2.17.0")
+    implementation("com.mapbox.navigation:ui:2.17.0")
+    
+    // WorkManager for periodic expiration checks - Story 7.4
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.hilt:hilt-work:1.1.0")
+    kapt("androidx.hilt:hilt-compiler:1.1.0")
+    androidTestImplementation("androidx.work:work-testing:2.9.0")
     
     // Retrofit & Gson (Story 6.2)
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

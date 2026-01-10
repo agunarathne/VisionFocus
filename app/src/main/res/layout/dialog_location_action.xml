@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Story 7.2: Location Action Menu Dialog
-  Provides Navigate, Edit, and Delete actions for saved locations
+  Story 7.4: Added offline map download/delete actions
+  Provides Navigate, Edit, Delete, and offline map actions for saved locations
 -->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -49,6 +50,29 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/delete_action"
+        android:textSize="16sp"
+        android:minHeight="48dp"
+        android:layout_marginTop="8dp"
+        android:textColor="?attr/colorError"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+    
+    <!-- Story 7.4: Download Offline Map Action Button -->
+    <Button
+        android:id="@+id/downloadOfflineMapButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/download_offline_map_action"
+        android:textSize="16sp"
+        android:minHeight="48dp"
+        android:layout_marginTop="8dp"
+        style="@style/Widget.MaterialComponents.Button.TextButton" />
+    
+    <!-- Story 7.4: Delete Offline Map Action Button -->
+    <Button
+        android:id="@+id/deleteOfflineMapButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/delete_offline_map_action"
         android:textSize="16sp"
         android:minHeight="48dp"
         android:layout_marginTop="8dp"

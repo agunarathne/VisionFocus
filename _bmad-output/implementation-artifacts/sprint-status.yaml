@@ -101,8 +101,8 @@ development_status:
   epic-7: in-progress  # Started Jan 5, 2026
   7-1-save-current-location-with-custom-labels: done  # Jan 5, 2026 - Code review complete: 11 issues found (3 HIGH + 5 MEDIUM + 3 LOW), 8 fixed automatically (3 HIGH + 5 MEDIUM), 3 LOW deferred, build successful, all ACs verified
   7-2-saved-locations-management-ui: done  # Jan 7, 2026 - COMPLETE: Implementation + code review (10 issues: 3 CRITICAL + 5 MEDIUM fixed) + user testing (4 critical bugs fixed: database migration 4→5, WhereAmICommand, TTS stop, Navigate to location), 33 files changed (17 new, 12 modified), 6676 insertions, all 11 ACs verified working on Samsung Galaxy A12s
-  7-3-quick-navigation-to-saved-locations: in-progress  # Jan 7, 2026 - Code review COMPLETE: 8 HIGH + 5 MEDIUM issues fixed, tests now compile, build successful, awaiting manual device testing
-  7-4-offline-map-pre-caching: backlog
+  7-3-quick-navigation-to-saved-locations: done  # Jan 10, 2026 - COMPLETE: Code review (13 fixes), manual testing PASSED (all ACs verified), UI bug fixed (MainActivity intent handling), fuzzy matching validated, test restoration scripts created, git commit 1ab5db0
+  7-4-offline-map-pre-caching: done  # Jan 10, 2026 - COMPLETE: Code review + implementation. Mapbox SDK v10.16.0, Repository pattern, MapboxOfflineManager with TileStore API, DownloadProgress, ExpirationCheckWorker, TTS announcements, migration v5→v6, 10 unit tests, 14 files created, UI integration (SavedLocationsFragment + ViewModel), download/delete buttons working. DEFERRED: NavigationManager offline routing (Story 7.5), integration tests, manual Mapbox device testing
   7-5-automatic-gps-offline-navigation-mode-switching: backlog
   7-6-destination-arrival-confirmation: backlog
   epic-7-retrospective: optional

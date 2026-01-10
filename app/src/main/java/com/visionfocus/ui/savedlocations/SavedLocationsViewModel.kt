@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.visionfocus.data.local.entity.SavedLocationEntity
 import com.visionfocus.data.repository.SavedLocationRepository
+import com.visionfocus.data.repository.OfflineMapRepository
 import com.visionfocus.navigation.repository.NavigationRepository
 import com.visionfocus.navigation.models.Destination
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -36,7 +37,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SavedLocationsViewModel @Inject constructor(
     private val repository: SavedLocationRepository,
-    private val navigationRepository: NavigationRepository
+    private val navigationRepository: NavigationRepository,
+    private val offlineMapRepository: OfflineMapRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<SavedLocationsUiState>(SavedLocationsUiState.Loading)
@@ -75,6 +77,13 @@ class SavedLocationsViewModel @Inject constructor(
                     }
                 }
         }
+    }
+    
+    /**
+     * Story 7.4: Refresh locations to update offline map status
+     */
+    fun refreshLocations() {
+        loadLocations()
     }
     
     /**
@@ -215,15 +224,19 @@ class SavedLocationsViewModel @Inject constructor(
     
     // Mapper extensions
     
-    private fun SavedLocationEntity.toUiModel() = SavedLocationUiModel(
-        id = id,
-        name = name,
-        latitude = latitude,
-        longitude = longitude,
-        address = address,
-        createdAt = createdAt,
-        lastUsedAt = lastUsedAt
-    )
+    private suspend fun SavedLocationEntity.toUiModel(): SavedLocationUiModel {
+        val hasOfflineMap = offlineMapRepository.isOfflineMapAvailable(id)
+        return SavedLocationUiModel(
+            id = id,
+            name = name,
+            latitude = latitude,
+            longitude = longitude,
+            address = address,
+            createdAt = createdAt,
+            lastUsedAt = lastUsedAt,
+            hasOfflineMap = hasOfflineMap
+        )
+    }
     
     private fun SavedLocationUiModel.toEntity() = SavedLocationEntity(
         id = id,

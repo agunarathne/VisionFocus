@@ -11,8 +11,12 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.visionfocus.R
 import com.visionfocus.databinding.FragmentSavedLocationsBinding
+import com.visionfocus.data.repository.OfflineMapRepository
+import com.visionfocus.navigation.offline.DownloadProgress
 import com.visionfocus.navigation.models.NavigationRoute
 import com.visionfocus.tts.engine.TTSManager
+import com.visionfocus.ui.dialogs.OfflineMapDownloadDialog
+import com.visionfocus.ui.dialogs.OfflineMapProgressDialog
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -22,12 +26,14 @@ import javax.inject.Inject
  * Fragment for viewing and managing saved locations.
  * 
  * Story 7.2: Saved Locations Management UI
+ * Story 7.4: Added offline map download functionality
  * 
  * Features:
  * - RecyclerView displaying all saved locations sorted by most recently used
  * - Each item shows: location name, address (if available), save timestamp
  * - TalkBack content descriptions for full accessibility
  * - Action menu for Navigate, Edit, Delete operations
+ * - Offline map download and management (Story 7.4)
  * - Empty state when no locations exist
  * 
  * @AndroidEntryPoint enables Hilt dependency injection
@@ -43,7 +49,11 @@ class SavedLocationsFragment : Fragment() {
     @Inject
     lateinit var ttsManager: TTSManager
     
+    @Inject
+    lateinit var offlineMapRepository: OfflineMapRepository
+    
     private lateinit var adapter: SavedLocationAdapter
+    private var progressDialog: OfflineMapProgressDialog? = null
     
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -245,6 +255,76 @@ class SavedLocationsFragment : Fragment() {
         }
     }
     
+    /**
+     * Story 7.4: Handle Download Offline Map action
+     * Shows confirmation dialog before downloading
+     */
+    fun onDownloadOfflineMapClicked(location: SavedLocationUiModel) {
+        val dialog = OfflineMapDownloadDialog.newInstance(location) { confirmed ->
+            if (confirmed) {
+                startOfflineMapDownload(location)
+            }
+        }
+        dialog.show(childFragmentManager, "offline_map_download")
+    }
+    
+    /**
+     * Story 7.4: Start downloading offline map for location
+     */
+    private fun startOfflineMapDownload(location: SavedLocationUiModel) {
+        progressDialog = OfflineMapProgressDialog.newInstance(location.name)
+        progressDialog?.show(childFragmentManager, OfflineMapProgressDialog.TAG)
+        
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                offlineMapRepository.downloadOfflineMap(
+                    locationId = location.id,
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    locationName = location.name
+                ).collect { progress ->
+                    progressDialog?.updateProgress(progress)
+                    
+                    when (progress) {
+                        is DownloadProgress.Complete -> {
+                            announceOfflineMapDownloaded(location.name)
+                            // Refresh list to show updated offline map status
+                            viewModel.refreshLocations()
+                        }
+                        is DownloadProgress.Error -> {
+                            announceError("Failed to download offline map: ${progress.message}")
+                        }
+                        else -> { /* Progress updates handled by dialog */ }
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Download failed")
+                announceError("Failed to download offline map: ${e.message}")
+                progressDialog?.dismiss()
+            }
+        }
+    }
+    
+    /**
+     * Story 7.4: Handle Delete Offline Map action
+     */
+    fun onDeleteOfflineMapClicked(location: SavedLocationUiModel) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val result = offlineMapRepository.deleteOfflineMap(location.id)
+            result.fold(
+                onSuccess = {
+                    announceOfflineMapDeleted(location.name)
+                    // Refresh list to show updated offline map status
+                    viewModel.refreshLocations()
+                },
+                onFailure = { error ->
+                    Timber.e(error, "Failed to delete offline map")
+                    announceError("Failed to delete offline map: ${error.message}")
+                }
+            )
+        }
+    }
+    
     // TalkBack announcements
     
     /**
@@ -321,8 +401,32 @@ class SavedLocationsFragment : Fragment() {
         }
     }
     
+    /**
+     * Story 7.4: Announce offline map downloaded
+     */
+    private fun announceOfflineMapDownloaded(locationName: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val announcement = "Offline map downloaded for $locationName"
+            ttsManager.announce(announcement)
+            Timber.d("Announced: $announcement")
+        }
+    }
+    
+    /**
+     * Story 7.4: Announce offline map deleted
+     */
+    private fun announceOfflineMapDeleted(locationName: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val announcement = "Offline map deleted for $locationName"
+            ttsManager.announce(announcement)
+            Timber.d("Announced: $announcement")
+        }
+    }
+    
     override fun onDestroyView() {
         super.onDestroyView()
+        progressDialog?.dismiss()
+        progressDialog = null
         _binding = null
     }
 }

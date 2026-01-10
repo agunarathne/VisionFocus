@@ -7,6 +7,7 @@ import kotlinx.parcelize.Parcelize
  * UI model for saved location.
  * 
  * Story 7.2: Presentation layer model separate from entity
+ * Story 7.4: Added hasOfflineMap flag for offline map availability
  * Parcelable for passing between dialogs and fragments.
  */
 @Parcelize
@@ -17,5 +18,6 @@ data class SavedLocationUiModel(
     val longitude: Double,
     val address: String?,
     val createdAt: Long,
-    val lastUsedAt: Long
+    val lastUsedAt: Long,
+    val hasOfflineMap: Boolean = false  // Story 7.4: Indicates if offline map is downloaded
 ) : Parcelable
