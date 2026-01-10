@@ -21,23 +21,32 @@ Write-Host ""
 # Step 2: Check device connection
 Write-Host "Step 2/5: Checking device connection..." -ForegroundColor Yellow
 $devices = adb devices | Select-String "192.168.1.95:37791"
-if (-not $devices) {
-    Write-Host "❌ Device not connected at 192.168.1.95:37791" -ForegroundColor Red
-    Write-Host "Run: adb connect 192.168.1.95:37791" -ForegroundColor Yellow
-    exit 1
+if ($null -eq $devices) {
+    # Try generic device detection if specific IP fails
+    $devices = adb devices | Select-String "device$" | Select-String -NotMatch "List of devices"
+    if ($devices) {
+        $deviceId = $devices[0].ToString().Split()[0]
+        Write-Host "✅ Device connected: $deviceId" -ForegroundColor Green
+    } else {
+        Write-Host "❌ Device not connected" -ForegroundColor Red
+        Write-Host "Run: adb connect <your-device-ip>" -ForegroundColor Yellow
+        exit 1
+    }
+} else {
+    $deviceId = "192.168.1.95:37791"
+    Write-Host "✅ Device connected!" -ForegroundColor Green
 }
-Write-Host "✅ Device connected!" -ForegroundColor Green
 Write-Host ""
 
 # Step 3: Uninstall old app completely
 Write-Host "Step 3/5: Uninstalling old app..." -ForegroundColor Yellow
-adb -s 192.168.1.95:37791 uninstall com.visionfocus 2>&1 | Out-Null
+adb -s $deviceId uninstall com.visionfocus 2>&1 | Out-Null
 Write-Host "✅ Old app removed!" -ForegroundColor Green
 Write-Host ""
 
 # Step 4: Install fresh APK
 Write-Host "Step 4/5: Installing fresh APK with fixes..." -ForegroundColor Yellow
-$installResult = adb -s 192.168.1.95:37791 install app\build\outputs\apk\debug\app-debug.apk 2>&1
+$installResult = adb -s $deviceId install app\build\outputs\apk\debug\app-debug.apk 2>&1
 
 if ($installResult -match "Success") {
     Write-Host "✅ Installation successful!" -ForegroundColor Green
@@ -50,7 +59,7 @@ Write-Host ""
 
 # Step 5: Launch app
 Write-Host "Step 5/5: Launching VisionFocus..." -ForegroundColor Yellow
-adb -s 192.168.1.95:37791 shell am start -n com.visionfocus/.MainActivity 2>&1 | Out-Null
+adb -s $deviceId shell am start -n com.visionfocus/.MainActivity 2>&1 | Out-Null
 Write-Host "✅ App launched!" -ForegroundColor Green
 Write-Host ""
 

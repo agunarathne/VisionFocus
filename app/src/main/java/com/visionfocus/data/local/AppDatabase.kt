@@ -2,9 +2,11 @@ package com.visionfocus.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.visionfocus.data.local.dao.BeaconDao
 import com.visionfocus.data.local.dao.OfflineMapDao
 import com.visionfocus.data.local.dao.RecognitionHistoryDao
 import com.visionfocus.data.local.dao.SavedLocationDao
+import com.visionfocus.data.local.entity.BeaconEntity
 import com.visionfocus.data.local.entity.OfflineMapEntity
 import com.visionfocus.data.local.entity.RecognitionHistoryEntity
 import com.visionfocus.data.local.entity.SavedLocationEntity
@@ -12,12 +14,13 @@ import com.visionfocus.data.local.entity.SavedLocationEntity
 /**
  * Room database for VisionFocus local data storage.
  * 
- * Contains three entities:
+ * Contains four entities:
  * 1. RecognitionHistoryEntity - Stores last 50 recognition results (Epic 4)
  * 2. SavedLocationEntity - Stores user's frequently visited locations (Epic 7)
  * 3. OfflineMapEntity - Stores offline map metadata for saved locations (Story 7.4)
+ * 4. BeaconEntity - Stores paired Bluetooth beacons for indoor navigation (Epic 10)
  * 
- * Database version: 6 (Story 7.4 - added OfflineMapEntity)
+ * Database version: 7 (Epic 10 Story 10.1 - added BeaconEntity)
  * Migration strategy: MIGRATION_5_6 for production data preservation
  * 
  * Version history:
@@ -27,6 +30,7 @@ import com.visionfocus.data.local.entity.SavedLocationEntity
  * - v4: Saved locations schema (Story 7.1) - name, latitude, longitude, createdAt, lastUsedAt, address
  * - v5: Database migration bug fix (Story 7.2)
  * - v6: Offline maps table (Story 7.4) - locationId FK, download metadata, expiration tracking
+ * - v7: Beacon navigation table (Epic 10 Story 10.1) - name, macAddress, rssi, timestamps
  * 
  * Future enhancements:
  * - Story 7.5: Automatic offline/GPS mode switching
@@ -36,9 +40,10 @@ import com.visionfocus.data.local.entity.SavedLocationEntity
     entities = [
         RecognitionHistoryEntity::class,
         SavedLocationEntity::class,
-        OfflineMapEntity::class
+        OfflineMapEntity::class,
+        BeaconEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true  // Export schema for version tracking and migrations
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -59,6 +64,12 @@ abstract class AppDatabase : RoomDatabase() {
      * Provides access to offline maps data access object.
      * Methods added in Story 7.4.
      */
+    /**
+     * Provides access to beacons data access object.
+     * Methods added in Epic 10 Story 10.1.
+     */
+    abstract fun beaconDao(): BeaconDao
+    
     abstract fun offlineMapDao(): OfflineMapDao
     
     companion object {

@@ -11,8 +11,8 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.visionfocus.R
+import com.visionfocus.MainActivity
 import com.visionfocus.data.repository.OfflineMapRepository
-import com.visionfocus.ui.MainActivity
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first

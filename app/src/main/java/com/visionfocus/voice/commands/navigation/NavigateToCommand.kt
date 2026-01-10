@@ -3,7 +3,9 @@ package com.visionfocus.voice.commands.navigation
 import android.content.Context
 import android.content.Intent
 import androidx.lifecycle.lifecycleScope
+import com.visionfocus.beacon.ProximityNavigationService
 import com.visionfocus.data.local.entity.SavedLocationEntity
+import com.visionfocus.data.repository.BeaconRepository
 import com.visionfocus.data.repository.SavedLocationRepository
 import com.visionfocus.navigation.models.Destination
 import com.visionfocus.navigation.repository.NavigationRepository
@@ -12,7 +14,9 @@ import com.visionfocus.tts.engine.TTSManager
 import com.visionfocus.voice.processor.CommandResult
 import com.visionfocus.voice.processor.LevenshteinMatcher
 import com.visionfocus.voice.processor.VoiceCommand
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,6 +27,7 @@ import javax.inject.Singleton
 /**
  * Navigate To Command
  * Story 7.3 Task 4: Voice command for quick navigation to saved locations
+ * Epic 10: Supports fallback to Beacon navigation if no location found
  * 
  * Directly starts navigation to a saved location by name without intermediate screens.
  * Supports fuzzy matching with Levenshtein distance ≤2 for typos and speech recognition errors.
@@ -50,7 +55,9 @@ import javax.inject.Singleton
 @Singleton
 class NavigateToCommand @Inject constructor(
     private val repository: SavedLocationRepository,
+    private val beaconRepository: BeaconRepository,
     private val navigationRepository: NavigationRepository,
+    private val proximityNav: ProximityNavigationService,
     private val ttsManager: TTSManager
 ) : VoiceCommand {
     
@@ -60,6 +67,9 @@ class NavigateToCommand @Inject constructor(
         private const val TRANSCRIPTION_KEY = "last_transcription"
         private const val FUZZY_MATCH_THRESHOLD = 2
     }
+    
+    // Dedicated scope for proximity navigation lifecycle
+    private val navigationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
     override val displayName: String = "Navigate To"
     
@@ -75,10 +85,10 @@ class NavigateToCommand @Inject constructor(
      * 
      * Flow:
      * 1. Extract location name from transcription
-     * 2. Try exact match (case-insensitive)
-     * 3. Try fuzzy match if no exact match
-     * 4. Handle disambiguation if multiple matches
-     * 5. Start navigation to selected location
+     * 2. Try exact match (case-insensitive) for Saved Location
+     * 3. Try fuzzy match for Saved Location
+     * 4. If no Saved Location found, try specific/exact match for Beacon
+     * 5. Start navigation (Turn-by-turn OR Proximity)
      */
     override suspend fun execute(context: Context): CommandResult {
         return try {
@@ -110,36 +120,36 @@ class NavigateToCommand @Inject constructor(
             val allLocations = repository.getAllLocationsSorted().firstOrNull() ?: emptyList()
             val fuzzyMatches = findFuzzyLocationMatches(locationName, allLocations)
             
-            return when {
-                fuzzyMatches.isEmpty() -> {
-                    // Story 7.3 Task 4.11: No matches
-                    val message = context.getString(
-                        com.visionfocus.R.string.no_location_found,
-                        locationName
-                    )
-                    ttsManager.announce(message)
-                    Timber.w("No saved location found named: $locationName")
-                    CommandResult.Failure("Location not found")
-                }
-                fuzzyMatches.size == 1 -> {
-                    // Story 7.3 Task 4.9: Single fuzzy match
+            if (fuzzyMatches.isNotEmpty()) {
+                if (fuzzyMatches.size == 1) {
                     val match = fuzzyMatches.first()
-                    val announcement = context.getString(
-                        com.visionfocus.R.string.did_you_mean,
-                        match.name
-                    )
-                    ttsManager.announce(announcement)
-                    
-                    Timber.d("Single fuzzy match found: ${match.name}")
+                    ttsManager.announce(context.getString(com.visionfocus.R.string.did_you_mean, match.name))
                     startNavigationToLocation(context, match)
-                    CommandResult.Success("Navigation to ${match.name} started")
-                }
-                else -> {
-                    // Story 7.3 Task 4.10: Multiple fuzzy matches - disambiguation
+                    return CommandResult.Success("Navigation to ${match.name} started")
+                } else {
                     handleDisambiguation(context, fuzzyMatches)
-                    CommandResult.Success("Disambiguation dialog shown")
+                    return CommandResult.Success("Disambiguation dialog shown")
                 }
             }
+
+            // Fallback: Check for Beacon if no location found
+            // Epic 10: Seamless beacon support
+            Timber.d("No saved location found, checking beacons for: $locationName")
+            val beaconMatch = beaconRepository.findByName(locationName)
+            
+            if (beaconMatch != null) {
+                Timber.d("Beacon match found: ${beaconMatch.name}")
+                ttsManager.announce("Found beacon ${beaconMatch.name}. Starting proximity tracking.")
+                proximityNav.startNavigation(beaconMatch.macAddress, beaconMatch.name, navigationScope)
+                return CommandResult.Success("Tracking beacon ${beaconMatch.name}")
+            }
+            
+            // No matches at all
+            val message = context.getString(com.visionfocus.R.string.no_location_found, locationName)
+            ttsManager.announce(message)
+            Timber.w("No saved location or beacon found named: $locationName")
+            return CommandResult.Failure("Location not found")
+            
         } catch (e: Exception) {
             Timber.e(e, "Navigate To command execution failed")
             ttsManager.announce("Navigation failed. Please try again.")

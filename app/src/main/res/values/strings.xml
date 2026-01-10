@@ -385,6 +385,12 @@
     <string name="offline_map_status_downloading">Downloading offline maps: %1$d%%</string>
     <string name="offline_map_status_expired">Offline maps expired. Update now?</string>
     <string name="update_offline_map">Update Offline Map</string>
+
+    <!-- Epic 10: Bluetooth Beacon Navigation -->
+    <string name="beacon_navigation_section">Indoor Navigation</string>
+    <string name="beacon_navigation_description">Manage Bluetooth Smart Tags for indoor location.</string>
+    <string name="manage_beacons_action">Manage Smart Tags</string>
+    <string name="manage_beacons_description">Manage Smart Tags, button. Configure Bluetooth beacons for rooms and objects.</string>
 </resources>
 
 

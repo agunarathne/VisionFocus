@@ -2,7 +2,9 @@ package com.visionfocus.data.repository
 
 import com.visionfocus.data.local.dao.OfflineMapDao
 import com.visionfocus.data.local.entity.OfflineMapEntity
-import com.visionfocus.maps.MapboxOfflineManager
+import com.visionfocus.data.local.entity.SavedLocationEntity
+import com.visionfocus.di.IODispatcher
+import com.visionfocus.maps.GoogleMapsOfflineManager
 import com.visionfocus.navigation.offline.DownloadProgress
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -21,8 +23,8 @@ import javax.inject.Singleton
 @Singleton
 class OfflineMapRepositoryImpl @Inject constructor(
     private val offlineMapDao: OfflineMapDao,
-    private val mapboxOfflineManager: MapboxOfflineManager,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val googleMapsOfflineManager: GoogleMapsOfflineManager,
+    @IODispatcher private val ioDispatcher: CoroutineDispatcher
 ) : OfflineMapRepository {
     
     override suspend fun downloadOfflineMap(
@@ -32,13 +34,16 @@ class OfflineMapRepositoryImpl @Inject constructor(
         locationName: String,
         radiusMeters: Int
     ): Flow<DownloadProgress> {
-        return mapboxOfflineManager.downloadOfflineMap(
-            locationId = locationId,
+        // Create a temporary SavedLocationEntity for the manager
+        val tempLocation = SavedLocationEntity(
+            id = locationId,
+            name = locationName,
             latitude = latitude,
             longitude = longitude,
-            locationName = locationName,
-            radiusMeters = radiusMeters
+            address = null, // Not needed for offline map download
+            createdAt = System.currentTimeMillis()
         )
+        return googleMapsOfflineManager.downloadOfflineMap(tempLocation, radiusMeters)
     }
     
     override fun getOfflineMapForLocation(locationId: Long): Flow<OfflineMapEntity?> {
@@ -81,20 +86,8 @@ class OfflineMapRepositoryImpl @Inject constructor(
     override suspend fun deleteOfflineMap(locationId: Long): Result<Unit> =
         withContext(ioDispatcher) {
             try {
-                val map = offlineMapDao.getOfflineMapByLocationId(locationId)
-                if (map != null) {
-                    // Delete from Mapbox offline manager
-                    mapboxOfflineManager.deleteOfflineRegion(map.mapboxRegionId)
-                    
-                    // Delete from database
-                    offlineMapDao.deleteOfflineMap(locationId)
-                    
-                    Timber.i("Successfully deleted offline map for location $locationId")
-                    Result.success(Unit)
-                } else {
-                    Timber.w("No offline map found for location $locationId")
-                    Result.failure(Exception("Offline map not found"))
-                }
+                // Use GoogleMapsOfflineManager to handle deletion
+                googleMapsOfflineManager.deleteOfflineMap(locationId)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to delete offline map for location $locationId")
                 Result.failure(e)

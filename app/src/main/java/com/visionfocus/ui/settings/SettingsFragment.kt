@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.widget.SeekBar
 import android.widget.RadioButton
+import androidx.navigation.fragment.findNavController
 
 /**
  * Settings screen for theme preferences and haptic feedback.
@@ -538,6 +539,11 @@ class SettingsFragment : Fragment() {
         // Story 5.3: Reset to Defaults button listener
         binding.resetDefaultsButton.setOnClickListener {
             showResetConfirmationDialog()
+        }
+        
+        // Epic 10: Manage Beacons button listener
+        binding.manageBeaconsButton.setOnClickListener {
+            findNavController().navigate(R.id.beaconManagementFragment)
         }
     }
     

@@ -345,4 +345,41 @@ class NavigationAnnouncementManager @Inject constructor(
         Log.w(TAG, "Excessive recalculations: $message")
         announceWithPriority(message)
     }
+    
+    /**
+     * Story 7.5 Task 7.2: Announce network loss with offline capability.
+     * 
+     * @param hasOfflineMaps Whether offline maps are available for destination
+     */
+    suspend fun announceNetworkLoss(hasOfflineMaps: Boolean) {
+        val message = if (hasOfflineMaps) {
+            "Lost internet connection. Continuing navigation using offline maps."
+        } else {
+            "Lost internet connection. Cannot continue navigation. Waiting for connectivity."
+        }
+        Log.w(TAG, "Network loss: $message")
+        announceWithPriority(message)
+    }
+    
+    /**
+     * Story 7.5 Task 7.3: Announce network restored.
+     * 
+     * AC #6: "Internet connected. Updating route with live traffic."
+     */
+    suspend fun announceNetworkRestored() {
+        val message = "Internet connected. Updating route with live traffic."
+        Log.i(TAG, "Network restored: $message")
+        announceWithPriority(message)
+    }
+    
+    /**
+     * Story 7.5 Task 7.4: Announce deviation while in offline mode.
+     * 
+     * AC #5: "Off route. Cannot recalculate without internet. Continue following directions or wait for connectivity."
+     */
+    suspend fun announceOfflineDeviation() {
+        val message = "Off route. Cannot recalculate without internet. Continue following directions or wait for connectivity."
+        Log.w(TAG, "Offline deviation: $message")
+        announceWithPriority(message)
+    }
 }

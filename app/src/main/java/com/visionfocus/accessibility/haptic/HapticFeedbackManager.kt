@@ -233,6 +233,42 @@ class HapticFeedbackManager @Inject constructor(
                     repeat = -1
                 )
             }
+            
+            HapticPattern.NavigationArrived -> {
+                // Epic 10 Story 10.2: Beacon navigation arrival (Strong triple tap)
+                vibratePattern(
+                    timings = longArrayOf(0, 100, 100, 100, 100, 100),
+                    amplitudes = intArrayOf(0, getAmplitude(intensity), 0, getAmplitude(intensity), 0, getAmplitude(intensity)),
+                    repeat = -1
+                )
+            }
+            
+            HapticPattern.ProximityVeryClose -> {
+                // Epic 10 Story 10.2: Rapid ticking (50ms)
+                vibratePattern(
+                    timings = longArrayOf(0, 50),
+                    amplitudes = intArrayOf(0, getAmplitude(intensity)),
+                    repeat = -1
+                )
+            }
+            
+            HapticPattern.ProximityClose -> {
+                // Epic 10 Story 10.2: Steady beat (100ms)
+                vibratePattern(
+                    timings = longArrayOf(0, 100),
+                    amplitudes = intArrayOf(0, getAmplitude(intensity)),
+                    repeat = -1
+                )
+            }
+            
+            HapticPattern.ProximityFar -> {
+                // Epic 10 Story 10.2: Slow pulse (200ms)
+                vibratePattern(
+                    timings = longArrayOf(0, 200),
+                    amplitudes = intArrayOf(0, getAmplitude(intensity)),
+                    repeat = -1
+                )
+            }
         }
         } catch (e: SecurityException) {
             android.util.Log.e(TAG, "Haptic trigger failed: VIBRATE permission revoked", e)

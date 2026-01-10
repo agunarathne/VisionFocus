@@ -102,4 +102,36 @@ sealed class HapticPattern {
      * Feels like: "Tap-tap-tap" - "Upcoming navigation action"
      */
     object NavigationAlert : HapticPattern()
+    
+    /**
+     * Triple pulse vibration for arrival
+     * Epic 10 Story 10.2: Beacon navigation arrival
+     * Duration: 100ms on, 100ms off, 100ms on, 100ms off, 100ms on
+     * Feels like: Strong triple tap - "You have arrived"
+     */
+    object NavigationArrived : HapticPattern()
+    
+    /**
+     * Fast pulse for very close proximity
+     * Epic 10 Story 10.2: Beacon navigation proximity
+     * Duration: 50ms (short, sharp)
+     * Feels like: Rapid ticking - "Getting warmer"
+     */
+    object ProximityVeryClose : HapticPattern()
+    
+    /**
+     * Medium pulse for close proximity
+     * Epic 10 Story 10.2: Beacon navigation proximity
+     * Duration: 100ms
+     * Feels like: Steady beat - "On right track"
+     */
+    object ProximityClose : HapticPattern()
+    
+    /**
+     * Slow pulse for far proximity
+     * Epic 10 Story 10.2: Beacon navigation proximity
+     * Duration: 200ms
+     * Feels like: Slow pulse - "Signal detected"
+     */
+    object ProximityFar : HapticPattern()
 }

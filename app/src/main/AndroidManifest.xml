@@ -16,6 +16,20 @@
     <!-- ACCESS_BACKGROUND_LOCATION NOT used - navigation is foreground-only (Story 6.5 AC #8) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     
+    <!-- Bluetooth permissions for beacon indoor navigation (Epic 10) -->
+    <!-- BLUETOOTH_SCAN: Required to discover nearby BLE beacons (Story 10.1) -->
+    <!-- BLUETOOTH_CONNECT: Required to read beacon details and connect (Story 10.1) -->
+    <!-- Android 12+ (API 31+) requires these permissions for BLE scanning -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    
+    <!-- Legacy Bluetooth permissions for Android 11 and below -->
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
+    
     <!-- Internet permission for Google Maps Directions API (Story 6.2) -->
     <uses-permission android:name="android.permission.INTERNET" />
     

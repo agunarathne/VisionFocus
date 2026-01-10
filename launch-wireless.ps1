@@ -2,13 +2,59 @@
 # Connects to Samsung SM-A127F via wireless debugging and launches the app
 
 param(
-    [string]$DeviceIP = "192.168.1.95:39547",
+    [string]$DeviceIP = "",
     [string]$PackageName = "com.visionfocus",
     [string]$ActivityName = ".MainActivity"
 )
 
 # Ensure ADB is in PATH
 $env:PATH += ";$env:LOCALAPPDATA\Android\Sdk\platform-tools"
+
+# Function to find wireless device
+function Get-WirelessDevice {
+    # 1. Try mDNS discovery (most accurate for new IP/Port)
+    $mdns = adb mdns services 2>&1
+    $pattern = "\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+)\b"
+    foreach ($line in $mdns) {
+        if ($line -match "_adb-tls-connect._tcp" -and $line -match $pattern) {
+             return $matches[1]
+        }
+    }
+
+    # 2. Fallback: Check actually CONNECTED devices (ignore offline/unauthorized)
+    $devices = adb devices
+    foreach ($line in $devices) {
+        if ($line -match $pattern -and $line -match "\s+device$") {
+             return $matches[1]
+        }
+    }
+    
+    return $null
+}
+
+# Auto-detect IP if not provided
+if ([string]::IsNullOrWhiteSpace($DeviceIP)) {
+    Write-Host "🔍 Searching for connected wireless devices..." -ForegroundColor Cyan
+    $foundIP = Get-WirelessDevice
+    if ($foundIP) {
+        $DeviceIP = $foundIP
+        Write-Host "✅ Found device: $DeviceIP" -ForegroundColor Green
+        
+        # Disconnect others to clean up
+        adb devices | Select-String "offline" | ForEach-Object {
+            if ($_ -match $pattern) {
+                $stale = $matches[1]
+                if ($stale -ne $DeviceIP) {
+                    adb disconnect $stale
+                }
+            }
+        }
+    } else {
+        # Fallback default
+        $DeviceIP = "192.168.8.101:41151"
+        Write-Host "⚠️ No device found. Using default: $DeviceIP" -ForegroundColor Yellow
+    }
+}
 
 Write-Host "🔌 Connecting to device at $DeviceIP..." -ForegroundColor Cyan
 

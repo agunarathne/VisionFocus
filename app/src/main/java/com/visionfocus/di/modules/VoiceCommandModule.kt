@@ -7,6 +7,7 @@ import com.visionfocus.voice.commands.navigation.BackCommand
 import com.visionfocus.voice.commands.navigation.HistoryCommand
 import com.visionfocus.voice.commands.navigation.HomeCommand
 import com.visionfocus.voice.commands.navigation.NavigateCommand
+import com.visionfocus.voice.commands.navigation.NavigateToBeaconCommand
 import com.visionfocus.voice.commands.navigation.NavigateToCommand
 import com.visionfocus.voice.commands.navigation.SavedLocationsCommand
 import com.visionfocus.voice.commands.navigation.WhereAmICommand
@@ -94,6 +95,7 @@ object VoiceCommandModule {
      * @param verbosityDetailedCommand Settings commands (Story 4.1 Task 7)
      * @param scanEnvironmentCommand Recognition commands (Story 4.4 Task 7)
      * @param stopScanningCommand Recognition commands (Story 4.4 Task 7)
+     * @param navigateToBeaconCommand Beacon navigation commands (Epic 10 Story 10.2)
      * @return Fully configured VoiceCommandProcessor
      */
     @Provides
@@ -111,6 +113,7 @@ object VoiceCommandModule {
         // Navigation commands
         navigateCommand: NavigateCommand,
         navigateToCommand: NavigateToCommand,  // Story 7.3
+        navigateToBeaconCommand: NavigateToBeaconCommand,  // Epic 10 Story 10.2
         whereAmICommand: WhereAmICommand,
         backCommand: BackCommand,
         homeCommand: HomeCommand,
@@ -142,6 +145,7 @@ object VoiceCommandModule {
         
         // Register all commands with the processor
         processor.registerCommand(recognizeCommand)
+        processor.registerCommand(navigateToBeaconCommand)  // Epic 10 Story 10.2
         processor.registerCommand(navigateCommand)
         processor.registerCommand(navigateToCommand)  // Story 7.3
         processor.registerCommand(repeatCommand)

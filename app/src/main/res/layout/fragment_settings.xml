@@ -429,6 +429,36 @@
             android:paddingBottom="@dimen/spacing_medium"
             android:importantForAccessibility="yes"
             android:contentDescription="@string/network_status_online" />
+            
+        <!-- Epic 10: Beacon Navigation Section -->
+        <TextView
+            android:id="@+id/beaconNavigationSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/beacon_navigation_section"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:paddingTop="@dimen/spacing_large"
+            android:paddingBottom="@dimen/spacing_small"
+            android:accessibilityHeading="true"
+            android:importantForAccessibility="yes" />
+
+        <TextView
+            android:id="@+id/beaconNavigationExplanation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/beacon_navigation_description"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:paddingBottom="@dimen/spacing_small"
+            android:importantForAccessibility="no" />
+
+        <Button
+            android:id="@+id/manageBeaconsButton"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="48dp"
+            android:text="@string/manage_beacons_action"
+            android:contentDescription="@string/manage_beacons_description" />
         
         <!-- Story 5.3: Reset to Defaults Button -->
         <Button

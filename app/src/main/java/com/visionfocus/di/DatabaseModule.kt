@@ -6,6 +6,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.visionfocus.data.local.AppDatabase
 import com.visionfocus.data.local.EncryptionHelper
+import com.visionfocus.data.local.dao.BeaconDao
 import com.visionfocus.data.local.dao.OfflineMapDao
 import com.visionfocus.data.local.dao.RecognitionHistoryDao
 import com.visionfocus.data.local.dao.SavedLocationDao
@@ -197,6 +198,36 @@ object DatabaseModule {
     }
     
     /**
+     * Epic 10 Story 10.1: Migration from v6 to v7 - Add beacons table
+     * 
+     * Adds BeaconEntity table for Bluetooth beacon indoor navigation:
+     * - name: User-provided beacon name (e.g., "Living Room")
+     * - macAddress: Bluetooth MAC address (unique identifier)
+     * - lastRssi: Last recorded signal strength
+     * - createdAt: Timestamp when beacon was paired
+     * - lastSeenAt: Timestamp when beacon was last detected
+     */
+    private val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // Create beacons table
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS beacons (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    name TEXT NOT NULL,
+                    macAddress TEXT NOT NULL,
+                    lastRssi INTEGER NOT NULL DEFAULT -100,
+                    createdAt INTEGER NOT NULL,
+                    lastSeenAt INTEGER NOT NULL
+                )
+            """.trimIndent())
+            
+            // Create indices for beacons
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_beacons_macAddress ON beacons(macAddress)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_beacons_name ON beacons(name)")
+        }
+    }
+    
+    /**
      * Provides singleton AppDatabase instance with encryption.
      * 
      * Story 4.2 enhancements:
@@ -212,6 +243,9 @@ object DatabaseModule {
      * 
      * Story 7.4 enhancements:
      * - Migration from v5 → v6 to add OfflineMapEntity table
+     * 
+     * Epic 10 Story 10.1 enhancements:
+     * - Migration from v6 → v7 to add BeaconEntity table
      * 
      * Security: Database encrypted at rest with AES-256 (SQLCipher)
      */
@@ -232,7 +266,7 @@ object DatabaseModule {
                 AppDatabase.DATABASE_NAME
             )
                 .openHelperFactory(factory)  // Story 4.2: Enable SQLCipher encryption
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)  // Story 4.2, 4.5, 7.1, 7.2, 7.4: Migrations for schema changes
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)  // Story 4.2, 4.5, 7.1, 7.2, 7.4, Epic 10.1: Migrations for schema changes
                 .fallbackToDestructiveMigration()  // TEMPORARY: Story 7.4 testing - rebuild database if migration fails
                 .build()
         } catch (e: Exception) {
@@ -245,7 +279,7 @@ object DatabaseModule {
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .fallbackToDestructiveMigration()  // TEMPORARY: Story 7.4 testing - rebuild database if migration fails
                 .build()
         }
@@ -282,6 +316,17 @@ object DatabaseModule {
     @Singleton
     fun provideOfflineMapDao(database: AppDatabase): OfflineMapDao {
         return database.offlineMapDao()
+    }
+    
+    /**
+     * Provides BeaconDao.
+     * 
+     * DAO methods added in Epic 10 Story 10.1 for beacon indoor navigation.
+     */
+    @Provides
+    @Singleton
+    fun provideBeaconDao(database: AppDatabase): BeaconDao {
+        return database.beaconDao()
     }
     
     /**

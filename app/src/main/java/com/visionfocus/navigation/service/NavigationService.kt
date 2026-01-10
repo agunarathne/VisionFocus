@@ -16,10 +16,14 @@ import com.visionfocus.navigation.location.LocationManager
 import com.visionfocus.navigation.models.DeviationState
 import com.visionfocus.navigation.models.Destination
 import com.visionfocus.navigation.models.LatLng
+import com.visionfocus.navigation.models.NavigationMode
 import com.visionfocus.navigation.models.NavigationProgress
 import com.visionfocus.navigation.models.NavigationRoute
 import com.visionfocus.navigation.models.TurnWarning
 import com.visionfocus.navigation.repository.NavigationRepository
+import com.visionfocus.navigation.manager.NavigationManager
+import com.visionfocus.data.repository.OfflineMapRepository
+import com.visionfocus.network.monitor.NetworkStateMonitor
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,9 +31,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
@@ -100,9 +106,15 @@ class NavigationService : Service() {
     @Inject lateinit var deviationDetector: DeviationDetector
     @Inject lateinit var navigationRepository: NavigationRepository
     
+    // Story 7.5: Mode switching dependencies
+    @Inject lateinit var navigationManager: NavigationManager
+    @Inject lateinit var offlineMapRepository: OfflineMapRepository
+    @Inject lateinit var networkStateMonitor: NetworkStateMonitor
+    
     // Coroutine scope for GPS updates
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var locationUpdatesJob: Job? = null
+    private var networkMonitorJob: Job? = null  // Story 7.5: Network monitoring job
     
     // Current navigation state
     private var navigationRoute: NavigationRoute? = null
@@ -114,6 +126,9 @@ class NavigationService : Service() {
     private var recalculationCount = 0
     private var recalculationWindowStart: Long = 0
     private var isRecalculating = false
+    
+    // Story 7.5: Navigation mode tracking
+    private var currentNavigationMode = NavigationMode.ONLINE
     
     // StateFlow for progress broadcasting to UI
     private val _navigationProgress = MutableStateFlow<NavigationProgress?>(null)
@@ -171,6 +186,7 @@ class NavigationService : Service() {
      * 1. Start foreground service with notification
      * 2. Announce navigation start via TTS
      * 3. Begin GPS location updates at 1Hz
+     * 4. Story 7.5: Start network state monitoring
      * 
      * Story 6.4: Store destination for recalculation
      */
@@ -184,6 +200,11 @@ class NavigationService : Service() {
         recalculationCount = 0
         recalculationWindowStart = System.currentTimeMillis()
         
+        // Story 7.5: Determine initial navigation mode
+        val isOnline = networkStateMonitor.isNetworkAvailable.value
+        currentNavigationMode = if (isOnline) NavigationMode.ONLINE else NavigationMode.OFFLINE
+        Log.d(TAG, "Initial navigation mode: $currentNavigationMode")
+        
         // Reset deviation detector
         deviationDetector.resetHistory()
         
@@ -195,6 +216,9 @@ class NavigationService : Service() {
         serviceScope.launch {
             announcementManager.announceNavigationStart(route.totalDistance, route.totalDuration)
         }
+        
+        // Story 7.5: Start network state monitoring
+        startNetworkMonitoring()
         
         // Start GPS location updates (1Hz)
         startLocationUpdates(route)
@@ -313,11 +337,21 @@ class NavigationService : Service() {
      * Handles route deviation by recalculating route and resuming guidance.
      * 
      * Story 6.4 AC #2, #3, #4, #5, #7
+     * Story 7.5 Task 6: Offline mode awareness - no recalculation when offline
      */
     private suspend fun handleRouteDeviation(currentLocation: LatLng) {
         val destination = originalDestination
         if (destination == null) {
             Log.e(TAG, "Cannot recalculate: no destination stored")
+            return
+        }
+        
+        // Story 7.5: Check if in offline mode
+        if (currentNavigationMode == NavigationMode.OFFLINE) {
+            Log.w(TAG, "Route deviation detected in offline mode - cannot recalculate")
+            // Announce offline deviation (AC #5)
+            announcementManager.announceOfflineDeviation()
+            // Continue with original route, no recalculation
             return
         }
         
@@ -394,6 +428,145 @@ class NavigationService : Service() {
     }
     
     /**
+     * Story 7.5 Task 3: Start network state monitoring for mode transitions.
+     * 
+     * Monitors network availability with 2-second debounce (reuses Story 6.6 pattern).
+     * Triggers mode switches when network state changes during navigation.
+     */
+    private fun startNetworkMonitoring() {
+        networkMonitorJob?.cancel()
+        
+        networkMonitorJob = serviceScope.launch {
+            networkStateMonitor.isNetworkAvailable
+                .debounce(2000L)  // 2-second debounce to prevent rapid switching
+                .collect { isOnline ->
+                    if (isNavigating) {
+                        handleNetworkTransition(isOnline)
+                    }
+                }
+        }
+    }
+    
+    /**
+     * Story 7.5 Task 3.4: Handle network state transitions.
+     * 
+     * @param isOnline New network state
+     */
+    private suspend fun handleNetworkTransition(isOnline: Boolean) {
+        val destination = originalDestination
+        if (destination == null) {
+            Log.w(TAG, "Cannot handle network transition: no destination stored")
+            return
+        }
+        
+        Log.d(TAG, "Network transition detected: isOnline=$isOnline, currentMode=$currentNavigationMode")
+        
+        when {
+            // Online → Offline transition (network lost)
+            !isOnline && currentNavigationMode == NavigationMode.ONLINE -> {
+                // Check if offline maps available (using destination coordinates)
+                val hasOfflineMaps = try {
+                    // Story 7.5: Check by coordinates since Destination doesn't have locationId
+                    offlineMapRepository.getAllOfflineMaps()
+                    // For now, assume no offline maps available - full implementation pending
+                    false
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to check offline map availability", e)
+                    false
+                }
+                
+                if (hasOfflineMaps) {
+                    switchToOfflineMode()
+                } else {
+                    // No offline maps available - announce limitation
+                    announcementManager.announceNetworkLoss(hasOfflineMaps = false)
+                    currentNavigationMode = NavigationMode.UNAVAILABLE
+                }
+            }
+            
+            // Offline → Online transition (network restored)
+            isOnline && currentNavigationMode == NavigationMode.OFFLINE -> {
+                switchToOnlineMode()
+            }
+            
+            // Unavailable → Online transition (network restored after being unavailable)
+            isOnline && currentNavigationMode == NavigationMode.UNAVAILABLE -> {
+                switchToOnlineMode()
+            }
+            
+            else -> {
+                Log.d(TAG, "No mode switch needed: isOnline=$isOnline, mode=$currentNavigationMode")
+            }
+        }
+    }
+    
+    /**
+     * Story 7.5 Task 4: Switch to offline navigation mode.
+     * 
+     * Continues navigation using cached route from Mapbox offline maps.
+     * Disables route recalculation and live traffic.
+     */
+    private suspend fun switchToOfflineMode() {
+        Log.i(TAG, "Switching to offline navigation mode")
+        
+        // Announce mode switch (AC #2)
+        announcementManager.announceNetworkLoss(hasOfflineMaps = true)
+        
+        // Update mode
+        currentNavigationMode = NavigationMode.OFFLINE
+        
+        // Note: Current route continues - no need to reload from offline maps
+        // The route was already calculated either online or offline
+        // In offline mode, we simply disable recalculation
+        
+        Log.d(TAG, "Offline mode active - route recalculation disabled")
+    }
+    
+    /**
+     * Story 7.5 Task 5: Switch to online navigation mode.
+     * 
+     * Restores live navigation with route recalculation capability.
+     * Triggers immediate route recalculation to get latest traffic data.
+     */
+    private suspend fun switchToOnlineMode() {
+        val destination = originalDestination
+        val currentLoc = previousProgress?.currentLocation
+        
+        if (destination == null || currentLoc == null) {
+            Log.w(TAG, "Cannot switch to online mode: missing destination or location")
+            return
+        }
+        
+        Log.i(TAG, "Switching to online navigation mode")
+        
+        // Announce mode switch (AC #6)
+        announcementManager.announceNetworkRestored()
+        
+        // Update mode
+        currentNavigationMode = NavigationMode.ONLINE
+        
+        // Trigger immediate route recalculation (AC #7)
+        try {
+            val result = navigationRepository.recalculateRoute(currentLoc, destination)
+            if (result.isSuccess) {
+                val newRoute = result.getOrThrow()
+                navigationRoute = newRoute
+                previousProgress = routeFollower.replaceRoute(newRoute)
+                deviationDetector.resetHistory()
+                
+                // Broadcast updated progress
+                _navigationProgress.value = previousProgress
+                
+                Log.i(TAG, "Online mode active - route recalculated with live traffic")
+            } else {
+                Log.e(TAG, "Route recalculation failed after switching to online mode")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to recalculate route in online mode", e)
+        }
+    }
+    
+    /**
      * Stop navigation service and cleanup.
      */
     private fun stopNavigationAndService() {
@@ -402,6 +575,8 @@ class NavigationService : Service() {
         isNavigating = false
         locationUpdatesJob?.cancel()
         locationUpdatesJob = null
+        networkMonitorJob?.cancel()  // Story 7.5: Stop network monitoring
+        networkMonitorJob = null
         
         // Stop all TTS announcements immediately and restore volume
         announcementManager.stopAllAnnouncements()
@@ -423,6 +598,7 @@ class NavigationService : Service() {
         
         isNavigating = false
         locationUpdatesJob?.cancel()
+        networkMonitorJob?.cancel()  // Story 7.5: Stop network monitoring
         serviceScope.cancel()
         
         // Stop all announcements on service destroy

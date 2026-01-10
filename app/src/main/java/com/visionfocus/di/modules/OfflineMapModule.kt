@@ -3,7 +3,7 @@ package com.visionfocus.di.modules
 import com.visionfocus.data.local.dao.OfflineMapDao
 import com.visionfocus.data.repository.OfflineMapRepository
 import com.visionfocus.data.repository.OfflineMapRepositoryImpl
-import com.visionfocus.maps.MapboxOfflineManager
+import com.visionfocus.maps.GoogleMapsOfflineManager
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

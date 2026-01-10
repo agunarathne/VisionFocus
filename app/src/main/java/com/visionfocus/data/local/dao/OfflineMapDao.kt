@@ -47,6 +47,28 @@ interface OfflineMapDao {
     suspend fun getOfflineMapByRegionId(mapboxRegionId: Long): OfflineMapEntity?
     
     /**
+     * Story 7.5: Get offline map by coordinates
+     * Checks if coordinates fall within any cached offline map region
+     * Uses simple bounding box check (centerLat ± radius, centerLng ± radius)
+     */
+    @Query("""
+        SELECT * FROM offline_maps 
+        WHERE status = :availableStatus
+        AND expiresAt > :currentTime
+        AND :latitude BETWEEN (centerLat - (radiusMeters / 111000.0)) 
+                         AND (centerLat + (radiusMeters / 111000.0))
+        AND :longitude BETWEEN (centerLng - (radiusMeters / (111000.0 * 0.8))) 
+                          AND (centerLng + (radiusMeters / (111000.0 * 0.8)))
+        LIMIT 1
+    """)
+    suspend fun getOfflineMapByCoordinates(
+        latitude: Double,
+        longitude: Double,
+        availableStatus: String = OfflineMapEntity.STATUS_AVAILABLE,
+        currentTime: Long = System.currentTimeMillis()
+    ): OfflineMapEntity?
+    
+    /**
      * Get all offline maps
      */
     @Query("SELECT * FROM offline_maps ORDER BY downloadedAt DESC")

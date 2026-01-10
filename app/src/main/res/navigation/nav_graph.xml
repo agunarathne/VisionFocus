@@ -108,4 +108,11 @@
             app:popUpToInclusive="false" />
     </fragment>
 
+    <!-- Epic 10: Beacon Management Screen -->
+    <fragment
+        android:id="@+id/beaconManagementFragment"
+        android:name="com.visionfocus.ui.beacon.BeaconManagementFragment"
+        android:label="Smart Tags"
+        tools:layout="@layout/fragment_beacon_management" />
+
 </navigation>
