@@ -133,7 +133,8 @@ Based on functional domain analysis:
 
 **Third-Party Dependencies:**
 - **TensorFlow Lite 2.x+:** Embedded quantized model (~4MB INT8); NNAPI hardware acceleration optional; version compatibility critical for inference performance
-- **Google Maps Directions API:** Required for outdoor navigation; offline maps support essential; graceful degradation when API unavailable
+- **Google Maps Directions API:** Required for online turn-by-turn navigation; provides route calculations and real-time directions; graceful degradation when API unavailable
+- **Mapbox Maps SDK v10.16.0:** Offline map tile downloads using TileStore API; provides local map rendering without network connectivity; complements Google Maps for offline navigation scenarios
 - **Android TalkBack 9.1+:** Core accessibility dependency; semantic API compatibility across versions; no vendor-specific TalkBack variants
 - **Google Text-to-Speech:** Android system TTS with adjustable rate/voice; must handle various TTS engines across OEMs
 
@@ -372,6 +373,10 @@ dependencies {
     // Google Maps & Location Services
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.gms:play-services-location:21.1.0")
+    
+    // Mapbox SDK (Offline maps)
+    implementation("com.mapbox.maps:android:10.16.0")
+    implementation("com.mapbox.navigation:android:2.17.0")
     
     // Room Database (Local persistence with encryption)
     implementation("androidx.room:room-runtime:2.6.1")
