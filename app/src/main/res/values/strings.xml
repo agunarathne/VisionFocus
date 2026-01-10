@@ -360,6 +360,16 @@
     <string name="location_name_updated_to">Location name updated to %1$s</string>
     <string name="location_deleted">%1$s deleted</string>
     <string name="location_already_exists">A location named %1$s already exists</string>
+    
+    <!-- Story 7.3: Quick Navigation to Saved Locations Strings -->
+    <string name="saved_locations_button_text">Saved Locations</string>
+    <string name="saved_locations_button_description">Select saved location, button</string>
+    <string name="select_saved_location_title">Select a saved location</string>
+    <string name="no_location_found">No saved location found named %1$s</string>
+    <string name="did_you_mean">Did you mean %1$s?</string>
+    <string name="multiple_locations_select_one">Multiple locations found. Select one.</string>
+    <string name="multiple_locations_announcement">Multiple locations found: %1$s. Please be more specific.</string>
+    <string name="disambiguation_dialog_title">Select Location</string>
 </resources>
 
 

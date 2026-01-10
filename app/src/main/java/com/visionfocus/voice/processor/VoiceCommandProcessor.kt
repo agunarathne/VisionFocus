@@ -122,6 +122,12 @@ class VoiceCommandProcessor @Inject constructor(
     suspend fun processCommand(transcription: String): CommandResult = withContext(Dispatchers.Main) {
         val startTime = System.currentTimeMillis()
         
+        // Story 7.3: Store transcription for parametric commands (e.g., "Navigate to [location]")
+        applicationContext.getSharedPreferences("voice", Context.MODE_PRIVATE)
+            .edit()
+            .putString("last_transcription", transcription)
+            .apply()
+        
         // 1. Normalize transcription (trim whitespace, already lowercase from Story 3.1)
         val normalized = transcription.trim()
         Log.d(TAG, "Processing command: \"$normalized\"")
@@ -130,7 +136,16 @@ class VoiceCommandProcessor @Inject constructor(
         var command = commandRegistry[normalized]
         var matchDistance = 0
         
-        // 3. Fuzzy match if no exact match (AC: Task 5)
+        // 3. Prefix match for parametric commands (Story 7.3: "navigate to [location]")
+        if (command == null) {
+            val prefixMatch = findPrefixMatch(normalized)
+            if (prefixMatch != null) {
+                command = prefixMatch
+                Log.d(TAG, "Prefix match found: \"$normalized\" → \"${command.displayName}\"")
+            }
+        }
+        
+        // 4. Fuzzy match if no exact or prefix match (AC: Task 5)
         if (command == null) {
             val fuzzyMatch = findFuzzyMatch(normalized)
             if (fuzzyMatch != null) {
@@ -212,6 +227,37 @@ class VoiceCommandProcessor @Inject constructor(
         // )
         
         return@withContext result
+    }
+    
+    /**
+     * Find prefix match for parametric commands.
+     * Story 7.3: Support commands with parameters like "navigate to [location]"
+     * 
+     * Checks if transcription starts with any registered keyword.
+     * Uses LONGEST match to prioritize "navigate to" over "navigate".
+     * This allows commands to receive the full transcription for parameter extraction.
+     * 
+     * @param input Transcribed voice input
+     * @return Matching command or null if no prefix match
+     */
+    private fun findPrefixMatch(input: String): VoiceCommand? {
+        var longestMatch: Pair<String, VoiceCommand>? = null
+        
+        commandRegistry.forEach { (keyword, command) ->
+            if (input.startsWith(keyword)) {
+                // Keep the longest matching keyword
+                if (longestMatch == null || keyword.length > longestMatch!!.first.length) {
+                    longestMatch = Pair(keyword, command)
+                }
+            }
+        }
+        
+        return if (longestMatch != null) {
+            Log.d(TAG, "Prefix match: \"$input\" starts with \"${longestMatch!!.first}\" → ${longestMatch!!.second.displayName}")
+            longestMatch!!.second
+        } else {
+            null
+        }
     }
     
     /**

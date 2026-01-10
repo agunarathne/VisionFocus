@@ -105,6 +105,7 @@ class DestinationInputFragment : Fragment() {
         setupTextInput()
         setupVoiceInput()
         setupGoButton()
+        setupSavedLocationsButton()  // Story 7.3
         setupBackButton()
         setupPermissionDeniedUI()  // Story 6.5
         setupNetworkStatus()  // Story 6.6
@@ -194,6 +195,51 @@ class DestinationInputFragment : Fragment() {
             } else {
                 requestLocationPermissionWithRationale()
             }
+        }
+    }
+    
+    /**
+     * Story 7.3 Task 3: Set up Saved Locations button click listener.
+     * Opens picker dialog to select saved location for navigation.
+     */
+    private fun setupSavedLocationsButton() {
+        binding.savedLocationsButton.setOnClickListener {
+            Log.d(TAG, "Saved Locations button clicked")
+            
+            // Story 7.3 Task 3.3: Show SavedLocationPickerDialogFragment
+            lifecycleScope.launch {
+                hapticFeedbackManager.trigger(HapticPattern.ButtonPress)
+            }
+            
+            val dialog = SavedLocationPickerDialogFragment.newInstance { selectedLocation ->
+                // Story 7.3 Task 3.4: Receive selected location from dialog callback
+                handleSavedLocationSelected(selectedLocation)
+            }
+            
+            dialog.show(childFragmentManager, SavedLocationPickerDialogFragment.TAG)
+        }
+    }
+    
+    /**
+     * Story 7.3 Task 3: Handle saved location selection from picker dialog.
+     * Populates destination field and triggers navigation automatically.
+     */
+    private fun handleSavedLocationSelected(location: com.visionfocus.data.local.entity.SavedLocationEntity) {
+        Log.d(TAG, "Location selected: ${location.name}")
+        
+        // Story 7.3 Task 3.5: Populate destination EditText with location name
+        viewModel.destinationText.value = location.name
+        
+        // Story 7.3 Task 3.7: Update location's lastUsedAt timestamp via repository
+        viewModel.updateLocationTimestamp(location)
+        
+        // Story 7.3 Task 3.6: Trigger navigation automatically (no "Go" button tap needed)
+        // Story 7.3 Task 3.8: Announce via TalkBack
+        lifecycleScope.launch {
+            ttsManager.announce(getString(R.string.starting_navigation_to, location.name))
+            
+            // Start navigation to saved location
+            viewModel.startNavigationToSavedLocation(location)
         }
     }
     

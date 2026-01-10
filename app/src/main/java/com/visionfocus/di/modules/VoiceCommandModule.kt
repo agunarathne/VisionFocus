@@ -7,6 +7,7 @@ import com.visionfocus.voice.commands.navigation.BackCommand
 import com.visionfocus.voice.commands.navigation.HistoryCommand
 import com.visionfocus.voice.commands.navigation.HomeCommand
 import com.visionfocus.voice.commands.navigation.NavigateCommand
+import com.visionfocus.voice.commands.navigation.NavigateToCommand
 import com.visionfocus.voice.commands.navigation.SavedLocationsCommand
 import com.visionfocus.voice.commands.navigation.WhereAmICommand
 import com.visionfocus.voice.commands.recognition.RecognizeCommand
@@ -109,6 +110,7 @@ object VoiceCommandModule {
         stopScanningCommand: StopScanningCommand,
         // Navigation commands
         navigateCommand: NavigateCommand,
+        navigateToCommand: NavigateToCommand,  // Story 7.3
         whereAmICommand: WhereAmICommand,
         backCommand: BackCommand,
         homeCommand: HomeCommand,
@@ -141,6 +143,7 @@ object VoiceCommandModule {
         // Register all commands with the processor
         processor.registerCommand(recognizeCommand)
         processor.registerCommand(navigateCommand)
+        processor.registerCommand(navigateToCommand)  // Story 7.3
         processor.registerCommand(repeatCommand)
         processor.registerCommand(cancelCommand)
         processor.registerCommand(settingsCommand)

@@ -1,14 +1,17 @@
 package com.visionfocus.data.local.entity
 
+import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.parcelize.Parcelize
 
 /**
  * Room entity for saved locations storage.
  * 
  * Story 7.1: Complete schema with all columns for saved locations feature.
+ * Story 7.3: Made Parcelable for disambiguation dialog arguments.
  * Encrypted at rest with SQLCipher (configured in Story 4.2).
  * 
  * Schema fields:
@@ -24,6 +27,7 @@ import androidx.room.PrimaryKey
  * - name: For duplicate check query performance (findByName)
  * - lastUsedAt: For getAllLocationsSorted() query performance
  */
+@Parcelize
 @Entity(
     tableName = "saved_locations",
     indices = [
@@ -52,4 +56,4 @@ data class SavedLocationEntity(
     
     @ColumnInfo(name = "address")
     val address: String? = null
-)
+) : Parcelable

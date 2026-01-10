@@ -30,6 +30,7 @@ import javax.inject.Inject
  * 
  * Story 6.1: Destination Input via Voice and Text
  * Story 6.2: Google Maps Directions API integration with navigation state management
+ * Story 7.3: Quick Navigation to Saved Locations
  */
 @HiltViewModel
 class DestinationInputViewModel @Inject constructor(
@@ -38,7 +39,8 @@ class DestinationInputViewModel @Inject constructor(
     private val networkConsentManager: NetworkConsentManager,
     private val ttsManager: TTSManager,
     private val hapticFeedbackManager: HapticFeedbackManager,
-    private val permissionManager: com.visionfocus.permissions.manager.PermissionManager  // Story 6.5
+    private val permissionManager: com.visionfocus.permissions.manager.PermissionManager,  // Story 6.5
+    private val savedLocationRepository: com.visionfocus.data.repository.SavedLocationRepository  // Story 7.3
 ) : ViewModel() {
     
     companion object {
@@ -280,6 +282,71 @@ class DestinationInputViewModel @Inject constructor(
         
         viewModelScope.launch {
             ttsManager.announce("Selected: ${selectedDestination.name}")
+        }
+    }
+    
+    /**
+     * Story 7.3 Task 3.7: Update location's lastUsedAt timestamp.
+     * Called when user selects a saved location for navigation.
+     * 
+     * @param location SavedLocationEntity to update
+     */
+    fun updateLocationTimestamp(location: com.visionfocus.data.local.entity.SavedLocationEntity) {
+        viewModelScope.launch {
+            try {
+                val updated = location.copy(lastUsedAt = System.currentTimeMillis())
+                savedLocationRepository.updateLocation(updated)
+                Timber.d("Updated lastUsedAt for location: ${location.name}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to update lastUsedAt for location: ${location.name}")
+                // Continue navigation even if timestamp update fails
+            }
+        }
+    }
+    
+    /**
+     * Story 7.3 Task 3.6: Start navigation to saved location.
+     * Converts saved location coordinates to Destination and triggers navigation.
+     * 
+     * @param location SavedLocationEntity to navigate to
+     */
+    fun startNavigationToSavedLocation(location: com.visionfocus.data.local.entity.SavedLocationEntity) {
+        viewModelScope.launch {
+            try {
+                // Create Destination from saved location
+                val destination = Destination(
+                    query = location.name,
+                    name = location.name,
+                    latitude = location.latitude,
+                    longitude = location.longitude,
+                    formattedAddress = location.address ?: "Saved location"
+                )
+                
+                // Update validation state
+                _validationState.value = ValidationResult.Valid(destination)
+                
+                // Check location permission
+                if (!permissionManager.isLocationPermissionGranted()) {
+                    Timber.w("Location permission not granted for saved location navigation")
+                    ttsManager.announce("Location permission required for navigation")
+                    return@launch
+                }
+                
+                // Check network consent
+                if (!networkConsentManager.hasConsent()) {
+                    Timber.d("Network consent required for navigation")
+                    _navigationEvent.emit(NavigationEvent.ShowNetworkConsentDialog)
+                    return@launch
+                }
+                
+                // Request route from current location to saved location
+                requestRoute(destination)
+                
+                Timber.d("Started navigation to saved location: ${location.name}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to start navigation to saved location: ${location.name}")
+                ttsManager.announce("Navigation failed. Please try again.")
+            }
         }
     }
 }

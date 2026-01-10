@@ -16,7 +16,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.NavHostFragment
 import com.visionfocus.data.repository.SettingsRepository
 import com.visionfocus.databinding.ActivityMainBinding
 import com.visionfocus.permissions.manager.AccessibilityAnnouncementHelper
@@ -164,6 +166,53 @@ class MainActivity : AppCompatActivity() {
         
         // Story 3.2: Register broadcast receiver for voice commands
         registerVoiceCommandReceiver()
+        
+        // Handle navigation intent from voice commands (Story 7.3)
+        handleNavigationIntent(intent)
+    }
+    
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // Handle navigation from voice commands when MainActivity is already running
+        handleNavigationIntent(intent)
+    }
+    
+    /**
+     * Story 7.3: Handle navigation intent from voice commands.
+     * Navigates to NavigationActiveFragment when triggered by NavigateToCommand.
+     */
+    private fun handleNavigationIntent(intent: Intent?) {
+        if (intent?.getStringExtra("navigate_to_fragment") == "navigationActive") {
+            val route = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra("route", com.visionfocus.navigation.models.NavigationRoute::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra("route")
+            }
+            val destinationName = intent.getStringExtra("destinationName") ?: ""
+            
+            if (route != null && destinationName.isNotEmpty()) {
+                lifecycleScope.launch {
+                    try {
+                        // Find NavController from nav_host_fragment
+                        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
+                        val navController = (navHostFragment as? androidx.navigation.fragment.NavHostFragment)?.navController
+                        
+                        if (navController != null) {
+                            // Navigate to NavigationActiveFragment with route
+                            val bundle = Bundle().apply {
+                                putParcelable("route", route)
+                                putString("destinationName", destinationName)
+                            }
+                            navController.navigate(R.id.navigationActiveFragment, bundle)
+                            android.util.Log.d("VisionFocus", "Navigated to NavigationActiveFragment: $destinationName")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("VisionFocus", "Failed to navigate to NavigationActiveFragment", e)
+                    }
+                }
+            }
+        }
     }
     
     /**

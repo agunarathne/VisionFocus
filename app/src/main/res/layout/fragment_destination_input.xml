@@ -61,6 +61,23 @@
             android:importantForAccessibility="yes" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Story 7.3: Saved Locations Button -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/savedLocationsButton"
+        style="@style/Widget.Material3.Button.OutlinedButton.Icon"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:minWidth="56dp"
+        android:minHeight="56dp"
+        android:text="@string/saved_locations_button_text"
+        app:icon="@drawable/ic_bookmark"
+        app:iconGravity="start"
+        android:contentDescription="@string/saved_locations_button_description"
+        android:importantForAccessibility="yes"
+        app:layout_constraintTop_toBottomOf="@id/destinationInputLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
     <!-- Progress Indicator (hidden by default) -->
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/validationProgressIndicator"
@@ -68,10 +85,10 @@
         android:layout_height="wrap_content"
         android:indeterminate="true"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/destinationInputLayout"
+        app:layout_constraintTop_toBottomOf="@id/savedLocationsButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="16dp"
         tools:visibility="visible" />
     
     <!-- Story 6.2: Route downloading progress indicator -->
