@@ -50,7 +50,8 @@ class ProximityNavigationService @Inject constructor(
         private const val HAPTIC_FAR = 2000L
         
         // Announcement throttling
-        private const val ANNOUNCEMENT_COOLDOWN_MS = 2500L
+        // Reduced to 0 to prevent delaying critical distance updates
+        private const val ANNOUNCEMENT_COOLDOWN_MS = 0L
     }
     
     private var navigationJob: Job? = null
@@ -203,8 +204,8 @@ enum class ProximityZone {
  */
 class KalmanRssiFilter {
     companion object {
-        private const val PROCESS_NOISE = 0.5f
-        private const val MEASUREMENT_NOISE = 4.0f
+        private const val PROCESS_NOISE = 1.0f  // Increased for faster response
+        private const val MEASUREMENT_NOISE = 2.0f // Reduced to trust value more (less lag)
     }
     
     private var estimate: Float = -100f
