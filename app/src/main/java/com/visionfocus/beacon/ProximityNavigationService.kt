@@ -36,19 +36,17 @@ class ProximityNavigationService @Inject constructor(
     companion object {
         private const val TAG = "ProximityNavigationService"
         
-        // RSSI threshold zones (dBm) - Tuned for ~2m intervals
+        // RSSI threshold zones (dBm) - Tuned based on user requirements
         // Based on log-distance path loss model approximation
-        private const val RSSI_ARRIVED = -55     // < 1 meter ("Reached")
-        private const val RSSI_VERY_CLOSE = -68  // 1-3 meters ("Very closer")
-        private const val RSSI_CLOSE = -78       // 3-5 meters ("Closer")
-        private const val RSSI_MEDIUM = -88      // 5-8 meters ("Signal found / So far")
-        // RSSI_FAR = anything below -88
+        private const val RSSI_ARRIVED = -60     // < 2 meter ("Reached")
+        private const val RSSI_VERY_CLOSE = -72  // 2-4 meters ("Very closer")
+        private const val RSSI_CLOSE = -82       // 4-6 meters ("Closer")
+        // RSSI_MEDIUM = > 6 meters ("Signal found / So far")
         
         // Haptic pulse intervals (milliseconds)
         private const val HAPTIC_ARRIVED = 100L
         private const val HAPTIC_VERY_CLOSE = 250L
         private const val HAPTIC_CLOSE = 500L
-        private const val HAPTIC_MEDIUM = 1000L
         private const val HAPTIC_FAR = 2000L
         
         // Announcement throttling
@@ -124,7 +122,6 @@ class ProximityNavigationService @Inject constructor(
             filteredRssi >= RSSI_ARRIVED -> ProximityZone.ARRIVED
             filteredRssi >= RSSI_VERY_CLOSE -> ProximityZone.VERY_CLOSE
             filteredRssi >= RSSI_CLOSE -> ProximityZone.CLOSE
-            filteredRssi >= RSSI_MEDIUM -> ProximityZone.MEDIUM
             else -> ProximityZone.FAR
         }
         
@@ -157,11 +154,10 @@ class ProximityNavigationService @Inject constructor(
         }
         
         val message = when (zone) {
-            ProximityZone.ARRIVED -> "You have reached $beaconName"
-            ProximityZone.VERY_CLOSE -> "Very close"
-            ProximityZone.CLOSE -> "Getting closer"
-            ProximityZone.MEDIUM -> "$beaconName is far, but signal detected"
-            ProximityZone.FAR -> "Signal weak, search around"
+            ProximityZone.ARRIVED -> "Reached"
+            ProximityZone.VERY_CLOSE -> "Very closer"
+            ProximityZone.CLOSE -> "Closer"
+            ProximityZone.FAR -> "Signal found, so far"
         }
         
         ttsManager.announce(message)
@@ -177,7 +173,6 @@ class ProximityNavigationService @Inject constructor(
             ProximityZone.ARRIVED -> HapticPattern.NavigationArrived  // Triple pulse
             ProximityZone.VERY_CLOSE -> HapticPattern.ProximityVeryClose  // Fast pulse
             ProximityZone.CLOSE -> HapticPattern.ProximityClose
-            ProximityZone.MEDIUM -> HapticPattern.ProximityFar
             ProximityZone.FAR -> HapticPattern.ProximityFar  // Slow pulse
         }
         
@@ -191,11 +186,10 @@ class ProximityNavigationService @Inject constructor(
  * Proximity zones based on RSSI thresholds.
  */
 enum class ProximityZone {
-    FAR,        // > 10 meters
-    MEDIUM,     // ~10 meters
-    CLOSE,      // ~5 meters
-    VERY_CLOSE, // ~2-3 meters
-    ARRIVED     // < 1 meter
+    FAR,        // > 6 meters
+    CLOSE,      // 4-6 meters
+    VERY_CLOSE, // 2-4 meters
+    ARRIVED     // < 2 meter
 }
 
 /**

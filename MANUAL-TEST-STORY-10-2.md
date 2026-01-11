@@ -23,34 +23,28 @@
     - The app announces "Searching for Keys beacon".
     - The `ProximityNavigationService` starts (verified by logs or immediate feedback).
 
-### 2. Feedback at "Far" Range (> 8m)
-- [ ] **Step**: Move far away from the beacon (> 8 meters).
+### 2. Feedback at "Far" Range (> 6m)
+- [ ] **Step**: Move far away from the beacon (> 6 meters).
 - [ ] **Expected**:
-    - **Audio**: "Signal weak, search around" (repeated every ~2.5s).
+    - **Audio**: "Signal found, so far".
     - **Haptic**: Slow pulse (every 2000ms).
 
-### 3. Feedback at "Medium" Range (5m - 8m)
-- [ ] **Step**: Move slightly closer.
+### 3. Feedback at "Close" Range (4m - 6m)
+- [ ] **Step**: Move closer (within 6 meters).
 - [ ] **Expected**:
-    - **Audio**: "Keys is far, but signal detected".
-    - **Haptic**: Medium interval pulse (1000ms).
+    - **Audio**: "Closer".
+    - **Haptic**: Medium interval pulse (500ms).
 
-### 4. Feedback at "Close" Range (3m - 5m)
-- [ ] **Step**: Continue approaching.
+### 4. Feedback at "Very Closer" Range (2m - 4m)
+- [ ] **Step**: Continue approaching (within 4 meters).
 - [ ] **Expected**:
-    - **Audio**: "Getting closer".
-    - **Haptic**: Faster pulse (500ms).
+    - **Audio**: "Very closer".
+    - **Haptic**: Faster pulse (250ms).
 
-### 5. Feedback at "Very Close" Range (1m - 3m)
-- [ ] **Step**: Get within 2 meters.
+### 5. Arrival (< 2m)
+- [ ] **Step**: Place the phone within 2 meters of the beacon.
 - [ ] **Expected**:
-    - **Audio**: "Very close".
-    - **Haptic**: Rapid buzzing (250ms).
-
-### 6. Arrival (< 1m)
-- [ ] **Step**: Place the phone directly next to the beacon.
-- [ ] **Expected**:
-    - **Audio**: "You have reached Keys".
+    - **Audio**: "Reached".
     - **Haptic**: Distinct "Arrival Pattern" (triple pulse).
     - **Action**: Navigation stops automatically.
 

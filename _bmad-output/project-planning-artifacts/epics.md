@@ -1387,11 +1387,10 @@ So that I can locate the tagged item or location precisely.
 **And** if found, Proximity Navigation Service starts
 **And** app scans for the specific MAC address in the background
 **And** distance estimates are provided based on RSSI strength:
-  - Far (> 8m): "Signal weak, search around"
-  - Medium (5-8m): "Signal detected"
-  - Close (3-5m): "Getting closer"
-  - Very Close (< 2m): "Very close"
-  - Arrived: "You have reached Keys"
+  - > 6 meters: "Signal found, so far"
+  - 4-6 meters: "Closer"
+  - 2-4 meters: "Very closer"
+  - < 2 meters: "Reached"
 **And** haptic feedback increases in frequency as I get closer (Geiger counter style)
 **And** signal noise is smoothed (e.g., Kalman filter) to prevent erratic feedback
 **And** navigation stops automatically upon arrival
