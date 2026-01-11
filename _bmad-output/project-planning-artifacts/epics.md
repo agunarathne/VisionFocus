@@ -1348,3 +1348,51 @@ So that I can use the app on my terms without being locked out.
 **And** Settings screen shows permission status: "Camera: Denied", "Microphone: Granted", "Location: Denied"
 **And** in-app permission re-request link navigates to system app settings (Intent to Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
 **And** granted features work normally regardless of other denied permissions (e.g., voice commands work without camera if microphone granted)
+
+---
+
+## Epic 10: Beacon-Based Indoor Micro-Navigation (Smart Tags)
+
+**Goal:** Enable users to find specific items or locations within a room using Bluetooth Low Energy (BLE) transmitters.
+
+### Story 10.1: Beacon Management and Pairing
+
+As a visually impaired user,
+I want to pair Bluetooth Low Energy (BLE) beacons to the app,
+So that I can associate physical objects (like keys or rooms) with digital tags for later retrieval.
+
+**Acceptance Criteria:**
+
+**Given** Bluetooth is enabled and permissions granted
+**When** I enter the "Manage Smart Tags" screen from Settings
+**Then** scanning mode activates showing nearby devices
+**And** only devices with strong signal (RSSI > -85) are shown to reduce clutter
+**And** I can select a device and assign a custom name (e.g., "Keys", "Office Door")
+**And** saved tags appear in a persistent "My Smart Tags" list
+**And** I can delete tags I no longer use
+**And** database (BeaconEntity) stores the Name and MAC Address
+**And** screen is fully accessible with TalkBack labels ("Scan for devices", "Save tag")
+
+### Story 10.2: Proximity-Based Navigation (Signal Seeking)
+
+As a visually impaired user,
+I want to initiate navigation to a paired beacon and receive granular distance feedback,
+So that I can locate the tagged item or location precisely.
+
+**Acceptance Criteria:**
+
+**Given** a paired beacon named "Keys" exists
+**When** I use voice command "Navigate to Keys" or "Find Keys"
+**Then** system first checks for Saved Locations (GPS), finding none, searches Beacons
+**And** if found, Proximity Navigation Service starts
+**And** app scans for the specific MAC address in the background
+**And** distance estimates are provided based on RSSI strength:
+  - Far (> 8m): "Signal weak, search around"
+  - Medium (5-8m): "Signal detected"
+  - Close (3-5m): "Getting closer"
+  - Very Close (< 2m): "Very close"
+  - Arrived: "You have reached Keys"
+**And** haptic feedback increases in frequency as I get closer (Geiger counter style)
+**And** signal noise is smoothed (e.g., Kalman filter) to prevent erratic feedback
+**And** navigation stops automatically upon arrival
+
