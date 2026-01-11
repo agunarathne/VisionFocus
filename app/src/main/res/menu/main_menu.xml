@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Story 10.1: New Menu Items -->
+    <item
+        android:id="@+id/action_saved_locations"
+        android:title="@string/menu_saved_outdoor_locations"
+        android:contentDescription="@string/menu_saved_outdoor_locations_desc"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_smart_tags"
+        android:title="@string/menu_saved_indoor_tags"
+        android:contentDescription="@string/menu_saved_indoor_tags_desc"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_history"
+        android:title="@string/menu_object_detection_history"
+        android:contentDescription="@string/menu_object_detection_history_desc"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_voice_commands"
+        android:title="@string/menu_voice_commands"
+        android:contentDescription="@string/menu_voice_commands_desc"
+        app:showAsAction="never" />
     
     <item
         android:id="@+id/action_settings"

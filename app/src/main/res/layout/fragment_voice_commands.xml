@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:contentDescription="@string/menu_voice_commands_desc">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/help_command_introduction"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Recognition Group -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Recognition Commands"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_recognize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Recognize"
+            android:contentDescription="Execute Recognize command" />
+
+        <Button
+            android:id="@+id/btn_what_do_i_see"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="What do I see"
+            android:contentDescription="Execute What do I see command" />
+
+        <Button
+            android:id="@+id/btn_repeat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Repeat"
+            android:contentDescription="Execute Repeat command"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Navigation Group -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Navigation Commands"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_navigate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Navigate"
+            android:contentDescription="Execute Navigate command" />
+
+        <Button
+            android:id="@+id/btn_where_am_i"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Where am I"
+            android:contentDescription="Execute Where am I command" />
+
+        <Button
+            android:id="@+id/btn_save_location"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Location"
+            android:contentDescription="Execute Save Location command" />
+
+        <Button
+            android:id="@+id/btn_saved_locations"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Saved Locations"
+            android:contentDescription="Execute Saved Locations command" />
+            
+        <Button
+            android:id="@+id/btn_cancel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Cancel"
+            android:contentDescription="Execute Cancel command"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Indoor Navigation Group -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Indoor Navigation (Beacon)"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_find_keys"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Find Keys"
+            android:contentDescription="Execute Find Keys command" />
+
+        <Button
+            android:id="@+id/btn_locate_backpack"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Locate Backpack"
+            android:contentDescription="Execute Locate Backpack command"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Settings Group -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Settings Commands"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:contentDescription="Execute Settings command" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            
+            <Button
+                android:id="@+id/btn_high_contrast_on"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="High Contrast On"
+                android:layout_marginEnd="4dp"/>
+                
+            <Button
+                android:id="@+id/btn_high_contrast_off"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="High Contrast Off"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            
+            <Button
+                android:id="@+id/btn_large_text_on"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Large Text On"
+                android:layout_marginEnd="4dp"/>
+                
+            <Button
+                android:id="@+id/btn_large_text_off"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Large Text Off"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_increase_speed"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Increase Speed"
+                android:layout_marginEnd="4dp"/>
+
+            <Button
+                android:id="@+id/btn_decrease_speed"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Decrease Speed"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
+        
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Verbosity"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:layout_marginTop="8dp"/>
+            
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            
+            <Button
+                android:id="@+id/btn_verbosity_brief"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Brief"
+                android:layout_marginEnd="2dp"/>
+                
+            <Button
+                android:id="@+id/btn_verbosity_standard"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Standard"
+                android:layout_marginEnd="2dp"
+                android:layout_marginStart="2dp"/>
+
+            <Button
+                android:id="@+id/btn_verbosity_detailed"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Detailed"
+                android:layout_marginStart="2dp"/>
+        </LinearLayout>
+        
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Haptics"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:layout_marginTop="8dp"/>
+            
+         <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+            
+            <Button
+                android:id="@+id/btn_haptic_off"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Off"
+                android:layout_marginEnd="2dp"/>
+                
+            <Button
+                android:id="@+id/btn_haptic_medium"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Medium"
+                android:layout_marginStart="2dp"/>
+        </LinearLayout>
+
+
+        <!-- General Group -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="General Commands"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_history"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="History"
+            android:contentDescription="Execute History command" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            
+            <Button
+                android:id="@+id/btn_back"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Back"
+                android:layout_marginEnd="4dp"/>
+                
+            <Button
+                android:id="@+id/btn_home"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Home"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

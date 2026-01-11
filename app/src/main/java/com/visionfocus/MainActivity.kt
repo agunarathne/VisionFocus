@@ -537,6 +537,22 @@ class MainActivity : AppCompatActivity() {
      */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_saved_locations -> {
+                navigateToSavedLocations()
+                true
+            }
+            R.id.action_smart_tags -> {
+                navigateToSmartTags()
+                true
+            }
+            R.id.action_history -> {
+                navigateToHistory()
+                true
+            }
+            R.id.action_voice_commands -> {
+                navigateToVoiceCommands()
+                true
+            }
             R.id.action_settings -> {
                 navigateToSettings()
                 true
@@ -642,6 +658,24 @@ class MainActivity : AppCompatActivity() {
     fun navigateToSavedLocations() {
         val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
         navController.navigate(R.id.savedLocationsFragment)
+    }
+    
+    /**
+     * Navigate to Smart Tags / Beacon Management screen.
+     * Story 10.1: Menu navigation to Smart Tags
+     */
+    fun navigateToSmartTags() {
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        navController.navigate(R.id.beaconManagementFragment)
+    }
+
+    /**
+     * Navigate to Voice Commands screen.
+     * Story 10.3: Menu navigation to Voice Commands
+     */
+    fun navigateToVoiceCommands() {
+        val navController = binding.navHostFragment.getFragment<androidx.navigation.fragment.NavHostFragment>().navController
+        navController.navigate(R.id.voiceCommandsFragment)
     }
     
     /**

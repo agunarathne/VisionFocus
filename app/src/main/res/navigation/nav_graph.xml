@@ -90,7 +90,7 @@
     <!-- History Screen -->
     <fragment
         android:id="@+id/historyFragment"
-        android:name="com.visionfocus.history.ui.HistoryFragment"
+        android:name="com.visionfocus.ui.history.HistoryFragment"
         android:label="History"
         tools:layout="@layout/fragment_history" />
 
@@ -114,5 +114,12 @@
         android:name="com.visionfocus.ui.beacon.BeaconManagementFragment"
         android:label="Smart Tags"
         tools:layout="@layout/fragment_beacon_management" />
+
+    <!-- Voice Commands Screen -->
+    <fragment
+        android:id="@+id/voiceCommandsFragment"
+        android:name="com.visionfocus.ui.voice.VoiceCommandsFragment"
+        android:label="Voice Commands"
+        tools:layout="@layout/fragment_voice_commands" />
 
 </navigation>

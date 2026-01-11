@@ -1395,3 +1395,20 @@ So that I can locate the tagged item or location precisely.
 **And** signal noise is smoothed (e.g., Kalman filter) to prevent erratic feedback
 **And** navigation stops automatically upon arrival
 
+### Story 10.3: Menu-Based Navigation for Accessibility
+
+As a visually impaired user,
+I want to access key features like Saved Locations, Smart Tags, and History via the main menu,
+So that I don't have to rely solely on voice commands which might be hard to use in noisy environments.
+
+**Acceptance Criteria:**
+
+**Given** the app main screen is displayed
+**When** I open the options menu
+**Then** three new items appear: "Saved Out-Door Locations", "Saved In-Door Tags", "Object Detection History"
+**And** "Saved Out-Door Locations" opens the Saved Locations screen
+**And** "Saved In-Door Tags" opens the Smart Tags management screen
+**And** "Object Detection History" opens the History screen
+**And** menu items are accessible via TalkBack and can be activated by double-tap
+**And** this provides a manual alternative to voice commands for these features
+
